@@ -57,17 +57,26 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   const purchaseNetFixedInputRef = useRef<HTMLInputElement>(null); 
 
   React.useEffect(() => {
-    itemRefs.current[rowIndex] = [
+    const fields = [
       materialSelectRef.current,
       productNameInputRef.current,
-      hsnCodeInputRef.current,
-      qtyInputRef.current,
-      isPurchase ? purchaseNetTypeSelectRef.current : rateInputRef.current,
-      isPurchase
-        ? item.purchaseNetType === 'net_percentage' ? purchaseNetPercentInputRef.current : purchaseNetFixedInputRef.current
-        : mcTypeSelectRef.current,
-      isPurchase ? null : mcValueInputRef.current, 
-    ].filter(Boolean) as Array<HTMLInputElement | HTMLButtonElement>;
+    ];
+    if (!isPurchase) {
+      fields.push(hsnCodeInputRef.current);
+    }
+    fields.push(qtyInputRef.current);
+
+    if (isPurchase) {
+      fields.push(purchaseNetTypeSelectRef.current);
+      fields.push(
+        item.purchaseNetType === 'net_percentage' ? purchaseNetPercentInputRef.current : purchaseNetFixedInputRef.current
+      );
+    } else {
+      fields.push(rateInputRef.current);
+      fields.push(mcTypeSelectRef.current);
+      fields.push(mcValueInputRef.current);
+    }
+    itemRefs.current[rowIndex] = fields.filter(Boolean) as Array<HTMLInputElement | HTMLButtonElement>;
   }, [rowIndex, itemRefs, isPurchase, item.purchaseNetType]);
 
 
@@ -148,15 +157,8 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
     }
   };
 
-  // Adjust grid columns based on purchase or sales and inclusion of HSN
-  // Sales: Material(2), Product Name(2), HSN(1), Qty/Wt(1), Rate(1), MC Type(1), Making(1), Taxable(1), Action(1) = 11
-  // Purchase: Material(2), Product Name(2), HSN(1), Qty/Wt(1), Net Type(2), Value(1), Taxable(1), Action(1) = 11
-  // Let's use a more flexible grid setup for better readability.
-  // Using fractions for more dynamic sizing.
-  // Example: grid-cols-[minmax(150px,1.5fr)_minmax(150px,2fr)_minmax(80px,0.5fr)_minmax(80px,0.5fr)_minmax(100px,1fr)_minmax(100px,0.75fr)_minmax(100px,0.75fr)_minmax(100px,1fr)_minmax(60px,0.5fr)]
-  // For now, simple column counts and adjust as needed.
   const gridColsClass = isPurchase 
-    ? "grid-cols-[1.5fr_2fr_1fr_1fr_1.5fr_1fr_1fr_0.5fr]" // Material, Name, HSN, Qty, NetType, Value, Amount, Action
+    ? "grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]" // Material, Name, Qty, NetType, Value, Amount, Action
     : "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]"; // Material, Name, HSN, Qty, Rate, MCType, Making, Amount, Action
 
   return (
@@ -205,19 +207,21 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         />
       </div>
       
-      {/* Column 3: HSN Code */}
-      <div>
-        <Input
-          ref={hsnCodeInputRef}
-          placeholder="HSN"
-          value={item.hsnCode || ''}
-          onChange={(e) => handleFieldChange('hsnCode', e.target.value)}
-          onKeyDown={(e) => handleKeyDown(e, 2)}
-          className="h-12 text-base text-center"
-        />
-      </div>
+      {/* Column 3: HSN Code (Sales Only) */}
+      {!isPurchase && (
+        <div>
+          <Input
+            ref={hsnCodeInputRef}
+            placeholder="HSN"
+            value={item.hsnCode || ''}
+            onChange={(e) => handleFieldChange('hsnCode', e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, 2)}
+            className="h-12 text-base text-center"
+          />
+        </div>
+      )}
 
-      {/* Column 4: Qty/Wt */}
+      {/* Column 4 (Sales) / 3 (Purchase): Qty/Wt */}
       <div>
         <Input
           ref={qtyInputRef}
@@ -225,7 +229,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           placeholder={`Qty/${selectedValuableDetails?.unit || 'unit'}`}
           value={item.weightOrQuantity === undefined ? '' : item.weightOrQuantity}
           onChange={(e) => handleFieldChange('weightOrQuantity', e.target.value)}
-          onKeyDown={(e) => handleKeyDown(e, 3)}
+          onKeyDown={(e) => handleKeyDown(e, isPurchase ? 2 : 3)}
           min="0"
           step={selectedValuableDetails?.unit === 'carat' || selectedValuableDetails?.unit === 'ct' ? '0.001' : '0.01'}
           className="h-12 text-base text-center"
@@ -235,7 +239,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       {/* Columns for Purchase vs Sales */}
       {isPurchase ? (
         <>
-          {/* Purchase Column 5: Net Type */}
+          {/* Purchase Column 4: Net Type */}
           <div className="flex flex-col space-y-1">
             <Select
               value={item.purchaseNetType || 'net_percentage'}
@@ -244,7 +248,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               <SelectTrigger
                 ref={purchaseNetTypeSelectRef}
                 className="h-12 text-sm"
-                onKeyDown={(e) => handleKeyDown(e, 4)}
+                onKeyDown={(e) => handleKeyDown(e, 3)}
               >
                 <SelectValue />
               </SelectTrigger>
@@ -258,7 +262,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
             )}
           </div>
 
-          {/* Purchase Column 6: Value Input (Percentage or Fixed) */}
+          {/* Purchase Column 5: Value Input (Percentage or Fixed) */}
           <div className="flex flex-col space-y-1">
             {item.purchaseNetType === 'net_percentage' && (
               <Input
@@ -270,7 +274,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                 className="h-12 text-base text-center"
                 min="0"
                 step="0.01"
-                onKeyDown={(e) => handleKeyDown(e, 5)}
+                onKeyDown={(e) => handleKeyDown(e, 4)}
               />
             )}
             {item.purchaseNetType === 'fixed_net_price' && (
@@ -283,7 +287,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                 className="h-12 text-base text-center"
                 min="0"
                 step="0.01"
-                onKeyDown={(e) => handleKeyDown(e, 5)}
+                onKeyDown={(e) => handleKeyDown(e, 4)}
               />
             )}
             {(item.purchaseNetType === 'net_percentage' || item.purchaseNetType === 'fixed_net_price') && item.valuableId && (
@@ -360,3 +364,5 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 };
 
 export default BillItemRow;
+
+    

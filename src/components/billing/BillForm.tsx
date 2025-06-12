@@ -225,6 +225,9 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         const taxableAmount = item.amount || 0;
         let itemCgst = 0;
         let itemSgst = 0;
+        // HSN should only be included for non-estimate sales bills
+        const includeHsn = billType === 'sales-bill' && !isEstimateMode;
+
 
         if (billType === 'sales-bill' && !isEstimateMode) {
             itemCgst = item.itemCgstAmount || 0;
@@ -238,7 +241,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           id: item.id || uuidv4(),
           valuableId: item.valuableId,
           name: item.name || '',
-          hsnCode: isEstimateMode ? '' : (item.hsnCode || ''), // HSN blank for estimates
+          hsnCode: includeHsn ? (item.hsnCode || '') : undefined, 
           weightOrQuantity: item.weightOrQuantity || 0,
           unit: item.unit,
           rate: item.rate || 0, 
@@ -371,7 +374,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   }, [items.length]);
 
   const headerGridColsClass = isPurchase
-    ? "grid-cols-[1.5fr_2fr_1fr_1fr_1.5fr_1fr_1fr_0.5fr]" // Material, Name, HSN, Qty, NetType, Value, Amount, Action
+    ? "grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]" // Material, Name, Qty, NetType, Value, Amount, Action
     : "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]"; // Material, Name, HSN, Qty, Rate, MCType, Making, Amount, Action
 
 
@@ -432,7 +435,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
            <div className={`py-3.5 px-4 grid ${headerGridColsClass} gap-3 text-base font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
             <div className="col-span-1">Material</div>
             <div className="col-span-1">Product Name</div>
-            <div className="col-span-1 text-center">HSN</div>
+            {!isPurchase && <div className="col-span-1 text-center">HSN</div>}
             <div className="col-span-1 text-center">Qty/Wt</div>
             {isPurchase ? (
                 <>
@@ -533,3 +536,5 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 };
 
 export default BillForm;
+
+    

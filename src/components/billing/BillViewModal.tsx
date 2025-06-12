@@ -83,6 +83,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       let itemSgst = 0;
       let lineTotal = taxableAmount;
 
+      // HSN is only for non-estimate Sales bills
+      const showHsnInPdf = bill.type === 'sales-bill' && !isEstimateView;
+
       if (bill.type === 'sales-bill' && !isEstimateView) {
         itemCgst = item.itemCgstAmount || 0;
         itemSgst = item.itemSgstAmount || 0;
@@ -93,7 +96,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         <tr style="font-size: 14pt; page-break-inside: avoid;">
           <td style="border: 1px solid #333333; padding: 9px; text-align: center;">${index + 1}</td>
           <td style="border: 1px solid #333333; padding: 9px;">${item.name} ${valuableDetails ? `(${valuableDetails.name})` : ''}</td>
-          ${!isEstimateView ? `<td style="border: 1px solid #333333; padding: 9px; text-align: center;">${item.hsnCode || '-'}</td>` : ''}
+          ${showHsnInPdf ? `<td style="border: 1px solid #333333; padding: 9px; text-align: center;">${item.hsnCode || '-'}</td>` : ''}
           <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} ${item.unit}</td>
           <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${effectiveRate.toFixed(2)}</td>
           ${bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0) ? `<td style="border: 1px solid #333333; padding: 9px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : currency + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
@@ -110,14 +113,14 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     const showMakingChargeColumn = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
     const showItemTaxableCol = bill.type === 'sales-bill' && !isEstimateView;
     const showItemGstCols = bill.type === 'sales-bill' && !isEstimateView;
-    const showHsnCol = !isEstimateView;
+    const showHsnColInPdf = bill.type === 'sales-bill' && !isEstimateView;
 
 
     let tableHeaders = `
       <th style="border: 1px solid #333333; padding: 10px; text-align: center; font-weight: bold; background-color: #e0e0e0;">#</th>
       <th style="border: 1px solid #333333; padding: 10px; text-align: left; font-weight: bold; background-color: #e0e0e0;">Item Description</th>
     `;
-    if (showHsnCol) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: center; font-weight: bold; background-color: #e0e0e0;">HSN</th>`;
+    if (showHsnColInPdf) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: center; font-weight: bold; background-color: #e0e0e0;">HSN</th>`;
     tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Qty/Wt</th>`;
     tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Rate / ${bill.items[0]?.unit || 'unit'}</th>`;
     if (showMakingChargeColumn) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Making</th>`;
@@ -197,33 +200,38 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
 
   const handleGeneratePdf = async () => {
+    if (!billContentRef.current || !bill) {
+        alert("Error: Bill content is not available for PDF generation.");
+        return;
+    }
     setIsGeneratingPdf(true);
 
     const captureWrapper = document.createElement('div');
     captureWrapper.id = 'pdf-capture-wrapper';
     Object.assign(captureWrapper.style, {
-        position: 'fixed', // Use fixed to ensure it's relative to viewport, not scroll
-        left: '-9999px', 
+        position: 'fixed',
+        left: '-9999px',
         top: '-9999px',
-        width: '794px', // A4-like width
-        backgroundColor: 'white', 
+        width: '794px', 
+        backgroundColor: 'white',
         padding: '0',
+        margin: '0',
         boxSizing: 'border-box',
-        zIndex: '-1', // Keep it off-screen and non-interactive
+        zIndex: '-1', 
     });
 
     const contentHost = document.createElement('div');
-    contentHost.innerHTML = generatePdfHtml();
+    contentHost.innerHTML = generatePdfHtml(); // Use the generated HTML string
     
     captureWrapper.appendChild(contentHost);
     document.body.appendChild(captureWrapper);
-    
     document.body.classList.add('print-capture-active');
 
+    // Target the actual content element that was created by innerHTML
     const billContentElementForCapture = contentHost.firstChild as HTMLElement;
 
     if (!billContentElementForCapture || billContentElementForCapture.offsetWidth === 0 || billContentElementForCapture.offsetHeight === 0) {
-        alert(`Error: PDF capture target has no dimensions (W: ${billContentElementForCapture?.offsetWidth}, H: ${billContentElementForCapture?.offsetHeight}). PDF generation aborted. Check generated HTML or ensure content is visible if temporarily moved.`);
+        alert(`Error: PDF capture target has no dimensions (W: ${billContentElementForCapture?.offsetWidth}, H: ${billContentElementForCapture?.offsetHeight}). PDF generation aborted. This can happen if the HTML content for the PDF is empty or not rendering correctly off-screen.`);
         if (captureWrapper.parentNode === document.body) {
             document.body.removeChild(captureWrapper);
         }
@@ -231,12 +239,12 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         setIsGeneratingPdf(false);
         return;
     }
-
+    
     try {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Longer delay for complex HTML
+        await new Promise(resolve => setTimeout(resolve, 300)); 
 
         const canvas = await html2canvas(billContentElementForCapture, {
-            scale: 2.5,
+            scale: 2.5, 
             useCORS: true,
             logging: false, 
             backgroundColor: "#ffffff",
@@ -244,13 +252,13 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             height: billContentElementForCapture.offsetHeight,
             scrollX: 0,
             scrollY: 0,
-            windowWidth: billContentElementForCapture.scrollWidth, // Use scrollWidth to account for all content
-            windowHeight: billContentElementForCapture.scrollHeight, // Use scrollHeight
+            windowWidth: billContentElementForCapture.scrollWidth,
+            windowHeight: billContentElementForCapture.scrollHeight,
         });
 
         const imgData = canvas.toDataURL('image/png');
         if (imgData.length < 250 || imgData === 'data:,') { 
-             alert("Error: Failed to capture bill content. Generated image was empty. This may happen if the content is not rendered correctly before capture.");
+             alert("Error: Failed to capture bill content. Generated image was empty or too small. Please check the console for errors or try again.");
              if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
              document.body.classList.remove('print-capture-active');
              setIsGeneratingPdf(false);
@@ -280,12 +288,13 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         }
         
         const availableWidth = pdfWidth - 2 * margin;
-        const availableHeight = pdfHeight - 2 * margin;
-        
-        let ratio = Math.min(availableWidth / canvasImgWidth, availableHeight / canvasImgHeight);
-        
-        const finalPdfImgWidth = canvasImgWidth * ratio;
-        const finalPdfImgHeight = canvasImgHeight * ratio;
+        let finalPdfImgHeight = (canvasImgHeight * availableWidth) / canvasImgWidth; // Maintain aspect ratio based on available width
+        let finalPdfImgWidth = availableWidth;
+
+        if (finalPdfImgHeight > (pdfHeight - 2 * margin)) { // If height exceeds page with new width, scale by height instead
+            finalPdfImgHeight = pdfHeight - 2 * margin;
+            finalPdfImgWidth = (canvasImgWidth * finalPdfImgHeight) / canvasImgHeight;
+        }
         
         if (finalPdfImgWidth <= 0 || finalPdfImgHeight <= 0) {
             alert("Error: Calculated PDF image dimensions are invalid. Check image capture and scaling logic.");
@@ -296,7 +305,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         }
         
         const x = margin + (availableWidth - finalPdfImgWidth) / 2; 
-        const y = margin + (availableHeight - finalPdfImgHeight) / 2; 
+        const y = margin; // Start from top margin
         
         pdf.addImage(imgData, 'PNG', x, y, finalPdfImgWidth, finalPdfImgHeight);
         
@@ -305,7 +314,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         const billNumPart = bill.billNumber ? `_${bill.billNumber.replace(/[\s/]+/g, '_')}` : (isEstimateView ? '_Estimate' : '_Bill');
         const fileName = `${fileNameBase}${billNumPart}_${dateStr}.pdf`;
 
-        pdf.save(fileName);
+        pdf.save(fileName); // Triggers download
 
     } catch (error) {
         console.error("Error generating PDF:", error);
@@ -327,14 +336,15 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     </div>
   );
 
+  // HSN is only for non-estimate Sales bills
+  const showHsnColumnInModal = bill.type === 'sales-bill' && !isEstimateView;
   const showItemLevelGstColumns = bill.type === 'sales-bill' && !isEstimateView;
   const showMakingChargeColumn = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
-  const showHsnColumnInModal = !isEstimateView;
 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[95vh] flex flex-col print-dialog-content text-xl w-full max-w-screen-lg xl:max-w-screen-xl 2xl:max-w-screen-2xl"> {/* Wider modal */}
+      <DialogContent className="max-h-[95vh] flex flex-col print-dialog-content text-xl w-full max-w-screen-lg xl:max-w-screen-xl"> 
         <DialogHeader className="print-hidden pb-5 border-b">
           <DialogTitle className="font-headline text-3xl lg:text-4xl text-primary">
             {effectiveBillType}
@@ -502,70 +512,4 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
 export default BillViewModal;
 
-{/* Global styles primarily for html2canvas capture accuracy. */}
-const PrintStyles = () => (
-  <style jsx global>{`
-    body.print-capture-active {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-      background-color: #ffffff !important;
-    }
     
-    body.print-capture-active #pdf-capture-wrapper {
-        visibility: visible !important; /* Ensure wrapper is visible during capture */
-    }
-
-    body.print-capture-active #bill-content-for-pdf {
-      font-family: 'PT Sans', Arial, sans-serif !important;
-      color: #000000 !important;
-      background-color: #ffffff !important;
-      width: 100% !important; /* Should be based on captureWrapper's width */
-      padding: 0 !important; /* Padding is handled inside the generated HTML */
-      margin: 0 !important;
-      box-sizing: border-box !important;
-      border: none !important;
-      box-shadow: none !important;
-      transform: none !important;
-    }
-
-    body.print-capture-active #bill-content-for-pdf * {
-      color: #000000 !important;
-      background-color: transparent !important;
-      border-color: #333333 !important;
-      box-shadow: none !important;
-      text-shadow: none !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    
-    body.print-capture-active #bill-content-for-pdf table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-    }
-    
-    body.print-capture-active #bill-content-for-pdf th,
-    body.print-capture-active #bill-content-for-pdf td {
-      border: 1px solid #333333 !important;
-      page-break-inside: avoid !important;
-    }
-    
-    body.print-capture-active #bill-content-for-pdf th {
-      background-color: #e0e0e0 !important;
-      font-weight: bold !important;
-    }
-
-    body.print-capture-active #bill-content-for-pdf img {
-        max-width: 100% !important; /* Ensure images don't overflow their containers */
-        height: auto !important;
-    }
-
-    body.print-capture-active .print-hidden-during-capture {
-        display: none !important;
-    }
-  `}</style>
-);
-// Make sure to render <PrintStyles /> somewhere in your app's layout or this component
-// For this component, it's okay here if these styles are specific to its PDF generation.
-// However, it's not directly rendered in the modal's return.
-// The logic relies on the class `print-capture-active` being added to body.
-// The styles in generatePdfHtml are the primary source of truth for PDF content.
