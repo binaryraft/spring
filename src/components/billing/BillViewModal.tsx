@@ -1,6 +1,6 @@
 
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import type { Bill, BillItem } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
 import {
@@ -14,8 +14,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
-import { Printer, Building } from 'lucide-react';
+import { Printer, Building, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface BillViewModalProps {
   bill: Bill | null;
@@ -26,6 +28,7 @@ interface BillViewModalProps {
 
 const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, isEstimateView = false }) => {
   const { settings, getValuableById } = useAppContext();
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   if (!bill) return null;
 
@@ -38,11 +41,91 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     effectiveBillType = bill.type === 'purchase' ? 'Purchase Invoice' : 'Sales Invoice';
   }
 
-  const handlePrint = () => {
-    setTimeout(() => {
-        window.print();
-    }, 100); // Small delay to ensure content is ready
+  const handleGeneratePdf = async () => {
+    setIsGeneratingPdf(true);
+    const billContentElement = document.getElementById('bill-to-print');
+    if (!billContentElement) {
+      console.error('Bill content element not found.');
+      setIsGeneratingPdf(false);
+      return;
+    }
+
+    // Temporarily adjust styles for html2canvas capture for better quality
+    const originalStyles = {
+      transform: billContentElement.style.transform,
+      width: billContentElement.style.width,
+      border: billContentElement.style.border,
+      boxShadow: billContentElement.style.boxShadow,
+    };
+    billContentElement.style.transform = 'scale(1)'; // Ensure no scaling during capture
+    billContentElement.style.width = '210mm'; // A4 width
+    billContentElement.style.border = 'none';
+    billContentElement.style.boxShadow = 'none';
+
+
+    try {
+      const canvas = await html2canvas(billContentElement, {
+        scale: 2, // Increase scale for better resolution
+        useCORS: true, // For external images if any (logo)
+        logging: false,
+        onclone: (document) => {
+          // Apply print styles directly to the cloned document for html2canvas
+          const style = document.createElement('style');
+          style.innerHTML = printStyles; // printStyles defined below
+          document.head.appendChild(style);
+          // Ensure the specific element is targeted
+          const clonedContent = document.getElementById('bill-to-print');
+          if (clonedContent) {
+            // You can force additional styles here if needed for the capture
+             clonedContent.style.backgroundColor = '#ffffff';
+          }
+        }
+      });
+
+      // Restore original styles after capture
+      billContentElement.style.transform = originalStyles.transform;
+      billContentElement.style.width = originalStyles.width;
+      billContentElement.style.border = originalStyles.border;
+      billContentElement.style.boxShadow = originalStyles.boxShadow;
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const aspectRatio = canvasWidth / canvasHeight;
+
+      let imgWidth = pdfWidth - 20; // A4 width in mm minus 10mm margin on each side
+      let imgHeight = imgWidth / aspectRatio;
+      
+      let position = 0; // For multi-page, not fully implemented here
+
+      if (imgHeight > pdfHeight - 20) { // check if image is taller than page
+        imgHeight = pdfHeight - 20; // max height with margin
+        imgWidth = imgHeight * aspectRatio;
+      }
+
+      const xOffset = (pdfWidth - imgWidth) / 2;
+      const yOffset = 10; // 10mm margin from top
+
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
+      
+      // Open PDF in a new tab
+      pdf.output('dataurlnewwindow');
+
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
+
 
   const displaySubTotal = bill.subTotal;
   let displayCgstAmount = bill.cgstAmount || 0;
@@ -65,7 +148,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 return marketPrice * (1 - ((item.purchaseNetPercentValue || 0) / 100));
             case 'fixed_net_price':
                 return item.purchaseNetFixedValue || 0;
-            default: // Should not happen given type constraints
+            default: 
                 return item.rate || 0;
         }
     }
@@ -90,8 +173,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto p-1 print:overflow-visible print:p-0" id="bill-to-print">
-          <div className="p-6 border rounded-lg bg-card shadow-sm print:border-gray-300 print:shadow-none print:rounded-none print:bg-white print:text-black">
+        <div className="flex-grow overflow-y-auto p-1 print:overflow-visible print:p-0">
+          {/* This is the div that will be captured for PDF */}
+          <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm print:border-gray-300 print:shadow-none print:rounded-none print:bg-white print:text-black">
             <header className="mb-6 print:mb-4">
               <div className="flex justify-between items-start">
                   <div className="text-left">
@@ -203,183 +287,157 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </div>
         </div>
         <DialogFooter className="p-4 border-t mt-auto print:hidden">
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4"/> Print {isEstimateView ? "Estimate" : "Bill"}
+          <Button variant="outline" onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
+            {isGeneratingPdf ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Printer className="mr-2 h-4 w-4"/>
+            )}
+            Generate & View PDF
           </Button>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose} disabled={isGeneratingPdf}>Close</Button>
         </DialogFooter>
-      <style jsx global>{`
-        @media print {
-          /* General reset for print */
-          body, html {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-            font-family: 'PT Sans', Arial, sans-serif !important;
-            font-size: 10pt !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-
-          /* Hide everything except the bill content */
-          body * {
-            visibility: hidden !important;
-            color: #000000 !important; /* Default to black for all text */
-            background-color: transparent !important; /* Default to transparent background */
-            border-color: #aaaaaa !important; /* Default border for elements that might have them */
-            box-shadow: none !important;
-            text-shadow: none !important;
-          }
-          #bill-to-print, #bill-to-print * {
-            visibility: visible !important;
-          }
-          #bill-to-print {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            margin: 0 !important;
-            padding: 15mm !important; /* Page margins */
-            background-color: #ffffff !important;
-            border: none !important;
-          }
-
-          /* Ensure specific text elements are black */
-          #bill-to-print p,
-          #bill-to-print span,
-          #bill-to-print div,
-          #bill-to-print th,
-          #bill-to-print td,
-          #bill-to-print li,
-          #bill-to-print h1,
-          #bill-to-print h2,
-          #bill-to-print h3,
-          #bill-to-print h4,
-          #bill-to-print h5,
-          #bill-to-print h6,
-          #bill-to-print .text-primary,
-          #bill-to-print .text-accent,
-          #bill-to-print .text-muted-foreground,
-          #bill-to-print .text-destructive,
-          #bill-to-print [class*="text-gray-"] {
-             color: #000000 !important;
-           }
-          
-          /* Font families for print */
-          #bill-to-print .font-headline {
-            font-family: 'Playfair Display', 'Times New Roman', serif !important;
-          }
-          
-          /* Table styling */
-          #bill-to-print table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            page-break-inside: auto !important;
-          }
-          #bill-to-print tr {
-            page-break-inside: avoid !important;
-            page-break-after: auto !important;
-          }
-          #bill-to-print thead {
-            display: table-header-group !important; /* Repeat headers on new pages */
-            background-color: #f0f0f0 !important; /* Light gray for header background */
-          }
-           #bill-to-print th, #bill-to-print td {
-            font-weight: normal !important;
-            text-align: left !important;
-            border: 1px solid #cccccc !important; /* Light gray borders for cells */
-            padding: 4px 6px !important; /* Consistent padding */
-            word-break: break-word;
-          }
-          #bill-to-print th {
-            font-weight: bold !important;
-            background-color: #e9e9e9 !important; /* Consistent light gray for header cells */
-          }
-          
-          /* Font size overrides for print - use sparingly, base font size is good */
-          #bill-to-print .print\\:font-bold { font-weight: bold !important; }
-          #bill-to-print .print\\:font-semibold { font-weight: 600 !important; }
-          #bill-to-print .print\\:text-xs { font-size: 0.8rem !important; line-height: 1.2 !important; }
-          #bill-to-print .print\\:text-xxs { font-size: 0.7rem !important; line-height: 1.1 !important; }
-
-          /* Logo styling */
-          .print-logo {
-            filter: grayscale(100%) contrast(150%) !important;
-            max-width: 100px !important; 
-            max-height: 50px !important;
-            object-fit: contain !important;
-            display: block !important;
-          }
-          .print-placeholder-logo {
-            background-color: transparent !important;
-            border: 1px solid #bbbbbb !important;
-            width: 60px !important;
-            height: 50px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            padding: 5px !important;
-          }
-          .print-placeholder-logo svg {
-             width: 30px !important;
-             height: 30px !important;
-             fill: #000000 !important;
-             stroke: #000000 !important;
-          }
-
-          /* Separator lines */
-          #bill-to-print hr,
-          #bill-to-print .print\\:border-gray-400,
-          #bill-to-print .print\\:border-gray-300,
-          #bill-to-print .border-t,
-          #bill-to-print .border-b {
-            border-color: #cccccc !important;
-            background-color: #cccccc !important; 
-            height: 1px !important;
-            border-style: solid !important;
-            border-width: 1px 0 0 0 !important; /* Ensure only top border for horizontal rule */
-          }
-           #bill-to-print .whitespace-pre-line {
-             white-space: pre-wrap !important;
-             word-break: break-word !important;
-          }
-          
-          /* Hide elements not meant for print */
-          .print\\:hidden, .print\\:hidden * { 
-            display: none !important; 
-            visibility: hidden !important;
-            width: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-            position: absolute !important;
-            opacity: 0 !important;
-          }
-          
-          /* Specific layout adjustments for print sections */
-          /* Header: Company Info & Logo */
-          #bill-to-print header > div.flex { display: flex !important; justify-content: space-between !important; align-items: flex-start !important; }
-          #bill-to-print header > div.flex > div.text-left { flex-grow: 1; }
-          #bill-to-print header > div.flex > div.w-20 { flex-shrink: 0; } /* Logo container */
-          
-          /* Customer/Supplier & Bill Details */
-          #bill-to-print .grid.grid-cols-2.gap-4 { display: flex !important; justify-content: space-between !important; }
-          #bill-to-print .grid.grid-cols-2.gap-4 > div { width: 48% !important; } /* Approx half width for each column */
-          
-          /* Notes & Totals Section */
-          #bill-to-print .grid.grid-cols-5.gap-x-4 { display: flex !important; justify-content: space-between !important; }
-          #bill-to-print .grid.grid-cols-5.gap-x-4 > div.col-span-3 { width: 60% !important; } /* Notes area */
-          #bill-to-print .grid.grid-cols-5.gap-x-4 > div.col-span-2 { width: 35% !important; text-align: right !important; } /* Totals area */
-
-        }
-        @page {
-          size: A4;
-          margin: 10mm 10mm 10mm 15mm; /* top, right, bottom, left */
-        }
-      `}</style>
     </DialogContent>
   </Dialog>
   );
 };
 
+// Define printStyles as a template literal string to be injected
+const printStyles = \`
+  body, html {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'PT Sans', Arial, sans-serif !important;
+    font-size: 10pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide everything except the bill content for html2canvas capture */
+  body > *:not(#bill-to-print-wrapper), /* If you wrap #bill-to-print for capture */
+  body > *:not(.fixed.inset-0.z-50) > *:not(#bill-to-print) /* More specific if needed */
+   {
+    /* visibility: hidden !important; */ /* May not be needed if html2canvas targets specific element */
+  }
+  
+  #bill-to-print {
+    position: static !important; /* Reset any fixed/absolute positioning for capture */
+    width: 100% !important; /* Or specific width like 210mm if scaling for A4 */
+    height: auto !important;
+    margin: 0 !important;
+    padding: 15mm !important; /* Page margins for content */
+    background-color: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #000000 !important; /* Ensure base text color is black */
+  }
+
+  #bill-to-print * {
+    color: #000000 !important;
+    background-color: transparent !important;
+    border-color: #aaaaaa !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    visibility: visible !important; /* Ensure all children are visible */
+  }
+  
+  #bill-to-print .text-primary,
+  #bill-to-print .text-accent,
+  #bill-to-print .text-muted-foreground,
+  #bill-to-print [class*="text-gray-"] {
+      color: #000000 !important;
+  }
+
+  #bill-to-print .font-headline {
+    font-family: 'Playfair Display', 'Times New Roman', serif !important;
+  }
+  
+  #bill-to-print table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+  #bill-to-print tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+  #bill-to-print thead {
+    display: table-header-group !important;
+    background-color: #f0f0f0 !important;
+  }
+  #bill-to-print th, #bill-to-print td {
+    font-weight: normal !important;
+    text-align: left !important;
+    border: 1px solid #cccccc !important;
+    padding: 4px 6px !important;
+    word-break: break-word;
+  }
+  #bill-to-print th {
+    font-weight: bold !important;
+    background-color: #e9e9e9 !important;
+  }
+  
+  #bill-to-print .print\\:font-bold { font-weight: bold !important; }
+  #bill-to-print .print\\:font-semibold { font-weight: 600 !important; }
+  #bill-to-print .print\\:text-xs { font-size: 0.8rem !important; line-height: 1.2 !important; }
+  #bill-to-print .print\\:text-xxs { font-size: 0.7rem !important; line-height: 1.1 !important; }
+
+  .print-logo {
+    filter: grayscale(100%) contrast(120%) !important;
+    max-width: 100px !important; 
+    max-height: 50px !important;
+    object-fit: contain !important;
+    display: block !important;
+  }
+  .print-placeholder-logo {
+    background-color: transparent !important;
+    border: 1px solid #bbbbbb !important;
+    width: 60px !important;
+    height: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 5px !important;
+  }
+  .print-placeholder-logo svg {
+      width: 30px !important;
+      height: 30px !important;
+      fill: #000000 !important;
+      stroke: #000000 !important;
+  }
+
+  #bill-to-print hr,
+  #bill-to-print .print\\:border-gray-400,
+  #bill-to-print .print\\:border-gray-300,
+  #bill-to-print .border-t,
+  #bill-to-print .border-b {
+    border-color: #cccccc !important;
+    background-color: #cccccc !important; 
+    height: 1px !important;
+    border-style: solid !important;
+    border-width: 1px 0 0 0 !important;
+  }
+  #bill-to-print .whitespace-pre-line {
+      white-space: pre-wrap !important;
+      word-break: break-word !important;
+  }
+  
+  #bill-to-print .print\\:hidden, .print\\:hidden * { 
+    display: none !important; 
+  }
+  
+  /* Specific layout adjustments */
+  #bill-to-print header > div.flex { display: flex !important; justify-content: space-between !important; align-items: flex-start !important; }
+  #bill-to-print header > div.flex > div.text-left { flex-grow: 1; }
+  #bill-to-print header > div.flex > div.w-20 { flex-shrink: 0; }
+  
+  #bill-to-print .grid.grid-cols-2.gap-4 { display: flex !important; justify-content: space-between !important; }
+  #bill-to-print .grid.grid-cols-2.gap-4 > div { width: 48% !important; }
+  
+  #bill-to-print .grid.grid-cols-5.gap-x-4 { display: flex !important; justify-content: space-between !important; }
+  #bill-to-print .grid.grid-cols-5.gap-x-4 > div.col-span-3 { width: 60% !important; }
+  #bill-to-print .grid.grid-cols-5.gap-x-4 > div.col-span-2 { width: 35% !important; text-align: right !important; }
+
+\`;
+
 export default BillViewModal;
-        
