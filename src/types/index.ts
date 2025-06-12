@@ -3,11 +3,11 @@ export interface Valuable {
   id: string;
   name: string;
   price: number;
-  icon: 'gold' | 'silver' | 'diamond' | 'ruby' | 'emerald' | 'sapphire' | 'pearl' | 'platinum' | 'custom-gem' | 'other'; // Extended icon types
-  iconColor?: string; // e.g., 'blue' for diamond, or for custom-gem
+  icon: 'gold' | 'silver' | 'diamond' | 'ruby' | 'emerald' | 'sapphire' | 'pearl' | 'platinum' | 'custom-gem' | 'other';
+  iconColor?: string; 
   selectedInHeader: boolean;
-  unit: string; // e.g., 'gram', 'carat', 'piece'
-  isDefault?: boolean; // To differentiate default from user-added
+  unit: string; 
+  isDefault?: boolean; 
 }
 
 export interface MakingChargeSetting {
@@ -16,9 +16,9 @@ export interface MakingChargeSetting {
 }
 
 export interface CurrencyDefinition {
-  symbol: string; // Direct character like '₹', '$', '€'
-  code: string; // e.g., "INR", "USD"
-  name: string; // e.g., "Indian Rupee", "US Dollar"
+  symbol: string; 
+  code: string; 
+  name: string; 
 }
 
 export interface Settings {
@@ -26,37 +26,35 @@ export interface Settings {
   slogan: string;
   address: string;
   phoneNumber: string;
-  companyLogo?: string; // Base64 data URI for the logo
+  companyLogo?: string; 
   showCompanyLogo: boolean;
   valuables: Valuable[];
   defaultMakingCharge: MakingChargeSetting;
   defaultPurchaseItemNetPercentage: number;
   defaultPurchaseItemNetFixedValue: number;
-  cgstRate: number; // Percentage
-  sgstRate: number; // Percentage
-  productNames: string[]; // Stores unique product names for suggestions
-  currencySymbol: string; // Will hold the selected symbol (e.g., '₹', '$')
+  cgstRate: number; 
+  sgstRate: number; 
+  productNames: string[]; 
+  currencySymbol: string; 
   availableCurrencies: CurrencyDefinition[];
 }
 
 export interface BillItem {
   id: string;
-  valuableId: string; // links to Valuable.id
-  name: string; // User-editable product name (e.g., "Ring", "Bangle")
-  hsnCode?: string; // HSN code for the item
+  valuableId: string; 
+  name: string; 
+  hsnCode?: string; 
   weightOrQuantity: number;
-  unit: string; // copied from Valuable.unit
-  rate: number; // For sales: price per unit.
-  makingCharge?: number; // (Sales only)
-  makingChargeType?: 'percentage' | 'fixed'; // (Sales only)
-  amount: number; // Taxable amount: (weightOrQuantity * effective_rate) + makingCharge (for sales)
+  unit: string; 
+  rate: number; 
+  makingCharge?: number; 
+  makingChargeType?: 'percentage' | 'fixed'; 
+  amount: number; 
 
-  // For Purchase Items Only:
   purchaseNetType?: 'net_percentage' | 'fixed_net_price';
   purchaseNetPercentValue?: number;
   purchaseNetFixedValue?: number;
 
-  // Item-level GST (for Sales bills)
   itemCgstAmount?: number;
   itemSgstAmount?: number;
 }
@@ -67,18 +65,18 @@ export interface Bill {
   id: string;
   billNumber?: string;
   type: BillType;
-  date: string; // ISO string
+  date: string; 
   customerName?: string;
   customerAddress?: string;
   customerPhone?: string;
   items: BillItem[];
-  subTotal: number; // Sum of all item.amount (total taxable value of all items)
+  subTotal: number; 
   discount?: number;
   discountType?: 'percentage' | 'fixed';
   netAmountAfterDiscount?: number;
-  cgstAmount?: number; // Sum of all item.itemCgstAmount
-  sgstAmount?: number; // Sum of all item.itemSgstAmount
-  totalAmount: number; // subTotal + cgstAmount + sgstAmount (for sales) or subTotal (for purchase)
+  cgstAmount?: number; 
+  sgstAmount?: number; 
+  totalAmount: number; 
   notes?: string;
 }
 
@@ -101,7 +99,8 @@ export const AVAILABLE_CURRENCIES: CurrencyDefinition[] = [
   { symbol: '$', code: 'USD', name: 'US Dollar' },
   { symbol: '€', code: 'EUR', name: 'Euro' },
   { symbol: '£', code: 'GBP', name: 'British Pound' },
-  // Add more currencies as needed
+  { symbol: 'د.إ', code: 'AED', name: 'UAE Dirham' },
+  { symbol: 'S$', code: 'SGD', name: 'Singapore Dollar' },
 ];
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -115,10 +114,10 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultMakingCharge: { type: 'percentage', value: 10 },
   defaultPurchaseItemNetPercentage: 10,
   defaultPurchaseItemNetFixedValue: 4500,
-  cgstRate: 1.5, // As per Indian standards for gold jewellery
-  sgstRate: 1.5, // As per Indian standards for gold jewellery
+  cgstRate: 1.5, 
+  sgstRate: 1.5, 
   productNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle", "Bangles", "Rings", "Necklace", "Platinum Band", "Ruby Earrings"],
-  currencySymbol: '₹', // Default to INR direct character
+  currencySymbol: '₹', 
   availableCurrencies: AVAILABLE_CURRENCIES,
 };
 

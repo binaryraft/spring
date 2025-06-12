@@ -19,7 +19,7 @@ interface BillFormProps {
   existingBill?: Bill;
   onSaveAndPrint: (bill: Bill) => void;
   onCancel: () => void;
-  onShowEstimate?: (estimateData: Bill) => void; // Now optional, used by both sales and purchase
+  onShowEstimate?: (estimateData: Bill) => void;
 }
 
 const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPrint, onCancel, onShowEstimate }) => {
@@ -226,11 +226,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         let itemCgst = 0;
         let itemSgst = 0;
 
-        // For sales bills that are NOT estimates, calculate GST
         if (billType === 'sales-bill' && !isEstimateMode) {
             itemCgst = item.itemCgstAmount || 0;
             itemSgst = item.itemSgstAmount || 0;
-        } else { // For purchase bills OR sales estimates, GST is 0 at item level
+        } else { 
             itemCgst = 0;
             itemSgst = 0;
         }
@@ -239,7 +238,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           id: item.id || uuidv4(),
           valuableId: item.valuableId,
           name: item.name || '',
-          hsnCode: item.hsnCode || '',
+          hsnCode: isEstimateMode ? '' : (item.hsnCode || ''), // HSN blank for estimates
           weightOrQuantity: item.weightOrQuantity || 0,
           unit: item.unit,
           rate: item.rate || 0, 
@@ -258,7 +257,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     let currentBillCgst = 0;
     let currentBillSgst = 0;
     
-    // Bill-level GST only for actual sales bills
     if (billType === 'sales-bill' && !isEstimateMode) {
         currentBillCgst = parseFloat(finalItems.reduce((acc, item) => acc + (item.itemCgstAmount || 0), 0).toFixed(2));
         currentBillSgst = parseFloat(finalItems.reduce((acc, item) => acc + (item.itemSgstAmount || 0), 0).toFixed(2));
@@ -266,7 +264,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     
     let currentTotalAmount = currentSubTotal + currentBillCgst + currentBillSgst;
     
-    // For estimates (both sales and purchase), total is just subtotal
     if (isEstimateMode) { 
         currentTotalAmount = currentSubTotal;
         currentBillCgst = 0; 
@@ -289,7 +286,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   };
 
   const handleSubmit = () => {
-    const billDetails = getCurrentBillData(false); // false for actual bill
+    const billDetails = getCurrentBillData(false); 
     if (billDetails.items.length === 0) {
       toast({ title: "Error", description: "Please add at least one valid item with a selected material type.", variant: "destructive" });
       return;
@@ -309,12 +306,12 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
   const handleShowEstimate = () => {
     if (onShowEstimate) {
-      const estimateDetails = getCurrentBillData(true); // true for estimate mode
+      const estimateDetails = getCurrentBillData(true); 
        const estimateBillForView: Bill = {
         ...estimateDetails,
         id: `estimate-preview-${uuidv4()}`,
         date: new Date().toISOString(),
-        billNumber: 'ESTIMATE', // Or specific prefix for purchase estimates
+        billNumber: 'ESTIMATE', 
       };
       onShowEstimate(estimateBillForView);
     }
@@ -356,7 +353,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   };
 
   const handleCustomerKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>, nextFieldRef?: React.RefObject<HTMLElement>) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) { // Allow shift+enter for new lines in textarea
       event.preventDefault();
       if (nextFieldRef?.current) {
         nextFieldRef.current.focus();
@@ -372,6 +369,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         (itemRefs.current[lastItemIndex][0] as HTMLElement).focus();
     }
   }, [items.length]);
+
+  const headerGridColsClass = isPurchase
+    ? "grid-cols-[1.5fr_2fr_1fr_1fr_1.5fr_1fr_1fr_0.5fr]" // Material, Name, HSN, Qty, NetType, Value, Amount, Action
+    : "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]"; // Material, Name, HSN, Qty, Rate, MCType, Making, Amount, Action
 
 
   return (
@@ -428,15 +429,23 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
         <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
           <h3 className="text-2xl lg:text-3xl font-semibold text-accent mb-6 flex items-center"><ListOrdered className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>Items</h3>
-           <div className={`py-3 px-4 grid ${isPurchase ? 'grid-cols-[2fr,3fr,1fr,1fr,2fr,1fr,1fr,1fr]' : 'grid-cols-[2fr,3fr,1fr,1fr,1fr,1fr,1fr,1fr]'} gap-3 text-base font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
+           <div className={`py-3.5 px-4 grid ${headerGridColsClass} gap-3 text-base font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
             <div className="col-span-1">Material</div>
             <div className="col-span-1">Product Name</div>
             <div className="col-span-1 text-center">HSN</div>
             <div className="col-span-1 text-center">Qty/Wt</div>
-            {isPurchase && <div className="col-span-1 text-center">Net Type</div>}
-            <div className="col-span-1 text-center">{isPurchase ? "Value" : "Rate"}</div>
-            {!isPurchase && <div className="col-span-1 text-center">MC Type</div>}
-            {!isPurchase && <div className="col-span-1 text-center">Making</div>}
+            {isPurchase ? (
+                <>
+                    <div className="col-span-1 text-center">Net Type</div>
+                    <div className="col-span-1 text-center">Value</div>
+                </>
+            ) : (
+                 <>
+                    <div className="col-span-1 text-center">Rate</div>
+                    <div className="col-span-1 text-center">MC Type</div>
+                    <div className="col-span-1 text-center">Making</div>
+                 </>
+            )}
             <div className="col-span-1 text-right">Taxable Amt</div>
             <div className="col-span-1 text-center">Action</div>
           </div>
@@ -499,7 +508,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           <XCircle className="mr-2.5 h-5 w-5" /> Cancel
         </Button>
         <div className="flex items-end space-x-5">
-          {onShowEstimate && ( // This button will now show for both sales and purchase if onShowEstimate is passed
+          {onShowEstimate && ( 
             <div className="flex flex-col items-center">
                 <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto w-full">
                 <FileText className="mr-2.5 h-5 w-5" /> Create Estimate

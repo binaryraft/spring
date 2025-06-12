@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Bill, BillItem } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
 import {
@@ -29,9 +29,16 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   const { settings, getValuableById } = useAppContext();
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   
-  const billContentRef = useRef<HTMLDivElement>(null); // For the #bill-to-print element within the modal
+  const billContentRef = useRef<HTMLDivElement>(null); 
   const billOriginalParentRef = useRef<HTMLElement | null>(null);
-  const billPlaceholderRef = useRef<HTMLDivElement>(null); // Invisible placeholder in modal
+  const billPlaceholderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && billContentRef.current && !billOriginalParentRef.current) {
+        billOriginalParentRef.current = billContentRef.current.parentElement;
+    }
+  }, [isOpen]);
+
 
   if (!bill) return null;
 
@@ -65,7 +72,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     const logoHtml = company.showCompanyLogo 
       ? company.companyLogo 
         ? `<img src="${company.companyLogo}" alt="${company.companyName} Logo" style="max-width: 140px; max-height: 70px; object-fit: contain; margin-bottom: 12px;" />`
-        : `<div style="width: 120px; height: 60px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 13px; color: #555;">Logo Area</div>`
+        : `<div style="width: 120px; height: 60px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 16px; color: #555;">Logo Area</div>`
       : '';
 
     const itemsHtml = bill.items.map((item, index) => {
@@ -83,105 +90,106 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       }
 
       return `
-        <tr style="font-size: 12pt; page-break-inside: avoid;">
-          <td style="border: 1px solid #333333; padding: 8px; text-align: center;">${index + 1}</td>
-          <td style="border: 1px solid #333333; padding: 8px;">${item.name} ${valuableDetails ? `(${valuableDetails.name})` : ''}</td>
-          ${!isEstimateView ? `<td style="border: 1px solid #333333; padding: 8px; text-align: center;">${item.hsnCode || '-'}</td>` : ''}
-          <td style="border: 1px solid #333333; padding: 8px; text-align: right;">${item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} ${item.unit}</td>
-          <td style="border: 1px solid #333333; padding: 8px; text-align: right;">${currency}${effectiveRate.toFixed(2)}</td>
-          ${bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0) ? `<td style="border: 1px solid #333333; padding: 8px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : currency + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
-          ${!isEstimateView && bill.type === 'sales-bill' ? `<td style="border: 1px solid #333333; padding: 8px; text-align: right;">${currency}${taxableAmount.toFixed(2)}</td>` : ''}
+        <tr style="font-size: 14pt; page-break-inside: avoid;">
+          <td style="border: 1px solid #333333; padding: 9px; text-align: center;">${index + 1}</td>
+          <td style="border: 1px solid #333333; padding: 9px;">${item.name} ${valuableDetails ? `(${valuableDetails.name})` : ''}</td>
+          ${!isEstimateView ? `<td style="border: 1px solid #333333; padding: 9px; text-align: center;">${item.hsnCode || '-'}</td>` : ''}
+          <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} ${item.unit}</td>
+          <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${effectiveRate.toFixed(2)}</td>
+          ${bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0) ? `<td style="border: 1px solid #333333; padding: 9px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : currency + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
+          ${bill.type === 'sales-bill' && !isEstimateView ? `<td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${taxableAmount.toFixed(2)}</td>` : ''}
           ${bill.type === 'sales-bill' && !isEstimateView ? `
-            <td style="border: 1px solid #333333; padding: 8px; text-align: right;">${currency}${itemCgst.toFixed(2)}<br/><span style="font-size:9pt;">(${settings.cgstRate}%)</span></td>
-            <td style="border: 1px solid #333333; padding: 8px; text-align: right;">${currency}${itemSgst.toFixed(2)}<br/><span style="font-size:9pt;">(${settings.sgstRate}%)</span></td>
+            <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${itemCgst.toFixed(2)}<br/><span style="font-size:11pt;">(${settings.cgstRate}%)</span></td>
+            <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${itemSgst.toFixed(2)}<br/><span style="font-size:11pt;">(${settings.sgstRate}%)</span></td>
           ` : ''}
-          <td style="border: 1px solid #333333; padding: 8px; text-align: right; font-weight: bold;">${currency}${lineTotal.toFixed(2)}</td>
+          <td style="border: 1px solid #333333; padding: 9px; text-align: right; font-weight: bold;">${currency}${lineTotal.toFixed(2)}</td>
         </tr>
       `;
     }).join('');
 
     const showMakingChargeColumn = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
-    const showItemTaxableCol = !isEstimateView && bill.type === 'sales-bill';
+    const showItemTaxableCol = bill.type === 'sales-bill' && !isEstimateView;
     const showItemGstCols = bill.type === 'sales-bill' && !isEstimateView;
+    const showHsnCol = !isEstimateView;
+
 
     let tableHeaders = `
-      <th style="border: 1px solid #333333; padding: 9px; text-align: center; font-weight: bold; background-color: #e0e0e0;">#</th>
-      <th style="border: 1px solid #333333; padding: 9px; text-align: left; font-weight: bold; background-color: #e0e0e0;">Item Description</th>
-      ${!isEstimateView ? `<th style="border: 1px solid #333333; padding: 9px; text-align: center; font-weight: bold; background-color: #e0e0e0;">HSN</th>` : ''}
-      <th style="border: 1px solid #333333; padding: 9px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Qty/Wt</th>
-      <th style="border: 1px solid #333333; padding: 9px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Rate / ${bill.items[0]?.unit || 'unit'}</th>
+      <th style="border: 1px solid #333333; padding: 10px; text-align: center; font-weight: bold; background-color: #e0e0e0;">#</th>
+      <th style="border: 1px solid #333333; padding: 10px; text-align: left; font-weight: bold; background-color: #e0e0e0;">Item Description</th>
     `;
-    if (showMakingChargeColumn) tableHeaders += `<th style="border: 1px solid #333333; padding: 9px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Making</th>`;
-    if (showItemTaxableCol) tableHeaders += `<th style="border: 1px solid #333333; padding: 9px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Taxable Amt</th>`;
+    if (showHsnCol) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: center; font-weight: bold; background-color: #e0e0e0;">HSN</th>`;
+    tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Qty/Wt</th>`;
+    tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Rate / ${bill.items[0]?.unit || 'unit'}</th>`;
+    if (showMakingChargeColumn) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Making</th>`;
+    if (showItemTaxableCol) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Taxable Amt</th>`;
     if (showItemGstCols) {
-      tableHeaders += `<th style="border: 1px solid #333333; padding: 9px; text-align: right; font-weight: bold; background-color: #e0e0e0;">CGST</th>`;
-      tableHeaders += `<th style="border: 1px solid #333333; padding: 9px; text-align: right; font-weight: bold; background-color: #e0e0e0;">SGST</th>`;
+      tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">CGST</th>`;
+      tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">SGST</th>`;
     }
-    tableHeaders += `<th style="border: 1px solid #333333; padding: 9px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Line Total</th>`;
+    tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Line Total</th>`;
 
     const billDateFormatted = format(new Date(bill.date), 'dd MMM, yyyy');
     const billNumberDisplay = bill.billNumber || (isEstimateView ? 'N/A (Estimate)' : 'N/A');
     const billTypeLabel = isEstimateView ? 'Estimate Ref:' : (bill.type === 'purchase' ? 'P.O. No:' : 'Invoice No:');
     const customerLabel = bill.type === 'purchase' ? 'From (Supplier):' : 'To (Customer):';
 
-    // Increased font sizes and using PT Sans / Arial
     return `
-      <div style="font-family: 'PT Sans', Arial, sans-serif; color: #000000; width: 100%; max-width: 794px; margin: 0 auto; padding: 20px; background-color: #ffffff; border: 1px solid #ccc; box-sizing: border-box;">
+    <div id="bill-content-for-pdf" style="font-family: 'PT Sans', Arial, sans-serif; color: #000000; width: 100%; max-width: 794px; margin: 0 auto; padding: 30px; background-color: #ffffff; border: 1px solid #ccc; box-sizing: border-box;">
         
-        <div class="bill-company-header" style="text-align: center; margin-bottom: 30px;">
+        <div class="bill-company-header" style="text-align: center; margin-bottom: 35px;">
           ${logoHtml}
-          <h1 style="font-family: 'Playfair Display', serif; font-size: 32pt; margin: 0 0 8px 0; color: #000000;">${company.companyName}</h1>
-          ${company.slogan ? `<p style="font-size: 16pt; margin: 0 0 8px 0; color: #000000;">${company.slogan}</p>` : ''}
-          <p style="font-size: 14pt; margin: 0 0 5px 0; color: #000000;">${company.address}</p>
-          <p style="font-size: 14pt; margin: 0; color: #000000;">Phone: ${company.phoneNumber}</p>
+          <h1 style="font-family: 'Playfair Display', serif; font-size: 36pt; margin: 0 0 10px 0; color: #000000;">${company.companyName}</h1>
+          ${company.slogan ? `<p style="font-size: 18pt; margin: 0 0 10px 0; color: #000000;">${company.slogan}</p>` : ''}
+          <p style="font-size: 16pt; margin: 0 0 6px 0; color: #000000;">${company.address}</p>
+          <p style="font-size: 16pt; margin: 0; color: #000000;">Phone: ${company.phoneNumber}</p>
         </div>
 
-        <h2 class="bill-type-heading" style="font-family: 'Playfair Display', serif; font-size: 24pt; text-align: center; margin: 30px 0; font-weight: bold; text-transform: uppercase; border-top: 2px solid #000000; border-bottom: 2px solid #000000; padding: 10px 0;">${effectiveBillType}</h2>
+        <h2 class="bill-type-heading" style="font-family: 'Playfair Display', serif; font-size: 28pt; text-align: center; margin: 35px 0; font-weight: bold; text-transform: uppercase; border-top: 2.5px solid #000000; border-bottom: 2.5px solid #000000; padding: 12px 0;">${effectiveBillType}</h2>
         
-        <table class="bill-meta-grid" style="width: 100%; margin-bottom: 30px; font-size: 14pt;">
+        <table class="bill-meta-grid" style="width: 100%; margin-bottom: 35px; font-size: 16pt;">
           <tr>
-            <td style="width: 50%; vertical-align: top; padding-right: 15px;">
-              <h3 style="font-size: 16pt; font-weight: bold; margin-bottom: 8px;">Bill Details:</h3>
-              <p style="margin: 5px 0;">${billTypeLabel} <span style="font-weight: 500;">${billNumberDisplay}</span></p>
-              <p style="margin: 5px 0;">Date: <span style="font-weight: 500;">${billDateFormatted}</span></p>
+            <td style="width: 50%; vertical-align: top; padding-right: 20px;">
+              <h3 style="font-size: 18pt; font-weight: bold; margin-bottom: 10px;">Bill Details:</h3>
+              <p style="margin: 7px 0;">${billTypeLabel} <span style="font-weight: 500;">${billNumberDisplay}</span></p>
+              <p style="margin: 7px 0;">Date: <span style="font-weight: 500;">${billDateFormatted}</span></p>
             </td>
-            <td style="width: 50%; text-align: right; vertical-align: top; padding-left: 15px;">
-              <h3 style="font-size: 16pt; font-weight: bold; margin-bottom: 8px;">${customerLabel}</h3>
-              <p style="margin: 5px 0; font-weight: bold;">${bill.customerName || 'N/A'}</p>
-              ${bill.customerAddress ? `<p style="font-size: 13pt; margin: 5px 0;">${bill.customerAddress}</p>` : ''}
-              ${bill.customerPhone ? `<p style="font-size: 13pt; margin: 5px 0;">Phone: ${bill.customerPhone}</p>` : ''}
+            <td style="width: 50%; text-align: right; vertical-align: top; padding-left: 20px;">
+              <h3 style="font-size: 18pt; font-weight: bold; margin-bottom: 10px;">${customerLabel}</h3>
+              <p style="margin: 7px 0; font-weight: bold;">${bill.customerName || 'N/A'}</p>
+              ${bill.customerAddress ? `<p style="font-size: 15pt; margin: 7px 0;">${bill.customerAddress}</p>` : ''}
+              ${bill.customerPhone ? `<p style="font-size: 15pt; margin: 7px 0;">Phone: ${bill.customerPhone}</p>` : ''}
             </td>
           </tr>
         </table>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12pt;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 35px; font-size: 14pt;">
           <thead>
-            <tr style="font-size: 13pt;">${tableHeaders}</tr>
+            <tr style="font-size: 15pt;">${tableHeaders}</tr>
           </thead>
           <tbody>${itemsHtml}</tbody>
         </table>
         
-        <hr style="border: 0; border-top: 1.5px solid #555555; margin: 30px 0;" />
+        <hr style="border: 0; border-top: 2px solid #555555; margin: 35px 0;" />
 
-        <table class="bill-summary-grid" style="width: 100%; margin-top: 30px; font-size: 14pt;">
+        <table class="bill-summary-grid" style="width: 100%; margin-top: 35px; font-size: 16pt;">
           <tr>
             <td style="width: 60%; vertical-align: top; white-space: pre-line;">
-              ${bill.notes ? `<h4 style="font-weight: bold; margin-bottom: 7px; font-size: 16pt;">Notes:</h4><p style="font-size:14pt;">${bill.notes}</p>` : ''}
+              ${bill.notes ? `<h4 style="font-weight: bold; margin-bottom: 8px; font-size: 18pt;">Notes:</h4><p style="font-size:16pt;">${bill.notes}</p>` : ''}
             </td>
-            <td style="width: 40%; text-align: right; vertical-align: top; padding-left: 20px;">
-              <p style="margin: 6px 0;">Subtotal ${(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span style="font-weight: bold;">${currency}${bill.subTotal.toFixed(2)}</span></p>
-              ${!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 ? `<p style="margin: 6px 0;">Total CGST (${settings.cgstRate}%): <span style="font-weight: bold;">${currency}${(bill.cgstAmount || 0).toFixed(2)}</span></p>` : ''}
-              ${!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 ? `<p style="margin: 6px 0;">Total SGST (${settings.sgstRate}%): <span style="font-weight: bold;">${currency}${(bill.sgstAmount || 0).toFixed(2)}</span></p>` : ''}
-              ${isEstimateView ? `<p style="font-size: 12pt; color: #333; margin: 6px 0;">(GST not applicable for estimates)</p>` : ''}
-              <hr style="border: 0; border-top: 1px solid #555555; margin: 12px 0;" />
-              <p style="font-size: 18pt; font-weight: bold; margin-top: 12px;">Total: <span style="font-weight: bold; font-size: 20pt;">${currency}${bill.totalAmount.toFixed(2)}</span></p>
+            <td style="width: 40%; text-align: right; vertical-align: top; padding-left: 25px;">
+              <p style="margin: 8px 0;">Subtotal ${(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span style="font-weight: bold;">${currency}${bill.subTotal.toFixed(2)}</span></p>
+              ${!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 ? `<p style="margin: 8px 0;">Total CGST (${settings.cgstRate}%): <span style="font-weight: bold;">${currency}${(bill.cgstAmount || 0).toFixed(2)}</span></p>` : ''}
+              ${!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 ? `<p style="margin: 8px 0;">Total SGST (${settings.sgstRate}%): <span style="font-weight: bold;">${currency}${(bill.sgstAmount || 0).toFixed(2)}</span></p>` : ''}
+              ${isEstimateView ? `<p style="font-size: 14pt; color: #333; margin: 8px 0;">(GST not applicable for estimates)</p>` : ''}
+              <hr style="border: 0; border-top: 1.5px solid #555555; margin: 14px 0;" />
+              <p style="font-size: 20pt; font-weight: bold; margin-top: 14px;">Total: <span style="font-weight: bold; font-size: 22pt;">${currency}${bill.totalAmount.toFixed(2)}</span></p>
             </td>
           </tr>
         </table>
 
-        <div class="bill-footer" style="text-align: center; margin-top: 40px; padding-top: 25px; border-top: 2px solid #000000; font-size: 13pt;">
+        <div class="bill-footer" style="text-align: center; margin-top: 45px; padding-top: 30px; border-top: 2.5px solid #000000; font-size: 15pt;">
           <p>Thank you for your business!</p>
-          <p style="margin-top: 8px;">--- ${company.companyName} ---</p>
+          <p style="margin-top: 10px;">--- ${company.companyName} ---</p>
         </div>
       </div>
     `;
@@ -189,45 +197,33 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
 
   const handleGeneratePdf = async () => {
-    if (!billContentRef.current) {
-        alert("Error: Bill content area not found. Cannot generate PDF.");
-        return;
-    }
     setIsGeneratingPdf(true);
 
-    const billContentElement = document.getElementById('bill-to-print'); // Get the element to print
-    if (!billContentElement) {
-        alert("Error: Printable bill content (#bill-to-print) not found. Cannot generate PDF.");
-        setIsGeneratingPdf(false);
-        return;
-    }
-    
-    // Create a temporary wrapper for html2canvas
     const captureWrapper = document.createElement('div');
     captureWrapper.id = 'pdf-capture-wrapper';
     Object.assign(captureWrapper.style, {
-        position: 'absolute',
-        left: '-9999px', // Position off-screen
+        position: 'fixed', // Use fixed to ensure it's relative to viewport, not scroll
+        left: '-9999px', 
         top: '-9999px',
-        zIndex: '-1',
-        width: '794px', // A4-like width for consistent capture base
+        width: '794px', // A4-like width
         backgroundColor: 'white', 
         padding: '0',
         boxSizing: 'border-box',
+        zIndex: '-1', // Keep it off-screen and non-interactive
     });
 
     const contentHost = document.createElement('div');
-    contentHost.innerHTML = generatePdfHtml(); // Use the simplified HTML string
+    contentHost.innerHTML = generatePdfHtml();
     
     captureWrapper.appendChild(contentHost);
     document.body.appendChild(captureWrapper);
     
-    document.body.classList.add('print-capture-active'); // For any global print styles if needed
+    document.body.classList.add('print-capture-active');
 
     const billContentElementForCapture = contentHost.firstChild as HTMLElement;
 
     if (!billContentElementForCapture || billContentElementForCapture.offsetWidth === 0 || billContentElementForCapture.offsetHeight === 0) {
-        alert(`Error: PDF capture target has no dimensions (W: ${billContentElementForCapture?.offsetWidth}, H: ${billContentElementForCapture?.offsetHeight}). PDF generation aborted. Check generated HTML.`);
+        alert(`Error: PDF capture target has no dimensions (W: ${billContentElementForCapture?.offsetWidth}, H: ${billContentElementForCapture?.offsetHeight}). PDF generation aborted. Check generated HTML or ensure content is visible if temporarily moved.`);
         if (captureWrapper.parentNode === document.body) {
             document.body.removeChild(captureWrapper);
         }
@@ -236,27 +232,25 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         return;
     }
 
-
     try {
-        // Delay slightly to ensure content is rendered
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Longer delay for complex HTML
 
         const canvas = await html2canvas(billContentElementForCapture, {
-            scale: 2.5, // Higher scale for better quality
+            scale: 2.5,
             useCORS: true,
             logging: false, 
-            backgroundColor: "#ffffff", // Ensure canvas background is white
-            width: billContentElementForCapture.scrollWidth, 
-            height: billContentElementForCapture.scrollHeight,
+            backgroundColor: "#ffffff",
+            width: billContentElementForCapture.offsetWidth, 
+            height: billContentElementForCapture.offsetHeight,
             scrollX: 0,
             scrollY: 0,
-            windowWidth: billContentElementForCapture.scrollWidth,
-            windowHeight: billContentElementForCapture.scrollHeight,
+            windowWidth: billContentElementForCapture.scrollWidth, // Use scrollWidth to account for all content
+            windowHeight: billContentElementForCapture.scrollHeight, // Use scrollHeight
         });
 
         const imgData = canvas.toDataURL('image/png');
         if (imgData.length < 250 || imgData === 'data:,') { 
-             alert("Error: Failed to capture bill content. Generated image was empty.");
+             alert("Error: Failed to capture bill content. Generated image was empty. This may happen if the content is not rendered correctly before capture.");
              if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
              document.body.classList.remove('print-capture-active');
              setIsGeneratingPdf(false);
@@ -271,21 +265,20 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10; // 10mm margin
+        const margin = 10; 
 
         const imgProps = pdf.getImageProperties(imgData);
         const canvasImgWidth = imgProps.width;
         const canvasImgHeight = imgProps.height;
         
         if (canvasImgWidth === 0 || canvasImgHeight === 0) {
-            alert("Error: Captured image has no dimensions.");
-             if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
-             document.body.classList.remove('print-capture-active');
-             setIsGeneratingPdf(false);
+            alert("Error: Captured image has no dimensions. Ensure the content being captured is visible and has size.");
+            if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
+            document.body.classList.remove('print-capture-active');
+            setIsGeneratingPdf(false);
             return;
         }
-
-        // Maintain aspect ratio and fit within page margins
+        
         const availableWidth = pdfWidth - 2 * margin;
         const availableHeight = pdfHeight - 2 * margin;
         
@@ -295,14 +288,13 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         const finalPdfImgHeight = canvasImgHeight * ratio;
         
         if (finalPdfImgWidth <= 0 || finalPdfImgHeight <= 0) {
-            alert("Error: Calculated PDF image dimensions are invalid.");
+            alert("Error: Calculated PDF image dimensions are invalid. Check image capture and scaling logic.");
             if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
             document.body.classList.remove('print-capture-active');
             setIsGeneratingPdf(false);
             return;
         }
         
-        // Center the image on the page
         const x = margin + (availableWidth - finalPdfImgWidth) / 2; 
         const y = margin + (availableHeight - finalPdfImgHeight) / 2; 
         
@@ -310,19 +302,15 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         
         const dateStr = format(new Date(), 'yyyyMMdd_HHmmss');
         const fileNameBase = effectiveBillType.replace(/\s+/g, '_');
-        const billNumPart = bill.billNumber ? `_${bill.billNumber.replace(/\s+/g, '_')}` : '_EstimateRef';
+        const billNumPart = bill.billNumber ? `_${bill.billNumber.replace(/[\s/]+/g, '_')}` : (isEstimateView ? '_Estimate' : '_Bill');
         const fileName = `${fileNameBase}${billNumPart}_${dateStr}.pdf`;
 
-        pdf.save(fileName); // Trigger download
+        pdf.save(fileName);
 
     } catch (error) {
         console.error("Error generating PDF:", error);
-        alert(`An error occurred: ${error instanceof Error ? error.message : String(error)}`);
+        alert(`An error occurred during PDF generation: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
-        // Cleanup
-        if (billContentElement && billPlaceholderRef.current && billOriginalParentRef.current) {
-           // No longer moving elements, capture is done on a generated HTML string.
-        }
         if (captureWrapper.parentNode === document.body) {
            document.body.removeChild(captureWrapper);
         }
@@ -341,10 +329,12 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   const showItemLevelGstColumns = bill.type === 'sales-bill' && !isEstimateView;
   const showMakingChargeColumn = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
+  const showHsnColumnInModal = !isEstimateView;
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[95vh] flex flex-col print-dialog-content text-lg w-full max-w-screen-lg">
+      <DialogContent className="max-h-[95vh] flex flex-col print-dialog-content text-xl w-full max-w-screen-lg xl:max-w-screen-xl 2xl:max-w-screen-2xl"> {/* Wider modal */}
         <DialogHeader className="print-hidden pb-5 border-b">
           <DialogTitle className="font-headline text-3xl lg:text-4xl text-primary">
             {effectiveBillType}
@@ -354,7 +344,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </DialogDescription>
         </DialogHeader>
         
-        <div ref={billPlaceholderRef} style={{ display: 'none' }} /> {/* Placeholder for re-attaching */}
+        <div ref={billPlaceholderRef} style={{ display: 'none' }} /> 
 
         <div className="flex-grow overflow-y-auto p-1" > 
             <div id="bill-to-print" ref={billContentRef} className="p-6 bg-card text-foreground rounded-lg shadow-lg text-xl min-w-[780px] mx-auto"> 
@@ -400,12 +390,12 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
               <table className="w-full text-xl">
                 <thead className="bg-muted/50">
                   <tr className="text-left">
-                    <th className="py-3.5 px-4 font-semibold">#</th>
+                    <th className="py-3.5 px-4 font-semibold text-center">#</th>
                     <th className="py-3.5 px-4 font-semibold">Item (Material)</th>
-                    {!isEstimateView && <th className="py-3.5 px-4 text-center font-semibold">HSN</th>}
+                    {showHsnColumnInModal && <th className="py-3.5 px-4 text-center font-semibold">HSN</th>}
                     <th className="py-3.5 px-4 text-right font-semibold">Qty/Wt</th>
                     <th className="py-3.5 px-4 text-right font-semibold">
-                        Rate {isEstimateView && bill.items.length > 0 && bill.items[0].unit ? `/ ${bill.items[0].unit}` : (isEstimateView ? '/ unit' : (bill.items[0]?.unit ? `/ ${bill.items[0].unit}` : '/ unit'))}
+                        Rate {bill.items.length > 0 && bill.items[0].unit ? `/ ${bill.items[0].unit}` : '/ unit'}
                     </th>
                     {showMakingChargeColumn && <th className="py-3.5 px-4 text-right font-semibold">Making</th>}
                     {bill.type === 'sales-bill' && !isEstimateView && <th className="py-3.5 px-4 text-right font-semibold">Taxable Amt</th>}
@@ -440,7 +430,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                       <td className="py-3 px-4">
                         {item.name} {valuableDetails ? `(${valuableDetails.name})` : ''}
                       </td>
-                      {!isEstimateView && <td className="py-3 px-4 text-center">{item.hsnCode || '-'}</td>}
+                      {showHsnColumnInModal && <td className="py-3 px-4 text-center">{item.hsnCode || '-'}</td>}
                       <td className="py-3 px-4 text-right">{item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} {item.unit}</td>
                       <td className="py-3 px-4 text-right">{currency}{effectiveRate.toFixed(2)}</td>
                       {showMakingChargeColumn && (
@@ -512,68 +502,70 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
 export default BillViewModal;
 
-// Global styles for printing, now also activated by .print-capture-active on body
-// These styles are designed for the simple HTML generated by `generatePdfHtml`
+{/* Global styles primarily for html2canvas capture accuracy. */}
 const PrintStyles = () => (
   <style jsx global>{`
-    @media print, body.print-capture-active {
-      body {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        font-family: 'PT Sans', Arial, sans-serif !important;
-      }
+    body.print-capture-active {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      background-color: #ffffff !important;
+    }
+    
+    body.print-capture-active #pdf-capture-wrapper {
+        visibility: visible !important; /* Ensure wrapper is visible during capture */
+    }
 
-      /* Hide everything except the capture wrapper and its children */
-      body > *:not(#pdf-capture-wrapper) {
+    body.print-capture-active #bill-content-for-pdf {
+      font-family: 'PT Sans', Arial, sans-serif !important;
+      color: #000000 !important;
+      background-color: #ffffff !important;
+      width: 100% !important; /* Should be based on captureWrapper's width */
+      padding: 0 !important; /* Padding is handled inside the generated HTML */
+      margin: 0 !important;
+      box-sizing: border-box !important;
+      border: none !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    body.print-capture-active #bill-content-for-pdf * {
+      color: #000000 !important;
+      background-color: transparent !important;
+      border-color: #333333 !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    body.print-capture-active #bill-content-for-pdf table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+    }
+    
+    body.print-capture-active #bill-content-for-pdf th,
+    body.print-capture-active #bill-content-for-pdf td {
+      border: 1px solid #333333 !important;
+      page-break-inside: avoid !important;
+    }
+    
+    body.print-capture-active #bill-content-for-pdf th {
+      background-color: #e0e0e0 !important;
+      font-weight: bold !important;
+    }
+
+    body.print-capture-active #bill-content-for-pdf img {
+        max-width: 100% !important; /* Ensure images don't overflow their containers */
+        height: auto !important;
+    }
+
+    body.print-capture-active .print-hidden-during-capture {
         display: none !important;
-      }
-      #pdf-capture-wrapper, #pdf-capture-wrapper > div {
-         display: block !important;
-         visibility: visible !important;
-         position: static !important;
-         width: 100% !important; /* Wrapper is 794px, content fills it */
-      }
-      
-      /* Styles for the content inside #pdf-capture-wrapper */
-      /* These styles should match the inline styles in generatePdfHtml if needed */
-      #pdf-capture-wrapper h1, #pdf-capture-wrapper h2, #pdf-capture-wrapper h3, #pdf-capture-wrapper h4, #pdf-capture-wrapper p, #pdf-capture-wrapper td, #pdf-capture-wrapper th {
-        color: #000000 !important;
-        background-color: transparent !important;
-      }
-      #pdf-capture-wrapper table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-      }
-      #pdf-capture-wrapper th, #pdf-capture-wrapper td {
-        border: 1px solid #333333 !important;
-        padding: 6px 8px !important; /* Adjusted padding for print */
-        page-break-inside: avoid !important;
-      }
-      #pdf-capture-wrapper th {
-        background-color: #e0e0e0 !important;
-        font-weight: bold !important;
-      }
-      #pdf-capture-wrapper hr {
-        border-top: 1px solid #555555 !important;
-      }
-      #pdf-capture-wrapper img {
-        max-width: 150px !important; /* Ensure logo fits */
-        max-height: 80px !important;
-      }
     }
   `}</style>
 );
-
-// It's good practice to include PrintStyles once, e.g., in your _app.tsx or Layout.tsx
-// For this specific component, if it's the only place needing print styles, it's okay here.
-// However, if PrintStyles component is not directly rendered or used, these global styles won't apply from here.
-// Let's assume they are part of a global setup or we rely on the inline styles from `generatePdfHtml`
-// and `print-capture-active` on body primarily for body-level overrides if html2canvas struggled.
-// The primary styling for PDF content is now directly within `generatePdfHtml`.
-// The `<PrintStyles />` component isn't actually used in this file's render output,
-// so its styles won't be injected. The `<style jsx global>` approach requires it to be part of the render tree.
-// The current PDF generation relies on inline styles from generatePdfHtml().
-// The `print-capture-active` on `body` is more of a fallback if html2canvas needs broad hints.
-
+// Make sure to render <PrintStyles /> somewhere in your app's layout or this component
+// For this component, it's okay here if these styles are specific to its PDF generation.
+// However, it's not directly rendered in the modal's return.
+// The logic relies on the class `print-capture-active` being added to body.
+// The styles in generatePdfHtml are the primary source of truth for PDF content.
