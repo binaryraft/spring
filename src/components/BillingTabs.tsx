@@ -52,19 +52,19 @@ const BillingTabs: React.FC = () => {
   }
 
   const commonFormProps = {
-    onSaveAndPrint: handleSaveAndPrintBill, // Changed from onSave
+    onSaveAndPrint: handleSaveAndPrintBill, 
   };
 
   return (
     <div className="container mx-auto py-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6 bg-primary/10">
-          <TabsTrigger value="sales-bill" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Sales</TabsTrigger>
-          <TabsTrigger value="purchase" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Purchases</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 mb-6 bg-primary/10 rounded-lg p-1">
+          <TabsTrigger value="sales-bill" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md">Sales</TabsTrigger>
+          <TabsTrigger value="purchase" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md">Purchases</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales-bill">
-          <Card className="bg-card">
+          <Card className="bg-card shadow-lg">
             <CardContent className="p-6">
               {showSalesForm ? (
                 <BillForm
@@ -78,7 +78,7 @@ const BillingTabs: React.FC = () => {
               ) : (
                 <>
                   <div className="flex justify-end mb-4">
-                    <Button onClick={() => { setEditingBill(undefined); setShowSalesForm(true); }}>
+                    <Button onClick={() => { setEditingBill(undefined); setShowSalesForm(true); }} className="shadow-md hover:shadow-lg transition-shadow">
                       <PlusCircle className="mr-2 h-4 w-4" /> Create Sales Bill
                     </Button>
                   </div>
@@ -90,7 +90,7 @@ const BillingTabs: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="purchase">
-           <Card className="bg-card">
+           <Card className="bg-card shadow-lg">
             <CardContent className="p-6">
               {showPurchaseForm ? (
                 <BillForm
@@ -99,12 +99,12 @@ const BillingTabs: React.FC = () => {
                   existingBill={editingBill && editingBill.type === 'purchase' ? editingBill : undefined}
                   {...commonFormProps}
                   onCancel={() => { setEditingBill(undefined); setShowPurchaseForm(false); }}
-                  onShowEstimate={handleShowEstimatePreview} // Added for purchase estimates
+                  onShowEstimate={handleShowEstimatePreview} 
                 />
               ) : (
                 <>
                   <div className="flex justify-end mb-4">
-                    <Button onClick={() => { setEditingBill(undefined); setShowPurchaseForm(true); }}>
+                    <Button onClick={() => { setEditingBill(undefined); setShowPurchaseForm(true); }} className="shadow-md hover:shadow-lg transition-shadow">
                       <PlusCircle className="mr-2 h-4 w-4" /> Create Purchase Bill
                     </Button>
                   </div>

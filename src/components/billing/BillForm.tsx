@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Save, Calculator, FileText, XCircle } from 'lucide-react';
+import { PlusCircle, Save, Calculator, FileText, XCircle, Info } from 'lucide-react';
 import BillItemRow from './BillItemRow';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '../ui/separator';
 
 interface BillFormProps {
   billType: BillType;
@@ -70,7 +71,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
     if (item.makingCharge && !isPurchase) {
       if (item.makingChargeType === 'percentage') {
-        const mcBaseForSales = item.weightOrQuantity * (item.rate || 0); // Making charge calculated on item value before MC
+        const mcBaseForSales = item.weightOrQuantity * (item.rate || 0); 
         baseAmount += mcBaseForSales * (item.makingCharge / 100);
       } else {
         baseAmount += item.makingCharge;
@@ -96,8 +97,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         return {
           ...item, 
           id: item.id || uuidv4(),
-          amount: taxableAmount, // Ensure amount is the taxable amount
-          itemCgstAmount: item.itemCgstAmount ?? itemCgst, // Use existing or recalculate
+          amount: taxableAmount, 
+          itemCgstAmount: item.itemCgstAmount ?? itemCgst, 
           itemSgstAmount: item.itemSgstAmount ?? itemSgst
         };
       }) || [{ id: uuidv4() }]);
@@ -108,7 +109,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       itemRefs.current = [[]];
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingBill, billType, settings.cgstRate, settings.sgstRate]); // calculateItemTaxableAmount removed to avoid loops if it's not stable
+  }, [existingBill, billType, settings.cgstRate, settings.sgstRate]);
 
  useEffect(() => {
     const reCalculatedItems = items.map(currentItem => {
@@ -182,7 +183,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       name: '',
       weightOrQuantity: 1,
       unit: settings.valuables[0]?.unit || 'gram', 
-      amount: 0, // taxable amount
+      amount: 0,
       itemCgstAmount: 0,
       itemSgstAmount: 0,
     };
@@ -190,7 +191,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       newItemShell.purchaseNetType = 'net_percentage';
       newItemShell.purchaseNetPercentValue = settings.defaultPurchaseItemNetPercentage;
       newItemShell.purchaseNetFixedValue = settings.defaultPurchaseItemNetFixedValue;
-    } else { // Sales
+    } else { 
       newItemShell.makingChargeType = settings.defaultMakingCharge.type;
       newItemShell.makingCharge = settings.defaultMakingCharge.value;
     }
@@ -217,7 +218,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       .filter(item => item.valuableId && item.name && item.name.trim() !== '' && typeof item.weightOrQuantity === 'number' && item.weightOrQuantity > 0)
       .map(item => {
         if (!item.valuableId || !item.unit) {
-          console.warn("Item missing valuableId or unit", item);
           return null;
         }
         const taxableAmount = item.amount || 0;
@@ -228,7 +228,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
             itemCgst = item.itemCgstAmount || 0;
             itemSgst = item.itemSgstAmount || 0;
         } else if (billType === 'sales-bill' && isEstimateMode) {
-            // For sales estimates, item-level GST is not applied/shown in this version
             itemCgst = 0;
             itemSgst = 0;
         }
@@ -243,7 +242,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           rate: item.rate || 0, 
           makingCharge: item.makingCharge,
           makingChargeType: item.makingChargeType,
-          amount: taxableAmount, // This is the taxable amount
+          amount: taxableAmount, 
           purchaseNetType: item.purchaseNetType,
           purchaseNetPercentValue: item.purchaseNetPercentValue,
           purchaseNetFixedValue: item.purchaseNetFixedValue,
@@ -252,7 +251,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         } as BillItem;
       }).filter(item => item !== null) as BillItem[];
 
-    const currentSubTotal = parseFloat(finalItems.reduce((acc, item) => acc + (item.amount || 0), 0).toFixed(2)); // Sum of taxable amounts
+    const currentSubTotal = parseFloat(finalItems.reduce((acc, item) => acc + (item.amount || 0), 0).toFixed(2)); 
     let currentBillCgst = 0;
     let currentBillSgst = 0;
     
@@ -263,9 +262,9 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     
     let currentTotalAmount = currentSubTotal + currentBillCgst + currentBillSgst;
     
-    if (isEstimateMode) { // For all estimates (sales or purchase), total is just subtotal
+    if (isEstimateMode) { 
         currentTotalAmount = currentSubTotal;
-        currentBillCgst = 0; // No GST on estimates in this flow
+        currentBillCgst = 0; 
         currentBillSgst = 0;
     }
 
@@ -305,7 +304,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
   const handleShowEstimate = () => {
     if (onShowEstimate) {
-      const estimateDetails = getCurrentBillData(true); // isEstimateMode = true
+      const estimateDetails = getCurrentBillData(true); 
        const estimateBillForView: Bill = {
         ...estimateDetails,
         id: `estimate-preview-${uuidv4()}`,
@@ -324,7 +323,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       id: uuidv4(),
       name: '',
       weightOrQuantity: 1,
-      amount: 0, // taxable amount
+      amount: 0,
       itemCgstAmount: 0,
       itemSgstAmount: 0,
       unit: settings.valuables[0]?.unit || 'gram',
@@ -370,51 +369,58 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
 
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-xl border-primary/20">
       <CardHeader>
         <CardTitle className="font-headline text-2xl text-primary flex items-center">
-          <Calculator className="mr-2 h-6 w-6" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
+          <Calculator className="mr-3 h-7 w-7" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
         {(isSalesBill || isPurchase) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="customerName">{isPurchase ? "Supplier" : "Customer"} Name</Label>
-              <Input
-                id="customerName"
-                ref={customerNameRef}
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                onKeyDown={(e) => handleCustomerKeyDown(e, customerPhoneRef)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="customerPhone">{isPurchase ? "Supplier" : "Customer"} Phone</Label>
-              <Input
-                id="customerPhone"
-                ref={customerPhoneRef}
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                onKeyDown={(e) => handleCustomerKeyDown(e, customerAddressRef)}
-              />
-            </div>
-            <div className="md:col-span-3">
-              <Label htmlFor="customerAddress">{isPurchase ? "Supplier" : "Customer"} Address</Label>
-              <Textarea
-                id="customerAddress"
-                ref={customerAddressRef}
-                value={customerAddress}
-                onChange={(e) => setCustomerAddress(e.target.value)}
-                onKeyDown={(e) => handleCustomerKeyDown(e)} 
-              />
+          <div className="space-y-4 p-4 border border-border rounded-lg bg-primary/5">
+            <h3 className="text-lg font-semibold text-accent mb-3 flex items-center"><Info className="mr-2 h-5 w-5"/>{isPurchase ? "Supplier" : "Customer"} Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+                <div>
+                <Label htmlFor="customerName">{isPurchase ? "Supplier" : "Customer"} Name</Label>
+                <Input
+                    id="customerName"
+                    ref={customerNameRef}
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    onKeyDown={(e) => handleCustomerKeyDown(e, customerPhoneRef)}
+                    className="mt-1"
+                />
+                </div>
+                <div>
+                <Label htmlFor="customerPhone">{isPurchase ? "Supplier" : "Customer"} Phone</Label>
+                <Input
+                    id="customerPhone"
+                    ref={customerPhoneRef}
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onKeyDown={(e) => handleCustomerKeyDown(e, customerAddressRef)}
+                    className="mt-1"
+                />
+                </div>
+                <div className="md:col-span-3">
+                <Label htmlFor="customerAddress">{isPurchase ? "Supplier" : "Customer"} Address</Label>
+                <Textarea
+                    id="customerAddress"
+                    ref={customerAddressRef}
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    onKeyDown={(e) => handleCustomerKeyDown(e)} 
+                    className="mt-1"
+                    rows={2}
+                />
+                </div>
             </div>
           </div>
         )}
 
         <div>
-          <Label className="text-lg font-medium">Items</Label>
-           <div className={`py-1 grid ${isPurchase ? 'grid-cols-12' : 'grid-cols-12'} gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2`}>
+          <Label className="text-xl font-semibold text-accent mb-3 block">Items</Label>
+           <div className={`py-2 px-3 grid ${isPurchase ? 'grid-cols-12' : 'grid-cols-12'} gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
             <div className="col-span-2">Material</div>
             <div className="col-span-3">Product Name</div>
             <div className="col-span-1 text-center">Qty/Wt</div>
@@ -422,68 +428,77 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
             <div className="col-span-1 text-center">{isPurchase ? "Value" : "Rate"}</div>
             {!isPurchase && <div className="col-span-1 text-center">MC Type</div>}
             {!isPurchase && <div className="col-span-1 text-center">Making</div>}
-            <div className="col-span-1 text-right">Taxable Amt</div> {/* Changed from Amount to Taxable Amount */}
+            <div className="col-span-1 text-right">Taxable Amt</div>
             <div className="col-span-1 text-center">Action</div>
           </div>
-          {items.map((item, index) => (
-            <BillItemRow
-              key={item.id || index}
-              item={item}
-              onItemChange={(updatedFields) => handleItemChange(index, updatedFields)}
-              onProductNameBlur={handleProductNameBlur}
-              onRemoveItem={() => removeItem(index)}
-              availableValuables={settings.valuables}
-              productNames={settings.productNames}
-              isPurchase={isPurchase}
-              defaultMakingCharge={settings.defaultMakingCharge}
-              defaultPurchaseNetPercentage={settings.defaultPurchaseItemNetPercentage}
-              defaultPurchaseNetFixedValue={settings.defaultPurchaseItemNetFixedValue}
-              getValuablePrice={(valuableId) => getValuableById(valuableId)?.price || 0}
-              onEnterInLastField={addItem}
-              focusNextRowFirstElement={focusNextRowFirstElement}
-              rowIndex={index}
-              itemRefs={itemRefs}
-            />
-          ))}
-          <Button variant="outline" size="sm" onClick={addItem} className="mt-2">
+          <div className="border rounded-b-md">
+            {items.map((item, index) => (
+                <BillItemRow
+                key={item.id || index}
+                item={item}
+                onItemChange={(updatedFields) => handleItemChange(index, updatedFields)}
+                onProductNameBlur={handleProductNameBlur}
+                onRemoveItem={() => removeItem(index)}
+                availableValuables={settings.valuables}
+                productNames={settings.productNames}
+                isPurchase={isPurchase}
+                defaultMakingCharge={settings.defaultMakingCharge}
+                defaultPurchaseNetPercentage={settings.defaultPurchaseItemNetPercentage}
+                defaultPurchaseNetFixedValue={settings.defaultPurchaseItemNetFixedValue}
+                getValuablePrice={(valuableId) => getValuableById(valuableId)?.price || 0}
+                onEnterInLastField={addItem}
+                focusNextRowFirstElement={focusNextRowFirstElement}
+                rowIndex={index}
+                itemRefs={itemRefs}
+                />
+            ))}
+          </div>
+          <Button variant="outline" size="sm" onClick={addItem} className="mt-4 shadow hover:shadow-md transition-shadow">
             <PlusCircle className="mr-2 h-4 w-4" /> Add Item
           </Button>
         </div>
+        
+        <Separator />
 
         <div>
-          <Label htmlFor="notes">Notes</Label>
+          <Label htmlFor="notes" className="text-lg font-semibold text-accent mb-2 block">Notes</Label>
           <Textarea
             id="notes"
             ref={notesRef}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+            className="shadow-sm"
+            rows={3}
           />
         </div>
+        
+        <Separator />
 
-        <div className="space-y-2 text-right font-medium pr-4">
-          <div>Subtotal (Taxable Value): <span className="text-lg">{subTotal.toFixed(2)}</span></div>
+        <div className="p-4 border border-border rounded-lg bg-primary/5 space-y-3 text-right">
+          <div className="text-md">Subtotal (Taxable Value): <span className="font-semibold text-lg ml-2">{subTotal.toFixed(2)}</span></div>
           {(isSalesBill) && (
             <>
-              <div>CGST ({settings.cgstRate}%): <span className="text-lg">{billCgstAmount.toFixed(2)}</span></div>
-              <div>SGST ({settings.sgstRate}%): <span className="text-lg">{billSgstAmount.toFixed(2)}</span></div>
+              <div className="text-md">CGST ({settings.cgstRate}%): <span className="font-semibold text-lg ml-2">{billCgstAmount.toFixed(2)}</span></div>
+              <div className="text-md">SGST ({settings.sgstRate}%): <span className="font-semibold text-lg ml-2">{billSgstAmount.toFixed(2)}</span></div>
             </>
           )}
-          <div className="text-xl font-bold text-primary">Total: <span className="text-2xl">{finalTotalAmount.toFixed(2)}</span></div>
+          <Separator className="my-2 bg-primary/20"/>
+          <div className="text-xl font-bold text-primary">Total: <span className="text-3xl ml-2">{finalTotalAmount.toFixed(2)}</span></div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between items-center">
-        <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive">
+      <CardFooter className="flex justify-between items-center border-t pt-6">
+        <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive shadow hover:shadow-md transition-shadow">
           <XCircle className="mr-2 h-4 w-4" /> Cancel
         </Button>
-        <div className="flex space-x-2">
+        <div className="flex space-x-3">
           {onShowEstimate && (
-            <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent flex flex-col h-auto py-2">
+            <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent flex flex-col h-auto py-2 px-4 shadow hover:shadow-md transition-shadow">
               <span className="flex items-center"><FileText className="mr-2 h-4 w-4" /> Create Estimate</span>
-              <span className="text-xs text-muted-foreground mt-1">Total (Est.): {subTotal.toFixed(2)}</span> {/* Estimate shows subtotal */}
+              <span className="text-xs text-muted-foreground/80 mt-1">Total (Est.): {subTotal.toFixed(2)}</span>
             </Button>
           )}
-          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/80 flex flex-col h-auto py-2">
-             <span className="flex items-center"><Save className="mr-2 h-4 w-4" /> {existingBill ? 'Update' : 'Save'} & Print</span>
+          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-primary-foreground flex flex-col h-auto py-2 px-4 shadow-md hover:shadow-lg transition-shadow">
+             <span className="flex items-center"><Save className="mr-2 h-4 w-4" /> {existingBill ? 'Update' : 'Save'} & Print Bill</span>
              <span className="text-xs text-primary-foreground/80 mt-1">Total: {finalTotalAmount.toFixed(2)}</span>
           </Button>
         </div>

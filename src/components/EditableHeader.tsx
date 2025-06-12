@@ -27,7 +27,6 @@ const EditableHeader: React.FC = () => {
         const originalValuable = settings.valuables.find(v => v.id === valuableId);
         if (originalValuable) {
           setEditingPrices(prev => ({...prev, [valuableId]: String(originalValuable.price)}));
-           // Also update context if value was invalid and reset
           updateValuablePrice(valuableId, originalValuable.price);
         }
     } else {
@@ -39,22 +38,22 @@ const EditableHeader: React.FC = () => {
 
   if (activeValuables.length === 0) {
     return (
-      <div className="p-4 text-center text-muted-foreground text-sm">
+      <div className="p-6 text-center text-muted-foreground text-sm bg-card rounded-lg shadow-md">
         No market prices selected for display. Configure in Settings.
       </div>
     );
   }
   
   return (
-    <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20 shadow-sm">
-      <h3 className="text-md font-semibold text-center mb-3 text-primary/80">
-        Market Prices (per {activeValuables[0]?.unit || 'unit'})
+    <div className="mt-6 p-6 rounded-lg bg-card border border-border shadow-lg">
+      <h3 className="text-lg font-semibold text-center mb-4 text-primary">
+        Live Market Prices
       </h3>
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-6 gap-y-4">
         {activeValuables.map((valuable) => (
-          <div key={valuable.id} className="flex flex-col space-y-1">
-            <Label htmlFor={`price-${valuable.id}`} className="flex items-center text-xs font-medium text-foreground">
-              <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-4 h-4 mr-1.5" />
+          <div key={valuable.id} className="flex flex-col space-y-1.5">
+            <Label htmlFor={`price-${valuable.id}`} className="flex items-center text-sm font-medium text-foreground">
+              <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-5 h-5 mr-2" />
               {valuable.name}
             </Label>
             <Input
@@ -63,10 +62,11 @@ const EditableHeader: React.FC = () => {
               value={editingPrices[valuable.id] ?? valuable.price}
               onChange={(e) => handlePriceChange(valuable.id, e.target.value)}
               onBlur={() => handleBlur(valuable.id)}
-              className="w-full border-accent focus:ring-primary h-8 text-sm"
+              className="w-full border-input focus:ring-primary h-9 text-sm shadow-sm"
               min="0"
               step="0.01"
             />
+            <p className="text-xs text-muted-foreground text-center">per {valuable.unit}</p>
           </div>
         ))}
       </div>

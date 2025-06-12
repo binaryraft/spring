@@ -46,84 +46,52 @@ const handleGeneratePdf = async () => {
     const billContentElement = document.getElementById('bill-to-print');
 
     if (!billContentElement) {
-        console.error('Bill content element not found for PDF generation.');
-        alert("Error: Bill content element not found. PDF generation aborted.");
+        alert("Error: Bill content element (#bill-to-print) not found. PDF generation aborted.");
         setIsGeneratingPdf(false);
         return;
     }
     
-    // Store original parent and next sibling to restore later
     const originalParent = billContentElement.parentNode;
     const originalNextSibling = billContentElement.nextSibling;
 
-    // Create a temporary wrapper for capture
     const captureWrapper = document.createElement('div');
     captureWrapper.id = 'pdf-capture-wrapper';
     Object.assign(captureWrapper.style, {
         position: 'absolute',
-        left: '0px', // Keep on-screen for debugging initially
-        top: '0px',  // Keep on-screen for debugging initially
-        zIndex: '10000', // Ensure it's on top
-        width: '794px', // A4-ish width
+        left: '0px', 
+        top: '0px',
+        zIndex: '10000', 
+        width: '794px', 
         backgroundColor: 'white',
         padding: '0',
         border: '1px dashed #ccc' // For debugging visibility
     });
     document.body.appendChild(captureWrapper);
-    
-    // Move the content to the wrapper
     captureWrapper.appendChild(billContentElement);
-
     document.body.classList.add('print-capture-active');
     
-    // Ensure styles are applied and layout is stable in the new wrapper
-    await new Promise(resolve => requestAnimationFrame(resolve));
-    await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
+    await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay for rendering in new wrapper
 
-    if (billContentElement.scrollWidth === 0 || billContentElement.scrollHeight === 0) {
-        console.error('Bill content element (in wrapper) has no dimensions. Width:', billContentElement.scrollWidth, 'Height:', billContentElement.scrollHeight);
-        alert("Error: Bill content not rendered with dimensions in capture wrapper. PDF generation aborted.");
-        
-        // Restore element and cleanup
-        if (originalParent && billContentElement.parentNode === captureWrapper) { // Check if it was moved
-            if (originalNextSibling) {
-                originalParent.insertBefore(billContentElement, originalNextSibling);
-            } else {
-                originalParent.appendChild(billContentElement);
-            }
-        }
-        if (captureWrapper.parentNode === document.body) {
-           document.body.removeChild(captureWrapper);
-        }
-        document.body.classList.remove('print-capture-active');
+    if (billContentElement.offsetWidth === 0 || billContentElement.offsetHeight === 0) {
+        alert(`Error: Bill content element (in wrapper) has no dimensions (W: ${billContentElement.offsetWidth}, H: ${billContentElement.offsetHeight}). PDF generation aborted. The capture wrapper will remain on screen for inspection.`);
+        // Don't restore here to allow inspection of the wrapper if left/top are 0px.
+        // Cleanup will happen in finally if wrapper is off-screen.
         setIsGeneratingPdf(false);
         return;
     }
 
+
     try {
-        console.log(`Attempting to capture element: #bill-to-print (now in #pdf-capture-wrapper). OffsetWidth: ${billContentElement.offsetWidth}, OffsetHeight: ${billContentElement.offsetHeight}, ScrollWidth: ${billContentElement.scrollWidth}, ScrollHeight: ${billContentElement.scrollHeight}`);
-        
-        const canvas = await html2canvas(billContentElement, { // Target the element (which is now in the wrapper)
-            scale: 2, 
+        const canvas = await html2canvas(billContentElement, {
+            scale: 2,
             useCORS: true,
-            logging: true, 
-            backgroundColor: "#ffffff", 
+            logging: true,
+            backgroundColor: "#ffffff", // Ensure canvas background is white
         });
 
         const imgData = canvas.toDataURL('image/png');
-        console.log('Canvas toDataURL length:', imgData.length);
-        if (imgData.length < 250 || imgData === 'data:,') { // Increased threshold slightly
-             console.error("Generated canvas image is too small or empty. Data (first 100 chars):", imgData.substring(0,100));
-             alert("Error: Failed to capture bill content for PDF. The generated image was empty or too small. Check console for details. The capture wrapper will remain on screen for inspection if left/top are 0px.");
-             // Don't restore immediately if left/top are 0 for debugging the wrapper
-             if (captureWrapper.style.left !== "0px") {
-                // Restore element and cleanup if it was off-screen
-                if (originalParent && billContentElement.parentNode === captureWrapper) {
-                    if (originalNextSibling) { originalParent.insertBefore(billContentElement, originalNextSibling); } else { originalParent.appendChild(billContentElement); }
-                }
-                if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
-                document.body.classList.remove('print-capture-active');
-             }
+        if (imgData.length < 250 || imgData === 'data:,') { // Threshold for empty image data
+             alert("Error: Failed to capture bill content for PDF. The generated image was empty or too small. The capture wrapper will remain for inspection if visible.");
              setIsGeneratingPdf(false);
              return; 
         }
@@ -142,49 +110,45 @@ const handleGeneratePdf = async () => {
         const canvasImgWidth = imgProps.width;
         const canvasImgHeight = imgProps.height;
         
-        console.log('Captured image properties from PDF lib: Width:', canvasImgWidth, 'Height:', canvasImgHeight);
-
         if (canvasImgWidth === 0 || canvasImgHeight === 0) {
-            console.error("Canvas image properties (from PDF lib) report zero width or height.");
             alert("Error: Captured image for PDF has no dimensions according to PDF library.");
-            return; // Finally will still run
+            setIsGeneratingPdf(false);
+            return;
         }
 
         const availableWidth = pdfWidth - 2 * margin;
         const availableHeight = pdfHeight - 2 * margin;
-
         let ratio = Math.min(availableWidth / canvasImgWidth, availableHeight / canvasImgHeight);
-        
         const finalPdfImgWidth = canvasImgWidth * ratio;
         const finalPdfImgHeight = canvasImgHeight * ratio;
 
-        console.log('Final PDF image dimensions: Width:', finalPdfImgWidth, 'Height:', finalPdfImgHeight);
-        
         if (finalPdfImgWidth <= 0 || finalPdfImgHeight <= 0) {
-            console.error("Calculated PDF image dimensions are invalid (<=0). Width:", finalPdfImgWidth, "Height:", finalPdfImgHeight);
-            alert("Error: Calculated PDF dimensions are invalid.");
-            return; // Finally will still run
+            alert("Error: Calculated PDF dimensions are invalid (<=0).");
+            setIsGeneratingPdf(false);
+            return;
         }
 
         const x = margin + (availableWidth - finalPdfImgWidth) / 2; 
         const y = margin + (availableHeight - finalPdfImgHeight) / 2; 
         
         pdf.addImage(imgData, 'PNG', x, y, finalPdfImgWidth, finalPdfImgHeight);
-        pdf.output('dataurlnewwindow');
+        
+        const dateStr = format(new Date(), 'yyyy-MM-dd-HHmmss');
+        const fileName = `${effectiveBillType.replace(' ', '-')}-${bill.billNumber || 'Estimate'}-${dateStr}.pdf`;
+        pdf.save(fileName);
 
     } catch (error) {
         console.error("Error generating PDF with html2canvas and jspdf:", error);
         alert(`An error occurred while generating the PDF: ${error instanceof Error ? error.message : String(error)}. Check console for details.`);
     } finally {
-        // Restore the element to its original position and remove the wrapper
-        if (originalParent && billContentElement.parentNode === captureWrapper) { // Check if it was moved
+        if (originalParent && billContentElement.parentNode === captureWrapper) {
             if (originalNextSibling) {
                 originalParent.insertBefore(billContentElement, originalNextSibling);
             } else {
                 originalParent.appendChild(billContentElement);
             }
         }
-         if (captureWrapper.parentNode === document.body) { // Check if it's still there
+         if (captureWrapper.parentNode === document.body) {
            document.body.removeChild(captureWrapper);
         }
         document.body.classList.remove('print-capture-active');
@@ -216,6 +180,7 @@ const handleGeneratePdf = async () => {
   );
 
   const showItemLevelGstColumns = bill.type === 'sales-bill' && !isEstimateView;
+  const showTaxableAmountColumn = !isEstimateView;
   const showMakingChargeColumn = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
 
 
@@ -244,10 +209,10 @@ const handleGeneratePdf = async () => {
                     border: none !important;
                     box-shadow: none !important;
                     width: 780px !important; 
-                    height: auto !important; /* Let content determine height */
+                    height: auto !important;
                     box-sizing: border-box !important;
                     overflow: visible !important;
-                    transform: none !important; /* Crucial for html2canvas */
+                    transform: none !important;
                 }
 
                 body.print-capture-active .print-hidden {
@@ -434,7 +399,7 @@ const handleGeneratePdf = async () => {
                         Rate {isEstimateView && bill.items.length > 0 && bill.items[0].unit ? `/ ${bill.items[0].unit}` : (isEstimateView ? '/ unit' : '/ unit')}
                     </th>
                     {showMakingChargeColumn && <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
-                    {!isEstimateView && <th className="py-2 px-1 text-right font-semibold border border-border">Taxable Amt</th>}
+                    {showTaxableAmountColumn && <th className="py-2 px-1 text-right font-semibold border border-border">Taxable Amt</th>}
                     {showItemLevelGstColumns && (
                         <>
                             <th className="py-2 px-1 text-right font-semibold border border-border">CGST ({settings.cgstRate}%)</th>
@@ -452,9 +417,9 @@ const handleGeneratePdf = async () => {
                     
                     let itemCgst = 0;
                     let itemSgst = 0;
-                    let lineTotal = taxableAmount; // For estimates or purchases
+                    let lineTotal = taxableAmount; 
 
-                    if (showItemLevelGstColumns) { // This is only true for non-estimate sales bills
+                    if (showItemLevelGstColumns) { 
                         itemCgst = item.itemCgstAmount || 0;
                         itemSgst = item.itemSgstAmount || 0;
                         lineTotal = taxableAmount + itemCgst + itemSgst;
@@ -475,7 +440,7 @@ const handleGeneratePdf = async () => {
                            : '-'}
                         </td>
                       )}
-                      {!isEstimateView && <td className="py-2 px-1 text-right border border-border">{taxableAmount.toFixed(2)}</td>}
+                      {showTaxableAmountColumn && <td className="py-2 px-1 text-right border border-border">{taxableAmount.toFixed(2)}</td>}
                       {showItemLevelGstColumns && (
                         <>
                             <td className="py-2 px-1 text-right border border-border">{itemCgst.toFixed(2)}</td>
@@ -501,7 +466,7 @@ const handleGeneratePdf = async () => {
                 )}
               </div>
               <div className="col-span-2 text-sm space-y-1 text-right bill-details-column"> 
-                <p>Subtotal {!isEstimateView && bill.type === 'sales-bill' ? '(Taxable Value)' : ''}: <span className="font-semibold">{bill.subTotal.toFixed(2)}</span></p>
+                <p>Subtotal {showTaxableAmountColumn && bill.type === 'sales-bill' ? '(Taxable Value)' : ''}: <span className="font-semibold">{bill.subTotal.toFixed(2)}</span></p>
 
                 {!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 && <p>Total CGST ({settings.cgstRate}%): <span className="font-semibold">{(bill.cgstAmount || 0).toFixed(2)}</span></p>}
                 {!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 && <p>Total SGST ({settings.sgstRate}%): <span className="font-semibold">{(bill.sgstAmount || 0).toFixed(2)}</span></p>}
@@ -526,7 +491,7 @@ const handleGeneratePdf = async () => {
             ) : (
               <Printer className="mr-2 h-4 w-4"/>
             )}
-            Generate &amp; View PDF
+            Generate &amp; Download PDF
           </Button>
           <Button variant="outline" onClick={onClose} disabled={isGeneratingPdf}>Close</Button>
         </DialogFooter>
@@ -536,6 +501,4 @@ const handleGeneratePdf = async () => {
 };
 
 export default BillViewModal;
-    
-
     
