@@ -53,23 +53,26 @@ const handleGeneratePdf = async () => {
     }
 
     if (billContentElement.scrollWidth === 0 || billContentElement.scrollHeight === 0) {
-        console.error('Bill content element has no dimensions. PDF generation aborted.');
+        console.error('Bill content element has no dimensions. PDF generation aborted. Width:', billContentElement.scrollWidth, 'Height:', billContentElement.scrollHeight);
         setIsGeneratingPdf(false);
         alert("Error: Could not determine content size for PDF generation. Please ensure the bill content is visible and has dimensions.");
         return;
     }
+
+    document.body.classList.add('print-capture-active');
     
+    // Ensure styles are applied and layout is stable
     await new Promise(resolve => requestAnimationFrame(resolve));
-    await new Promise(resolve => setTimeout(resolve, 250)); 
+    await new Promise(resolve => setTimeout(resolve, 300)); // Slightly increased delay
 
     try {
-        console.log(`Attempting to capture element with scrollWidth: ${billContentElement.scrollWidth}, scrollHeight: ${billContentElement.scrollHeight}`);
+        console.log(`Attempting to capture element: #bill-to-print. ScrollWidth: ${billContentElement.scrollWidth}, ScrollHeight: ${billContentElement.scrollHeight}`);
         
         const canvas = await html2canvas(billContentElement, {
-            scale: 2,
+            scale: 2, // Higher scale for better quality
             useCORS: true,
-            logging: true,
-            backgroundColor: "#ffffff",
+            logging: true, // Enable html2canvas logging for diagnostics
+            backgroundColor: "#ffffff", // Explicitly set background for the canvas
             width: billContentElement.scrollWidth,
             height: billContentElement.scrollHeight,
             scrollX: 0, 
@@ -77,49 +80,23 @@ const handleGeneratePdf = async () => {
             windowWidth: billContentElement.scrollWidth,
             windowHeight: billContentElement.scrollHeight,
             onclone: (documentClone) => {
+                // Minimal onclone: the body class 'print-capture-active' should handle most styling.
+                // Ensure the cloned element itself is display block for html2canvas.
                 const clonedContent = documentClone.getElementById('bill-to-print');
                 if (clonedContent) {
-                    clonedContent.style.position = 'relative'; 
-                    clonedContent.style.left = '0px';
-                    clonedContent.style.top = '0px';
-                    clonedContent.style.transform = 'none';
-                    clonedContent.style.width = `${billContentElement.scrollWidth}px`; 
-                    clonedContent.style.height = `${billContentElement.scrollHeight}px`; 
-                    clonedContent.style.overflow = 'visible'; 
                     clonedContent.style.display = 'block'; 
-                    clonedContent.style.backgroundColor = '#ffffff';
-                    clonedContent.style.color = '#000000';
-                    clonedContent.style.zIndex = '9999'; 
-                    
-                    const allElements = clonedContent.querySelectorAll('*');
-                    allElements.forEach((el) => {
-                        const htmlEl = el as HTMLElement;
-                        htmlEl.style.color = '#000000';
-                        htmlEl.style.backgroundColor = 'transparent';
-                        htmlEl.style.boxShadow = 'none';
-                        htmlEl.style.borderColor = '#cccccc'; 
-                         htmlEl.style.printColorAdjust = 'exact';
-                    });
-
-                    const logo = clonedContent.querySelector('.print-logo') as HTMLImageElement;
-                    if (logo) {
-                        logo.style.filter = 'grayscale(100%) contrast(120%)';
-                    }
-                    const placeholderLogoSvg = clonedContent.querySelector('.print-placeholder-logo svg') as HTMLElement;
-                    if (placeholderLogoSvg && placeholderLogoSvg.style) {
-                        placeholderLogoSvg.style.fill = '#000000';
-                        placeholderLogoSvg.style.stroke = '#000000';
-                    }
-                } else {
-                    console.error("Cloned content #bill-to-print not found in onclone");
+                    clonedContent.style.backgroundColor = '#ffffff'; // Force white background on the element being captured
                 }
             }
         });
 
+        document.body.classList.remove('print-capture-active');
+
         const imgData = canvas.toDataURL('image/png');
-        if (imgData.length < 200 || imgData === 'data:,') {
-             console.error("Generated canvas image is too small or empty. Length:", imgData.length);
-             alert("Error: Failed to capture bill content for PDF. The generated image was empty. This might be due to content visibility issues.");
+        console.log('Canvas toDataURL length:', imgData.length);
+        if (imgData.length < 200 || imgData === 'data:,') { 
+             console.error("Generated canvas image is too small or empty. Data (first 100 chars):", imgData.substring(0,100));
+             alert("Error: Failed to capture bill content for PDF. The generated image was empty or too small. Check console for details.");
              setIsGeneratingPdf(false);
              return;
         }
@@ -132,15 +109,17 @@ const handleGeneratePdf = async () => {
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10;
+        const margin = 10; // mm
 
         const imgProps = pdf.getImageProperties(imgData);
         const canvasImgWidth = imgProps.width;
         const canvasImgHeight = imgProps.height;
         
+        console.log('Captured image properties from PDF: Width:', canvasImgWidth, 'Height:', canvasImgHeight);
+
         if (canvasImgWidth === 0 || canvasImgHeight === 0) {
-            console.error("Canvas image properties report zero width or height.");
-            alert("Error: Captured image for PDF has no dimensions.");
+            console.error("Canvas image properties (from PDF lib) report zero width or height.");
+            alert("Error: Captured image for PDF has no dimensions according to PDF library.");
             setIsGeneratingPdf(false);
             return;
         }
@@ -153,8 +132,7 @@ const handleGeneratePdf = async () => {
         const finalPdfImgWidth = canvasImgWidth * ratio;
         const finalPdfImgHeight = canvasImgHeight * ratio;
 
-        const x = margin + (availableWidth - finalPdfImgWidth) / 2;
-        const y = margin + (availableHeight - finalPdfImgHeight) / 2;
+        console.log('Final PDF image dimensions: Width:', finalPdfImgWidth, 'Height:', finalPdfImgHeight);
         
         if (finalPdfImgWidth <= 0 || finalPdfImgHeight <= 0) {
             console.error("Calculated PDF image dimensions are invalid (<=0). Width:", finalPdfImgWidth, "Height:", finalPdfImgHeight);
@@ -163,12 +141,16 @@ const handleGeneratePdf = async () => {
             return;
         }
 
+        const x = margin + (availableWidth - finalPdfImgWidth) / 2; // Center horizontally
+        const y = margin + (availableHeight - finalPdfImgHeight) / 2; // Center vertically
+        
         pdf.addImage(imgData, 'PNG', x, y, finalPdfImgWidth, finalPdfImgHeight);
         pdf.output('dataurlnewwindow');
 
     } catch (error) {
         console.error("Error generating PDF with html2canvas and jspdf:", error);
-        alert(`An error occurred while generating the PDF: ${error instanceof Error ? error.message : String(error)}`);
+        alert(`An error occurred while generating the PDF: ${error instanceof Error ? error.message : String(error)}. Check console for details.`);
+        document.body.classList.remove('print-capture-active'); // Ensure class is removed in case of error
     } finally {
         setIsGeneratingPdf(false);
     }
@@ -215,43 +197,60 @@ const handleGeneratePdf = async () => {
 
         <div className="flex-grow overflow-y-auto p-1"> 
           <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm text-foreground">
-            <style jsx global>{`
+           <style jsx global>{`
                 body.print-capture-active #bill-to-print {
-                    // Styles to ensure #bill-to-print is fully visible and sized correctly for capture
-                    // This might not be needed if onclone handles it well
+                    background-color: #ffffff !important;
+                    padding: 15mm !important; /* Simulate page margins */
+                    box-sizing: border-box !important;
+                    /* Override any problematic modal positioning/transforms IF NECESSARY. 
+                       It's better if these are handled by DialogContent not being 'fixed' during capture,
+                       or by html2canvas onclone if absolutely needed.
+                       For now, we rely on the fact that #bill-to-print is a child and should be captured based on its own flow.
+                    */
                 }
-                @media print {
-                    body, html {
+
+                @media print, body.print-capture-active {
+                    /* Common styles for both actual print and html2canvas capture */
+                    /* General resets for the context html2canvas uses (cloned document) or actual print */
+                    html, body { 
                         background-color: #ffffff !important;
                         color: #000000 !important;
                         font-family: 'PT Sans', Arial, sans-serif !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
-                    body > *:not(#bill-to-print-wrapper):not(#bill-to-print-wrapper *) {
-                         display: none !important; 
+                    
+                    /* Hide everything not part of the bill for actual print */
+                    @media print {
+                        body > *:not(#bill-to-print-wrapper):not(#bill-to-print-wrapper *) {
+                            display: none !important; 
+                        }
+                        /* Hide Radix Dialog's default close X button for actual print */
+                        /* This targets the button by its typical structure if not otherwise hidden */
+                        .fixed.z-50.grid button[class*="absolute"][class*="right-4"][class*="top-4"],
+                        [role="dialog"] button[class*="absolute"][class*="right-4"][class*="top-4"] {
+                           display: none !important;
+                        }
                     }
-                    #bill-to-print-wrapper, #bill-to-print {
-                        display: block !important;
-                    }
-
+                    
+                    /* Ensure the #bill-to-print element itself is styled for print/capture */
                     #bill-to-print {
+                        display: block !important; /* Or flex if its direct children need flex */
+                        position: relative !important; /* Helps with positioning context for children */
+                        left: 0 !important;
+                        top: 0 !important;
+                        transform: none !important; /* Critical for elements inside transformed parents */
                         margin: 0 !important;
-                        padding: 15mm !important; 
                         border: none !important;
                         box-shadow: none !important;
                         width: 100% !important; 
-                        min-height: auto !important; 
                         box-sizing: border-box !important;
                         color: #000000 !important;
-                        background-color: #ffffff !important;
-                        position: static !important;
-                        transform: none !important;
-                        left: auto !important;
-                        top: auto !important;
-
+                        /* background-color is set by the more specific body.print-capture-active #bill-to-print */
                     }
-                    #bill-to-print * {
+
+                    #bill-to-print *,
+                    body.print-capture-active #bill-to-print * { /* Applies to all children within the bill */
                         color: #000000 !important;
                         background-color: transparent !important;
                         border-color: #cccccc !important; 
@@ -259,103 +258,116 @@ const handleGeneratePdf = async () => {
                         text-shadow: none !important;
                         print-color-adjust: exact !important;
                     }
-                    #bill-to-print .flex { display: flex !important; }
-                    #bill-to-print .grid { display: grid !important; }
-                    #bill-to-print .justify-between { justify-content: space-between !important; }
-                    #bill-to-print .items-start { align-items: flex-start !important; }
-                    #bill-to-print .text-left { text-align: left !important; }
-                    #bill-to-print .text-right { text-align: right !important; }
-                    #bill-to-print .text-center { text-align: center !important; }
-                    #bill-to-print .font-headline { font-family: 'Playfair Display', serif !important; }
 
+                    /* Specific Element Styling for print/capture (examples) */
                     #bill-to-print header, 
-                    #bill-to-print .grid.grid-cols-2,
-                    #bill-to-print .grid.grid-cols-5 {
-                         width: 100% !important; 
+                    body.print-capture-active #bill-to-print header,
+                    #bill-to-print .bill-section-grid, /* Assuming a class for grids that need to be flex */
+                    body.print-capture-active #bill-to-print .bill-section-grid {
+                        display: flex !important;
+                        justify-content: space-between !important;
+                        align-items: flex-start !important;
+                        width: 100% !important; 
                     }
-                    #bill-to-print .grid.grid-cols-2 > div:first-child,
-                    #bill-to-print .grid.grid-cols-5 > .col-span-3 {
-                        width: 60% !important; /* Adjust as needed */
-                        padding-right: 10px !important;
+                    
+                    #bill-to-print .company-details, body.print-capture-active #bill-to-print .company-details { width: 60%; }
+                    #bill-to-print .company-logo-container, body.print-capture-active #bill-to-print .company-logo-container { width: auto; flex-shrink: 0; }
+
+                    #bill-to-print .customer-details-column, body.print-capture-active #bill-to-print .customer-details-column,
+                    #bill-to-print .bill-details-column, body.print-capture-active #bill-to-print .bill-details-column {
+                        width: 48% !important; /* For two-column layouts */
                     }
-                     #bill-to-print .grid.grid-cols-2 > div:last-child,
-                    #bill-to-print .grid.grid-cols-5 > .col-span-2 {
-                        width: 38% !important; /* Adjust as needed */
-                    }
+                     #bill-to-print .bill-details-column, body.print-capture-active #bill-to-print .bill-details-column { text-align: right; }
 
 
-                    #bill-to-print a {
-                        text-decoration: none !important;
-                    }
-                    #bill-to-print table {
+                    #bill-to-print h1, body.print-capture-active #bill-to-print h1 { font-family: 'Playfair Display', serif !important; font-size: 24pt !important; }
+                    #bill-to-print h2, body.print-capture-active #bill-to-print h2 { font-family: 'Playfair Display', serif !important; font-size: 16pt !important; }
+                    #bill-to-print p, #bill-to-print td, #bill-to-print th, body.print-capture-active #bill-to-print p, body.print-capture-active #bill-to-print td, body.print-capture-active #bill-to-print th { font-size: 9pt !important; line-height: 1.4 !important; }
+                    
+                    #bill-to-print table, body.print-capture-active #bill-to-print table {
                         width: 100% !important;
                         border-collapse: collapse !important;
+                        margin-top: 1rem !important;
                         margin-bottom: 1rem !important;
                     }
-                    #bill-to-print th, #bill-to-print td {
+                    #bill-to-print th, body.print-capture-active #bill-to-print th,
+                    #bill-to-print td, body.print-capture-active #bill-to-print td {
                         border: 1px solid #cccccc !important;
                         padding: 4px 6px !important;
                         text-align: left !important;
-                        font-size: 9pt !important;
                     }
-                    #bill-to-print th {
+                    #bill-to-print th, body.print-capture-active #bill-to-print th {
                         background-color: #f0f0f0 !important; 
                         font-weight: bold !important;
                     }
-                    #bill-to-print .print-logo {
+                    #bill-to-print .text-right, body.print-capture-active #bill-to-print .text-right { text-align: right !important; }
+                    #bill-to-print .text-center, body.print-capture-active #bill-to-print .text-center { text-align: center !important; }
+                    #bill-to-print .font-semibold, body.print-capture-active #bill-to-print .font-semibold { font-weight: 600 !important; }
+                    #bill-to-print .font-bold, body.print-capture-active #bill-to-print .font-bold { font-weight: 700 !important; }
+
+
+                    #bill-to-print .print-logo, body.print-capture-active #bill-to-print .print-logo {
                         max-width: 60px !important; 
                         max-height: 30px !important;
                         object-fit: contain !important;
                         filter: grayscale(100%) contrast(150%) !important;
                     }
-                    #bill-to-print .print-placeholder-logo svg {
+                    #bill-to-print .print-placeholder-logo svg, body.print-capture-active #bill-to-print .print-placeholder-logo svg {
                         fill: #000000 !important;
                         stroke: #000000 !important;
                         width: 30px !important;
                         height: 30px !important;
                     }
-                    #bill-to-print .print-placeholder-logo {
+                    #bill-to-print .print-placeholder-logo, body.print-capture-active #bill-to-print .print-placeholder-logo {
                          border: 1px solid #000000 !important;
+                         background-color: #f0f0f0 !important;
                          width: auto !important; height: auto !important; padding: 5px !important;
                     }
-                    #bill-to-print hr, #bill-to-print [role="separator"] {
+
+                    #bill-to-print hr, #bill-to-print [role="separator"], 
+                    body.print-capture-active #bill-to-print hr, body.print-capture-active #bill-to-print [role="separator"] {
                         border-top: 1px solid #cccccc !important;
-                        background-color: #cccccc !important;
+                        background-color: #cccccc !important; /* Make separator visible */
                         height: 1px !important;
                         margin: 0.5rem 0 !important;
                     }
-                    .print-hidden { display: none !important; }
+
+                    .print-hidden, body.print-capture-active .print-hidden { 
+                        display: none !important; 
+                    }
+                }
+
+                @media print { /* @page is only for actual browser printing */
                     @page {
                         size: A4 portrait;
-                        margin: 10mm;
+                        margin: 10mm; /* Browser print margins */
                     }
                 }
             `}</style>
-            <header className="mb-6">
-              <div className="flex justify-between items-start">
-                  <div className="text-left">
-                      <h1 className="text-3xl font-bold font-headline text-primary">{company.companyName}</h1>
-                      {company.slogan && <p className="text-sm text-muted-foreground">{company.slogan}</p>}
-                      <p className="text-xs">{company.address}</p>
-                      <p className="text-xs">Phone: {company.phoneNumber}</p>
-                  </div>
-                  {company.showCompanyLogo && (
-                    <div className="w-20 h-20 flex-shrink-0">
-                        {company.companyLogo ? (
-                            <Image src={company.companyLogo} alt={`${company.companyName} Logo`} width={80} height={80} className="object-contain print-logo" />
-                        ) : (
-                            <PlaceholderLogo />
-                        )}
-                    </div>
-                  )}
+            {/* Assign classes to top-level flex containers for easier targeting in print CSS */}
+            <header className="mb-6 bill-section-grid">
+              <div className="text-left company-details">
+                  <h1 className="text-3xl font-bold font-headline text-primary">{company.companyName}</h1>
+                  {company.slogan && <p className="text-sm text-muted-foreground">{company.slogan}</p>}
+                  <p className="text-xs">{company.address}</p>
+                  <p className="text-xs">Phone: {company.phoneNumber}</p>
               </div>
-              <h2 className="text-xl font-semibold mt-3 text-accent text-center">{effectiveBillType.toUpperCase()}</h2>
+              {company.showCompanyLogo && (
+                <div className="w-20 h-20 flex-shrink-0 company-logo-container">
+                    {company.companyLogo ? (
+                        <Image src={company.companyLogo} alt={`${company.companyName} Logo`} width={80} height={80} className="object-contain print-logo" />
+                    ) : (
+                        <PlaceholderLogo />
+                    )}
+                </div>
+              )}
             </header>
+            <h2 className="text-xl font-semibold mt-3 text-accent text-center">{effectiveBillType.toUpperCase()}</h2>
 
             <Separator className="my-4"/>
 
-             <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                <div>
+             <div className="bill-section-grid gap-4 mb-4 text-sm">
+                <div className="customer-details-column">
                     <h3 className="font-semibold mb-1">
                         {bill.type === 'purchase' ? 'From (Supplier):' : 'To (Customer):'}
                     </h3>
@@ -363,7 +375,7 @@ const handleGeneratePdf = async () => {
                     {bill.customerAddress && <p className="text-xs">{bill.customerAddress}</p>}
                     {bill.customerPhone && <p className="text-xs">Phone: {bill.customerPhone}</p>}
                 </div>
-                <div className="text-right">
+                <div className="bill-details-column">
                     <h3 className="font-semibold mb-1">
                         Details:
                     </h3>
@@ -383,7 +395,7 @@ const handleGeneratePdf = async () => {
                     <th className="py-2 px-1 text-left font-semibold border border-border">Item (Material)</th>
                     <th className="py-2 px-1 text-right font-semibold border border-border">Qty/Wt</th>
                     <th className="py-2 px-1 text-right font-semibold border border-border">
-                        Rate / {isEstimateView && bill.items.length > 0 ? bill.items[0].unit : isEstimateView ? 'unit' : 'unit'}
+                        Rate {isEstimateView && bill.items.length > 0 ? `/ ${bill.items[0].unit}` : isEstimateView ? '/ unit' : '/ unit'}
                     </th>
                     {showMakingChargeColumn && <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
                     {!isEstimateView && <th className="py-2 px-1 text-right font-semibold border border-border">Taxable Amt</th>}
@@ -444,8 +456,9 @@ const handleGeneratePdf = async () => {
 
             <Separator className="my-4"/>
 
-            <div className="grid grid-cols-5 gap-x-4 mt-4">
-              <div className="col-span-3">
+             {/* Assign bill-section-grid for notes/totals too */}
+            <div className="bill-section-grid gap-x-4 mt-4">
+              <div className="col-span-3 customer-details-column"> {/* Reuse class for width consistency */}
                 {bill.notes && (
                   <>
                     <h4 className="font-semibold text-xs mb-1">Notes:</h4>
@@ -453,8 +466,8 @@ const handleGeneratePdf = async () => {
                   </>
                 )}
               </div>
-              <div className="col-span-2 text-sm space-y-1 text-right">
-                <p>Subtotal {!isEstimateView && '(Taxable)'}: <span className="font-semibold">{bill.subTotal.toFixed(2)}</span></p>
+              <div className="col-span-2 text-sm space-y-1 text-right bill-details-column"> {/* Reuse class for width consistency */}
+                <p>Subtotal {!isEstimateView && bill.type === 'sales-bill' ? '(Taxable Value)' : ''}: <span className="font-semibold">{bill.subTotal.toFixed(2)}</span></p>
 
                 {!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 && <p>Total CGST ({settings.cgstRate}%): <span className="font-semibold">{(bill.cgstAmount || 0).toFixed(2)}</span></p>}
                 {!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 && <p>Total SGST ({settings.sgstRate}%): <span className="font-semibold">{(bill.sgstAmount || 0).toFixed(2)}</span></p>}
