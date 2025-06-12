@@ -27,6 +27,7 @@ interface AppContextType {
   setCompanyLogo: (logoDataUri?: string) => void;
   toggleShowCompanyLogo: (show: boolean) => void;
   updateCurrencySymbol: (symbol: string) => void;
+  toggleTheme: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -46,7 +47,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => ({
       ...prev,
       valuables: prev.valuables.map(v =>
-        v.id === valuableId ? { ...v, price: Math.max(0, newPrice) } : v // Ensure price is not negative
+        v.id === valuableId ? { ...v, price: Math.max(0, newPrice) } : v 
       ),
     }));
   }, [setSettings]);
@@ -62,16 +63,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addValuable = useCallback((newValuableData: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>): Valuable | null => {
     if (settings.valuables.some(v => v.name.toLowerCase() === newValuableData.name.trim().toLowerCase())) {
-      // console.error("Valuable with this name already exists."); // Or throw error/toast
-      return null; // Indicate failure
+      return null; 
     }
     const newFullValuable: Valuable = {
       ...newValuableData,
       id: uuidv4(),
-      selectedInHeader: false, // Custom valuables not in header by default
+      selectedInHeader: false, 
       isDefault: false,
       iconColor: newValuableData.icon === 'custom-gem' ? (newValuableData.iconColor || '#808080') : undefined,
-      price: Math.max(0, newValuableData.price) // Ensure price is not negative
+      price: Math.max(0, newValuableData.price) 
     };
     setSettings(prev => ({
       ...prev,
@@ -86,11 +86,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       valuables: prev.valuables.map(v => {
         if (v.id === valuableId) {
           const mergedData = { ...v, ...updatedData };
-          // Ensure price is not negative
           if (typeof mergedData.price === 'number') {
             mergedData.price = Math.max(0, mergedData.price);
           }
-          // Ensure iconColor is set if icon is custom-gem, otherwise undefined
           mergedData.iconColor = mergedData.icon === 'custom-gem' ? (mergedData.iconColor || '#808080') : undefined;
           return mergedData;
         }
@@ -103,8 +101,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => {
       const valuableToRemove = prev.valuables.find(v => v.id === valuableId);
       if (valuableToRemove?.isDefault) {
-        // console.error("Cannot delete default valuables."); // Or throw error/toast
-        return prev; // Prevent deletion of default valuables
+        return prev; 
       }
       return {
         ...prev,
@@ -119,7 +116,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => {
       const lowerCaseName = name.trim().toLowerCase();
       if (prev.productNames.some(n => n.toLowerCase() === lowerCaseName)) {
-        return prev; // Already exists, do nothing
+        return prev; 
       }
       return {
         ...prev,
@@ -177,6 +174,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => ({ ...prev, currencySymbol: symbol }));
   }, [setSettings]);
 
+  const toggleTheme = useCallback(() => {
+    setSettings(prev => ({
+      ...prev,
+      theme: prev.theme === 'light' ? 'dark' : 'light',
+    }));
+  }, [setSettings]);
+
 
   return (
     <AppContext.Provider value={{
@@ -197,6 +201,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setCompanyLogo,
       toggleShowCompanyLogo,
       updateCurrencySymbol,
+      toggleTheme,
     }}>
       {children}
     </AppContext.Provider>

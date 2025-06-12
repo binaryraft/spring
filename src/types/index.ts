@@ -3,7 +3,7 @@ export interface Valuable {
   id: string;
   name: string;
   price: number;
-  icon: 'gold' | 'silver' | 'diamond' | 'ruby' | 'emerald' | 'sapphire' | 'pearl' | 'platinum' | 'custom-gem' | 'other';
+  icon: string; 
   iconColor?: string; 
   selectedInHeader: boolean;
   unit: string; 
@@ -37,6 +37,7 @@ export interface Settings {
   productNames: string[]; 
   currencySymbol: string; 
   availableCurrencies: CurrencyDefinition[];
+  theme: 'light' | 'dark';
 }
 
 export interface BillItem {
@@ -119,6 +120,7 @@ export const DEFAULT_SETTINGS: Settings = {
   productNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle", "Bangles", "Rings", "Necklace", "Platinum Band", "Ruby Earrings"],
   currencySymbol: '₹', 
   availableCurrencies: AVAILABLE_CURRENCIES,
+  theme: 'light',
 };
 
 export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = [

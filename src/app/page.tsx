@@ -1,16 +1,40 @@
 
 "use client";
+import React, { useEffect } from 'react';
 import { AppProvider, useAppContext } from "@/contexts/AppContext";
 import EditableHeader from "@/components/EditableHeader";
 import SettingsPanel from "@/components/SettingsPanel";
 import BillingTabs from "@/components/BillingTabs";
+import { Button } from '@/components/ui/button';
+import { Moon, Sun } from 'lucide-react';
 
 function PageContent() {
-  const { settings } = useAppContext();
+  const { settings, toggleTheme } = useAppContext();
+
+  useEffect(() => {
+    if (settings.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [settings.theme]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <SettingsPanel /> {/* Positioned fixed, can be anywhere in the tree */}
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <div className="fixed top-4 right-4 z-50 flex space-x-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleTheme}
+          className="shadow-lg hover:shadow-xl transition-shadow bg-card hover:bg-muted"
+          title={`Switch to ${settings.theme === 'light' ? 'Dark' : 'Light'} Mode`}
+        >
+          {settings.theme === 'light' ? <Moon className="h-6 w-6" /> : <Sun className="h-6 w-6" />}
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+        <SettingsPanel />
+      </div>
+      
       <header className="container mx-auto px-4 pt-12 sm:pt-16 md:pt-20 pb-4 max-w-screen-xl">
         <div className="text-center mb-8 py-8 rounded-lg bg-primary/10 shadow-md">
           <h1 className="text-5xl lg:text-6xl font-headline text-primary tracking-tight mb-3">
