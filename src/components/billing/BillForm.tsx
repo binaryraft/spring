@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Save, Calculator, FileText, XCircle, Info } from 'lucide-react';
+import { PlusCircle, Save, Calculator, FileText, XCircle, Info, Users, ShoppingBag, ListOrdered, StickyNote, Banknote } from 'lucide-react';
 import BillItemRow from './BillItemRow';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
@@ -369,16 +369,19 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
 
   return (
-    <Card className="shadow-xl border-primary/20">
-      <CardHeader>
-        <CardTitle className="font-headline text-2xl text-primary flex items-center">
-          <Calculator className="mr-3 h-7 w-7" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
+    <Card className="shadow-xl border-primary/20 bg-card">
+      <CardHeader className="pb-4">
+        <CardTitle className="font-headline text-3xl text-primary flex items-center">
+          <Calculator className="mr-3 h-8 w-8" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-8">
+      <CardContent className="space-y-6 pt-4">
         {(isSalesBill || isPurchase) && (
-          <div className="space-y-4 p-4 border border-border rounded-lg bg-primary/5">
-            <h3 className="text-lg font-semibold text-accent mb-3 flex items-center"><Info className="mr-2 h-5 w-5"/>{isPurchase ? "Supplier" : "Customer"} Details</h3>
+          <div className="space-y-4 p-6 border border-border rounded-lg bg-background shadow-sm">
+            <h3 className="text-xl font-semibold text-accent mb-4 flex items-center">
+                {isPurchase ? <ShoppingBag className="mr-2 h-6 w-6"/> : <Users className="mr-2 h-6 w-6"/>}
+                {isPurchase ? "Supplier" : "Customer"} Details
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
                 <div>
                 <Label htmlFor="customerName">{isPurchase ? "Supplier" : "Customer"} Name</Label>
@@ -418,8 +421,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </div>
         )}
 
-        <div>
-          <Label className="text-xl font-semibold text-accent mb-3 block">Items</Label>
+        <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
+          <h3 className="text-xl font-semibold text-accent mb-4 flex items-center"><ListOrdered className="mr-2 h-6 w-6"/>Items</h3>
            <div className={`py-2 px-3 grid ${isPurchase ? 'grid-cols-12' : 'grid-cols-12'} gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
             <div className="col-span-2">Material</div>
             <div className="col-span-3">Product Name</div>
@@ -450,6 +453,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 focusNextRowFirstElement={focusNextRowFirstElement}
                 rowIndex={index}
                 itemRefs={itemRefs}
+                currencySymbol={settings.currencySymbol}
                 />
             ))}
           </div>
@@ -458,49 +462,55 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </Button>
         </div>
         
-        <Separator />
-
-        <div>
-          <Label htmlFor="notes" className="text-lg font-semibold text-accent mb-2 block">Notes</Label>
-          <Textarea
-            id="notes"
-            ref={notesRef}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="shadow-sm"
-            rows={3}
-          />
+        <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
+            <h3 className="text-xl font-semibold text-accent mb-3 flex items-center"><StickyNote className="mr-2 h-6 w-6"/>Notes</h3>
+            <Textarea
+                id="notes"
+                ref={notesRef}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="shadow-sm"
+                rows={3}
+                placeholder="Any additional notes for the bill..."
+            />
         </div>
         
-        <Separator />
-
-        <div className="p-4 border border-border rounded-lg bg-primary/5 space-y-3 text-right">
-          <div className="text-md">Subtotal (Taxable Value): <span className="font-semibold text-lg ml-2">{subTotal.toFixed(2)}</span></div>
+        <div className="p-6 border-2 border-primary/30 rounded-lg bg-primary/5 space-y-3 text-right shadow-sm">
+          <h3 className="text-xl font-semibold text-primary mb-3 flex items-center justify-end"><Banknote className="mr-2 h-6 w-6"/>Totals</h3>
+          <div className="text-md">Subtotal (Taxable Value): <span className="font-semibold text-lg ml-2">{settings.currencySymbol}{subTotal.toFixed(2)}</span></div>
           {(isSalesBill) && (
             <>
-              <div className="text-md">CGST ({settings.cgstRate}%): <span className="font-semibold text-lg ml-2">{billCgstAmount.toFixed(2)}</span></div>
-              <div className="text-md">SGST ({settings.sgstRate}%): <span className="font-semibold text-lg ml-2">{billSgstAmount.toFixed(2)}</span></div>
+              <div className="text-md">CGST ({settings.cgstRate}%): <span className="font-semibold text-lg ml-2">{settings.currencySymbol}{billCgstAmount.toFixed(2)}</span></div>
+              <div className="text-md">SGST ({settings.sgstRate}%): <span className="font-semibold text-lg ml-2">{settings.currencySymbol}{billSgstAmount.toFixed(2)}</span></div>
             </>
           )}
           <Separator className="my-2 bg-primary/20"/>
-          <div className="text-xl font-bold text-primary">Total: <span className="text-3xl ml-2">{finalTotalAmount.toFixed(2)}</span></div>
+          <div className="text-2xl font-bold text-primary">Total: <span className="text-3xl ml-2">{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span></div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between items-center border-t pt-6">
+      <CardFooter className="flex justify-between items-center border-t pt-6 mt-4">
         <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive shadow hover:shadow-md transition-shadow">
           <XCircle className="mr-2 h-4 w-4" /> Cancel
         </Button>
-        <div className="flex space-x-3">
-          {onShowEstimate && (
-            <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent flex flex-col h-auto py-2 px-4 shadow hover:shadow-md transition-shadow">
-              <span className="flex items-center"><FileText className="mr-2 h-4 w-4" /> Create Estimate</span>
-              <span className="text-xs text-muted-foreground/80 mt-1">Total (Est.): {subTotal.toFixed(2)}</span>
-            </Button>
+        <div className="flex items-end space-x-3">
+          {onShowEstimate && isSalesBill && (
+            <div className="flex flex-col items-center">
+                <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent shadow hover:shadow-md transition-shadow w-full">
+                <FileText className="mr-2 h-4 w-4" /> Create Estimate
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">
+                    Est. Total: {settings.currencySymbol}{subTotal.toFixed(2)}
+                </p>
+            </div>
           )}
-          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-primary-foreground flex flex-col h-auto py-2 px-4 shadow-md hover:shadow-lg transition-shadow">
-             <span className="flex items-center"><Save className="mr-2 h-4 w-4" /> {existingBill ? 'Update' : 'Save'} & Print Bill</span>
-             <span className="text-xs text-primary-foreground/80 mt-1">Total: {finalTotalAmount.toFixed(2)}</span>
-          </Button>
+           <div className="flex flex-col items-center">
+                <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow w-full">
+                <Save className="mr-2 h-4 w-4" /> {existingBill ? 'Update' : 'Save'} & Print Bill
+                </Button>
+                <p className="text-xs text-primary-foreground/80 mt-1 bg-primary/80 px-2 py-0.5 rounded">
+                    Bill Total: {settings.currencySymbol}{finalTotalAmount.toFixed(2)}
+                </p>
+            </div>
         </div>
       </CardFooter>
     </Card>

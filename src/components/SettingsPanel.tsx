@@ -1,7 +1,7 @@
 
 "use client";
 import { useAppContext } from "@/contexts/AppContext";
-import type { Valuable, Settings, MakingChargeSetting } from "@/types";
+import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,14 +18,15 @@ import {
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, Upload, XCircle, Info, Tag, Package, Percent, Banknote } from "lucide-react";
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, Upload, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard } from "lucide-react";
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "./ValuableIcon";
 import Image from "next/image";
+import { cn } from "@/lib/utils"; // Ensure cn is imported
 
 const SettingsPanel: React.FC = () => {
-  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo } = useAppContext();
+  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol } = useAppContext();
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
   const [newProductName, setNewProductName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +37,10 @@ const SettingsPanel: React.FC = () => {
 
   const handleChange = (field: keyof Settings, value: any) => {
     setLocalSettings(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleCurrencyChange = (symbol: string) => {
+    setLocalSettings(prev => ({ ...prev, currencySymbol: symbol }));
   };
 
   const handleNestedChange = (parentField: keyof Settings, nestedField: string, value: any) => {
@@ -71,14 +76,14 @@ const SettingsPanel: React.FC = () => {
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === "image/png") {
+    if (file && file.type.startsWith("image/")) { // Allow common image types
       const reader = new FileReader();
       reader.onloadend = () => {
         setCompanyLogo(reader.result as string);
       };
       reader.readAsDataURL(file);
     } else {
-      alert("Please upload a PNG file.");
+      alert("Please upload a valid image file (e.g., PNG, JPG, GIF).");
     }
   };
 
@@ -91,6 +96,7 @@ const SettingsPanel: React.FC = () => {
 
   const handleSave = () => {
     updateSettings(localSettings);
+    updateCurrencySymbol(localSettings.currencySymbol); // Ensure currency symbol is updated directly too
   };
 
   const SectionHeader: React.FC<{ title: string; icon: React.ElementType; className?: string }> = ({ title, icon: Icon, className }) => (
@@ -142,6 +148,32 @@ const SettingsPanel: React.FC = () => {
             </section>
             
             <Separator />
+             <section>
+                <SectionHeader title="Currency Settings" icon={CreditCard} />
+                <div>
+                  <Label htmlFor="currencySymbol">Currency Symbol</Label>
+                  <Select
+                    value={localSettings.currencySymbol}
+                    onValueChange={handleCurrencyChange}
+                  >
+                    <SelectTrigger id="currencySymbol" className="mt-1 h-9">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {localSettings.availableCurrencies.map((currency) => (
+                        <SelectItem key={currency.code} value={currency.symbol}>
+                          {currency.symbol} - {currency.name} ({currency.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                   <p className="text-xs text-muted-foreground mt-1 italic">
+                    Selected currency will be used across the application for billing.
+                  </p>
+                </div>
+              </section>
+            <Separator />
+
 
             <section>
                 <SectionHeader title="Company Logo" icon={Upload} />
@@ -161,7 +193,7 @@ const SettingsPanel: React.FC = () => {
                             <Input
                                 id="logoUpload"
                                 type="file"
-                                accept="image/png"
+                                accept="image/*"
                                 onChange={handleLogoUpload}
                                 ref={fileInputRef}
                                 className="text-sm file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
@@ -209,7 +241,7 @@ const SettingsPanel: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <Label htmlFor={`price-${valuable.id}`}>Market Price</Label>
+                            <Label htmlFor={`price-${valuable.id}`}>Market Price ({settings.currencySymbol})</Label>
                             <Input
                             id={`price-${valuable.id}`}
                             type="number"
@@ -287,7 +319,7 @@ const SettingsPanel: React.FC = () => {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="percentage">Percentage (%)</SelectItem>
-                            <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
+                            <SelectItem value="fixed">Fixed Amount ({settings.currencySymbol})</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -340,7 +372,7 @@ const SettingsPanel: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <Label htmlFor="defaultPurchaseItemNetFixedValue">Default Fixed Net Rate (₹)</Label>
+                  <Label htmlFor="defaultPurchaseItemNetFixedValue">Default Fixed Net Rate ({settings.currencySymbol})</Label>
                   <Input
                     id="defaultPurchaseItemNetFixedValue"
                     type="number"

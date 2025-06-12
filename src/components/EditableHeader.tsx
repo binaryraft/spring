@@ -46,26 +46,29 @@ const EditableHeader: React.FC = () => {
   
   return (
     <div className="mt-6 p-6 rounded-lg bg-card border border-border shadow-lg">
-      <h3 className="text-lg font-semibold text-center mb-4 text-primary">
+      <h3 className="text-xl font-semibold text-center mb-6 text-primary">
         Live Market Prices
       </h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-6 gap-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-6">
         {activeValuables.map((valuable) => (
-          <div key={valuable.id} className="flex flex-col space-y-1.5">
-            <Label htmlFor={`price-${valuable.id}`} className="flex items-center text-sm font-medium text-foreground">
+          <div key={valuable.id} className="flex flex-col space-y-1.5 items-center">
+            <Label htmlFor={`price-${valuable.id}`} className="flex items-center text-base font-medium text-foreground">
               <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-5 h-5 mr-2" />
               {valuable.name}
             </Label>
-            <Input
-              id={`price-${valuable.id}`}
-              type="number"
-              value={editingPrices[valuable.id] ?? valuable.price}
-              onChange={(e) => handlePriceChange(valuable.id, e.target.value)}
-              onBlur={() => handleBlur(valuable.id)}
-              className="w-full border-input focus:ring-primary h-9 text-sm shadow-sm"
-              min="0"
-              step="0.01"
-            />
+            <div className="flex items-center">
+              <span className="mr-1 text-sm text-muted-foreground">{settings.currencySymbol}</span>
+              <Input
+                id={`price-${valuable.id}`}
+                type="number"
+                value={editingPrices[valuable.id] ?? valuable.price}
+                onChange={(e) => handlePriceChange(valuable.id, e.target.value)}
+                onBlur={() => handleBlur(valuable.id)}
+                className="w-full border-input focus:ring-primary h-9 text-sm shadow-sm text-center"
+                min="0"
+                step="0.01"
+              />
+            </div>
             <p className="text-xs text-muted-foreground text-center">per {valuable.unit}</p>
           </div>
         ))}

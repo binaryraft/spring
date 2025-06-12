@@ -2,8 +2,8 @@
 "use client";
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { Settings, Valuable, Bill, BillItem, BillType } from '@/types';
-import { DEFAULT_SETTINGS } from '@/types';
+import type { Settings, Valuable, Bill, BillItem, BillType, CurrencyDefinition } from '@/types';
+import { DEFAULT_SETTINGS, AVAILABLE_CURRENCIES } from '@/types';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -21,12 +21,16 @@ interface AppContextType {
   getValuableById: (id: string) => Valuable | undefined;
   setCompanyLogo: (logoDataUri?: string) => void;
   toggleShowCompanyLogo: (show: boolean) => void;
+  updateCurrencySymbol: (symbol: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useLocalStorage<Settings>('goldsmith-settings', DEFAULT_SETTINGS);
+  const [settings, setSettings] = useLocalStorage<Settings>('goldsmith-settings', {
+    ...DEFAULT_SETTINGS,
+    availableCurrencies: AVAILABLE_CURRENCIES, // Ensure this is part of stored settings
+  });
   const [bills, setBills] = useLocalStorage<Bill[]>('goldsmith-bills', []);
 
   const updateSettings = useCallback((newSettings: Partial<Settings>) => {
@@ -60,7 +64,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       return {
         ...prev,
-        productNames: [...prev.productNames, name.trim()].sort(),
+        productNames: [...prev.productNames, name.trim()].sort((a, b) => a.localeCompare(b)),
       };
     });
   }, [setSettings]);
@@ -77,11 +81,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [settings.valuables]);
 
   const addBill = useCallback((billData: Omit<Bill, 'id' | 'date' | 'billNumber'>): Bill => {
+    const prefix = billData.type === 'sales-bill' ? 'S' : 'P';
+    const typeSpecificBills = bills.filter(b => b.type === billData.type);
+    const nextBillNumber = (typeSpecificBills.length > 0 
+        ? Math.max(...typeSpecificBills.map(b => parseInt(b.billNumber?.split('-').pop() || '0', 10))) + 1 
+        : 1
+    ).toString().padStart(4, '0');
+
     const newBill: Bill = {
       ...billData,
       id: uuidv4(),
       date: new Date().toISOString(),
-      billNumber: `${billData.type === 'sales-bill' ? 'S' : 'P'}-${String(bills.filter(b => b.type === billData.type).length + 1).padStart(4, '0')}`,
+      billNumber: `${prefix}-${nextBillNumber}`,
     };
     setBills(prev => [newBill, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     return newBill;
@@ -103,6 +114,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => ({ ...prev, showCompanyLogo: show }));
   }, [setSettings]);
 
+  const updateCurrencySymbol = useCallback((symbol: string) => {
+    setSettings(prev => ({ ...prev, currencySymbol: symbol }));
+  }, [setSettings]);
+
+
   return (
     <AppContext.Provider value={{
       settings,
@@ -118,6 +134,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       getValuableById,
       setCompanyLogo,
       toggleShowCompanyLogo,
+      updateCurrencySymbol,
     }}>
       {children}
     </AppContext.Provider>

@@ -14,6 +14,12 @@ export interface MakingChargeSetting {
   value: number;
 }
 
+export interface CurrencyDefinition {
+  symbol: string;
+  code: string; // e.g., "INR", "USD"
+  name: string; // e.g., "Indian Rupee", "US Dollar"
+}
+
 export interface Settings {
   companyName: string;
   slogan: string;
@@ -28,6 +34,8 @@ export interface Settings {
   cgstRate: number; // Percentage
   sgstRate: number; // Percentage
   productNames: string[]; // Stores unique product names for suggestions
+  currencySymbol: string;
+  availableCurrencies: CurrencyDefinition[];
 }
 
 export interface BillItem {
@@ -81,6 +89,13 @@ export const DEFAULT_VALUABLES: Valuable[] = [
   { id: 'diamond', name: 'Diamond', price: 50000, icon: 'diamond', iconColor: 'blue', selectedInHeader: true, unit: 'carat' },
 ];
 
+export const AVAILABLE_CURRENCIES: CurrencyDefinition[] = [
+  { symbol: '₹', code: 'INR', name: 'Indian Rupee' },
+  { symbol: '$', code: 'USD', name: 'US Dollar' },
+  { symbol: '€', code: 'EUR', name: 'Euro' },
+  { symbol: '£', code: 'GBP', name: 'British Pound' },
+];
+
 export const DEFAULT_SETTINGS: Settings = {
   companyName: 'Your Company Name',
   slogan: 'Quality you can trust',
@@ -92,7 +107,9 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultMakingCharge: { type: 'percentage', value: 10 },
   defaultPurchaseItemNetPercentage: 10,
   defaultPurchaseItemNetFixedValue: 4500,
-  cgstRate: 9,
-  sgstRate: 9,
+  cgstRate: 1.5, // As per Indian standards for gold jewellery
+  sgstRate: 1.5, // As per Indian standards for gold jewellery
   productNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle", "Bangles", "Rings", "Necklace"],
+  currencySymbol: '₹',
+  availableCurrencies: AVAILABLE_CURRENCIES,
 };
