@@ -50,83 +50,116 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         setIsGeneratingPdf(false);
         return;
     }
+    
+    // Ensure content is fully laid out by waiting for the next animation frame
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    // Additional small delay
+    await new Promise(resolve => setTimeout(resolve, 50));
 
-    // Ensure the element is visible and has dimensions before capture
-    const rect = billContentElement.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
-        console.warn("Bill content element has zero dimensions. Attempting capture anyway, but this might result in a blank PDF.", rect);
-    }
+
+    console.log('Bill content element details for PDF generation:');
+    console.log('ID:', billContentElement.id);
+    console.log('OffsetWidth:', billContentElement.offsetWidth, 'OffsetHeight:', billContentElement.offsetHeight);
+    console.log('ScrollWidth:', billContentElement.scrollWidth, 'ScrollHeight:', billContentElement.scrollHeight);
+    console.log('ClientWidth:', billContentElement.clientWidth, 'ClientHeight:', billContentElement.clientHeight);
+    console.log('Computed Display:', window.getComputedStyle(billContentElement).display);
+    console.log('Computed Visibility:', window.getComputedStyle(billContentElement).visibility);
+    console.log('Parent Display:', window.getComputedStyle(billContentElement.parentElement!).display);
+
 
     try {
         const canvas = await html2canvas(billContentElement, {
             scale: 2, 
             useCORS: true,
             logging: true, 
-            backgroundColor: "#ffffff", 
+            backgroundColor: "#ffffff",
+            width: billContentElement.scrollWidth,
+            height: billContentElement.scrollHeight,
+            windowWidth: billContentElement.scrollWidth,
+            windowHeight: billContentElement.scrollHeight,
             onclone: (documentClone) => {
                 const clonedContent = documentClone.getElementById('bill-to-print');
                 if (clonedContent) {
-                    clonedContent.style.backgroundColor = '#ffffff';
-                    clonedContent.style.padding = '10mm'; 
-                    clonedContent.style.width = 'auto'; // Let content determine width, or set fixed e.g. '800px'
+                    // Force white background on the main container
+                    clonedContent.style.backgroundColor = '#ffffff !important';
+                    clonedContent.style.margin = '0';
+                    clonedContent.style.padding = '15mm'; // Simulate page margins
                     clonedContent.style.boxSizing = 'border-box';
+                    clonedContent.style.width = '210mm'; // Approximate A4 width for consistent capture base
 
+                    // Apply styles to all elements within the cloned content
                     const allElements = clonedContent.getElementsByTagName('*');
                     for (let i = 0; i < allElements.length; i++) {
                         const el = allElements[i] as HTMLElement;
                         if (el.style) { 
-                            el.style.color = '#000000';
-                            el.style.backgroundColor = 'transparent'; 
+                            el.style.color = '#000000 !important';
+                            el.style.backgroundColor = 'transparent !important'; 
                             el.style.webkitPrintColorAdjust = 'exact';
                             el.style.printColorAdjust = 'exact';
-                            // Avoid removing all borders, some are needed for tables
-                            // el.style.border = 'none'; 
-                            el.style.boxShadow = 'none';
+                            el.style.boxShadow = 'none !important';
+                            el.style.borderCollapse = 'collapse'; // Useful for tables
                         }
                     }
                     
                     // Style specific elements like tables for print within the clone
                     const tables = clonedContent.getElementsByTagName('table');
                     for (let i = 0; i < tables.length; i++) {
-                        tables[i].style.borderCollapse = 'collapse';
                         tables[i].style.width = '100%';
+                        tables[i].style.border = '1px solid #cccccc !important';
                     }
                     const ths = clonedContent.getElementsByTagName('th');
                     for (let i = 0; i < ths.length; i++) {
-                        ths[i].style.border = '1px solid #ccc';
-                        ths[i].style.padding = '4px';
-                        ths[i].style.backgroundColor = '#f0f0f0'; // Light grey for header
+                        ths[i].style.border = '1px solid #cccccc !important';
+                        ths[i].style.padding = '5px !important';
+                        ths[i].style.backgroundColor = '#f0f0f0 !important'; 
+                        ths[i].style.textAlign = 'left';
                     }
                     const tds = clonedContent.getElementsByTagName('td');
                     for (let i = 0; i < tds.length; i++) {
-                        tds[i].style.border = '1px solid #ccc';
-                        tds[i].style.padding = '4px';
+                        tds[i].style.border = '1px solid #cccccc !important';
+                        tds[i].style.padding = '5px !important';
                     }
+                    
+                    const separators = clonedContent.querySelectorAll('hr, [role="separator"]');
+                    separators.forEach(sep => {
+                        (sep as HTMLElement).style.borderColor = '#cccccc !important';
+                        (sep as HTMLElement).style.borderBottomWidth = '1px !important';
+                        (sep as HTMLElement).style.backgroundColor = '#cccccc !important';
+                        (sep as HTMLElement).style.height = '1px !important';
+                    });
 
 
                     const logo = clonedContent.querySelector('.print-logo') as HTMLElement;
                     if (logo) {
-                        logo.style.filter = 'grayscale(100%) contrast(150%)';
-                        (logo as HTMLImageElement).style.maxWidth = '100px';
-                        (logo as HTMLImageElement).style.maxHeight = '50px';
+                        logo.style.filter = 'grayscale(100%) contrast(150%) !important';
+                        (logo as HTMLImageElement).style.maxWidth = '100px !important';
+                        (logo as HTMLImageElement).style.maxHeight = '50px !important';
                         (logo as HTMLImageElement).style.objectFit = 'contain';
                     }
                     const placeholderLogoSvg = clonedContent.querySelector('.print-placeholder-logo svg');
                     if (placeholderLogoSvg) {
-                        (placeholderLogoSvg as HTMLElement).style.fill = '#000000';
-                        (placeholderLogoSvg as HTMLElement).style.stroke = '#000000';
+                        (placeholderLogoSvg as HTMLElement).style.fill = '#000000 !important';
+                        (placeholderLogoSvg as HTMLElement).style.stroke = '#000000 !important';
                          const parentPlaceholder = placeholderLogoSvg.parentElement;
                          if(parentPlaceholder){
-                            parentPlaceholder.style.border = '1px solid #000000';
+                            parentPlaceholder.style.border = '1px solid #000000 !important';
                          }
                     }
                 }
             }
         });
 
+        // For debugging:
+        // document.body.appendChild(canvas); 
+        // const testImg = document.createElement('img');
+        // testImg.src = canvas.toDataURL('image/png');
+        // document.body.appendChild(testImg);
+        // console.log('Canvas data URL length:', canvas.toDataURL('image/png').length);
+
+
         const imgData = canvas.toDataURL('image/png');
         if (imgData.length < 200) { 
-             console.error("Generated canvas image is too small or empty.");
+             console.error("Generated canvas image is too small or empty. Length:", imgData.length);
              setIsGeneratingPdf(false);
              return;
         }
@@ -139,25 +172,27 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10; 
+        const margin = 10; // 10mm margin
 
         const imgProps = pdf.getImageProperties(imgData);
         const canvasImgWidth = imgProps.width;
         const canvasImgHeight = imgProps.height;
         
-        const maxPdfPageImgWidth = pdfWidth - 2 * margin;
-        const maxPdfPageImgHeight = pdfHeight - 2 * margin;
+        // Calculate the width and height of the image in the PDF, maintaining aspect ratio
+        const availableWidth = pdfWidth - 2 * margin;
+        const availableHeight = pdfHeight - 2 * margin;
 
-        let ratio = Math.min(maxPdfPageImgWidth / canvasImgWidth, maxPdfPageImgHeight / canvasImgHeight);
+        let ratio = Math.min(availableWidth / canvasImgWidth, availableHeight / canvasImgHeight);
         
         const finalPdfImgWidth = canvasImgWidth * ratio;
         const finalPdfImgHeight = canvasImgHeight * ratio;
 
-        const x = margin + (maxPdfPageImgWidth - finalPdfImgWidth) / 2;
-        const y = margin + (maxPdfPageImgHeight - finalPdfImgHeight) / 2;
+        // Center the image on the page
+        const x = margin + (availableWidth - finalPdfImgWidth) / 2;
+        const y = margin + (availableHeight - finalPdfImgHeight) / 2;
         
         if (finalPdfImgWidth <= 0 || finalPdfImgHeight <= 0) {
-            console.error("Calculated PDF image dimensions are invalid (<=0).");
+            console.error("Calculated PDF image dimensions are invalid (<=0). Width:", finalPdfImgWidth, "Height:", finalPdfImgHeight);
             setIsGeneratingPdf(false);
             return;
         }
@@ -166,7 +201,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         pdf.output('dataurlnewwindow');
 
     } catch (error) {
-        console.error("Error generating PDF:", error);
+        console.error("Error generating PDF with html2canvas and jspdf:", error);
     } finally {
         setIsGeneratingPdf(false);
     }
@@ -194,9 +229,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 return marketPrice * (1 - ((item.purchaseNetPercentValue || 0) / 100));
             case 'fixed_net_price':
                 return item.purchaseNetFixedValue || 0;
-            // Removed 'market_rate' as it's no longer a type for purchase
             default: 
-                 // Fallback or error if unexpected type, though types should restrict this
                 return item.rate || 0;
         }
     }
@@ -221,8 +254,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto p-1">
-          <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm text-foreground"> {/* Base text color */}
+        <div className="flex-grow overflow-y-auto p-1"> {/* Parent scroll container */}
+          <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm text-foreground">
             <header className="mb-6">
               <div className="flex justify-between items-start">
                   <div className="text-left">
@@ -232,7 +265,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                       <p className="text-xs">Phone: {company.phoneNumber}</p>
                   </div>
                   {company.showCompanyLogo && (
-                    <div className="w-20 h-20 flex-shrink-0">
+                    <div className="w-20 h-20 flex-shrink-0"> {/* Fixed size for logo container */}
                         {company.companyLogo ? (
                             <Image src={company.companyLogo} alt={`${company.companyName} Logo`} width={80} height={80} className="object-contain print-logo" />
                         ) : (
@@ -275,7 +308,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     <th className="py-2 px-1 text-left font-semibold border border-border">Item (Material)</th>
                     <th className="py-2 px-1 text-right font-semibold border border-border">Qty/Wt</th>
                     <th className="py-2 px-1 text-right font-semibold border border-border">Rate</th>
-                    {(bill.type === 'sales-bill' && !isEstimateView && bill.items.some(i => i.makingCharge && i.makingCharge > 0)) && <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
+                    {(bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0)) && <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
                     <th className="py-2 px-1 text-right font-semibold border border-border">Amount</th>
                   </tr>
                 </thead>
@@ -291,7 +324,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                       </td>
                       <td className="py-2 px-1 text-right border border-border">{item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} {item.unit}</td>
                       <td className="py-2 px-1 text-right border border-border">{effectiveRate.toFixed(2)}</td>
-                      {(bill.type === 'sales-bill' && !isEstimateView && bill.items.some(i => i.makingCharge && i.makingCharge > 0)) && (
+                      {(bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0)) && (
                         <td className="py-2 px-1 text-right border border-border">
                           {item.makingCharge && item.makingCharge > 0 ?
                            (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : item.makingCharge.toFixed(2))
@@ -350,3 +383,4 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
+
