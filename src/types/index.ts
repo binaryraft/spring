@@ -26,6 +26,7 @@ export interface Settings {
   slogan: string;
   address: string;
   phoneNumber: string;
+  gstin?: string; // Added GSTIN
   companyLogo?: string; 
   showCompanyLogo: boolean;
   valuables: Valuable[];
@@ -79,6 +80,7 @@ export interface Bill {
   sgstAmount?: number; 
   totalAmount: number; 
   notes?: string;
+  companyGstin?: string; // Added to store GSTIN with the bill
 }
 
 export const DEFAULT_VALUABLES: Valuable[] = [
@@ -96,7 +98,7 @@ export const DEFAULT_VALUABLES: Valuable[] = [
 ];
 
 export const AVAILABLE_CURRENCIES: CurrencyDefinition[] = [
-  { symbol: 'Rs ', code: 'INR', name: 'Indian Rupee' },
+  { symbol: '₹', code: 'INR', name: 'Indian Rupee' },
   { symbol: '$', code: 'USD', name: 'US Dollar' },
   { symbol: '€', code: 'EUR', name: 'Euro' },
   { symbol: '£', code: 'GBP', name: 'British Pound' },
@@ -109,6 +111,7 @@ export const DEFAULT_SETTINGS: Settings = {
   slogan: 'Quality you can trust',
   address: '123 Main St, City, Country',
   phoneNumber: '+1234567890',
+  gstin: '', // Default GSTIN
   companyLogo: undefined,
   showCompanyLogo: true,
   valuables: DEFAULT_VALUABLES,
@@ -135,3 +138,4 @@ export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = 
     { value: 'custom-gem', label: 'Custom Gem (Specify Color)' },
     { value: 'other', label: 'Other/Generic' },
 ];
+

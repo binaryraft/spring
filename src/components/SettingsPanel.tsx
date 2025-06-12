@@ -20,7 +20,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, Upload, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette } from "lucide-react";
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, Upload, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, FileText as GstinIcon } from "lucide-react"; // Added GstinIcon
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "./ValuableIcon";
@@ -134,11 +134,11 @@ const SettingsPanel: React.FC = () => {
 
     const materialToSave: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'> = {
       ...customMaterialForm,
+      price: Number(customMaterialForm.price) || 0,
       iconColor: customMaterialForm.icon === 'custom-gem' ? (customMaterialForm.iconColor || '#808080') : undefined,
     };
     
     if (isEditingMaterial) {
-      // Check if name is changed to an existing name (excluding itself)
       if (settings.valuables.some(v => v.id !== isEditingMaterial.id && v.name.toLowerCase() === materialToSave.name.trim().toLowerCase())) {
         toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" });
         return;
@@ -150,8 +150,12 @@ const SettingsPanel: React.FC = () => {
         toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" });
         return;
       }
-      addValuable(materialToSave);
-      toast({ title: "Success", description: `Material "${materialToSave.name}" added.` });
+      const addedValuable = addValuable(materialToSave);
+      if (addedValuable) {
+        toast({ title: "Success", description: `Material "${materialToSave.name}" added.` });
+      } else {
+        toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists or an error occurred.`, variant: "destructive" });
+      }
     }
     resetCustomMaterialForm();
   };
@@ -197,7 +201,7 @@ const SettingsPanel: React.FC = () => {
         const { id, isDefault, ...updatableDataFromLocal } = val;
         
         let dataToUpdateInContext: Partial<Omit<Valuable, 'id' | 'isDefault'>> = {
-            price: updatableDataFromLocal.price,
+            price: Number(updatableDataFromLocal.price) || 0,
             unit: updatableDataFromLocal.unit,
             selectedInHeader: updatableDataFromLocal.selectedInHeader,
         };
@@ -223,6 +227,7 @@ const SettingsPanel: React.FC = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
+        {/* Removed fixed positioning from here */}
         <Button variant="outline" size="icon" className="shadow-lg hover:shadow-xl transition-shadow bg-card hover:bg-muted">
           <SettingsIcon className="h-6 w-6" />
           <span className="sr-only">Open Settings</span>
@@ -257,6 +262,10 @@ const SettingsPanel: React.FC = () => {
                 <div>
                   <Label htmlFor="phoneNumber" className="text-lg">Phone Number</Label>
                   <Input id="phoneNumber" value={localSettings.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} className="mt-1.5 text-lg h-12"/>
+                </div>
+                <div>
+                  <Label htmlFor="gstin" className="text-lg">GSTIN</Label>
+                  <Input id="gstin" value={localSettings.gstin || ''} onChange={(e) => handleChange('gstin', e.target.value.toUpperCase())} className="mt-1.5 text-lg h-12" placeholder="Enter company GSTIN"/>
                 </div>
               </div>
             </section>

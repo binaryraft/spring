@@ -20,7 +20,7 @@ interface AppContextType {
   addProductName: (name: string) => void;
   removeProductName: (name: string) => void;
   bills: Bill[];
-  addBill: (bill: Omit<Bill, 'id' | 'date' | 'billNumber'>) => Bill;
+  addBill: (bill: Omit<Bill, 'id' | 'date' | 'billNumber' | 'companyGstin'>) => Bill;
   updateBill: (updatedBill: Bill) => void;
   deleteBill: (billId: string) => void;
   getValuableById: (id: string) => Valuable | undefined;
@@ -136,7 +136,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return settings.valuables.find(v => v.id === id);
   }, [settings.valuables]);
 
-  const addBill = useCallback((billData: Omit<Bill, 'id' | 'date' | 'billNumber'>): Bill => {
+  const addBill = useCallback((billData: Omit<Bill, 'id' | 'date' | 'billNumber' | 'companyGstin'>): Bill => {
     const prefix = billData.type === 'sales-bill' ? 'S' : 'P';
     const typeSpecificBills = bills.filter(b => b.type === billData.type);
     const nextBillNumber = (typeSpecificBills.length > 0 
@@ -149,13 +149,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       id: uuidv4(),
       date: new Date().toISOString(),
       billNumber: `${prefix}-${nextBillNumber}`,
+      companyGstin: settings.gstin || undefined, // Save current company GSTIN with the bill
     };
     setBills(prev => [newBill, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     return newBill;
-  }, [bills, setBills]);
+  }, [bills, setBills, settings.gstin]);
 
   const updateBill = useCallback((updatedBill: Bill) => {
-    setBills(prev => prev.map(b => b.id === updatedBill.id ? updatedBill : b).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    // Ensure GSTIN is preserved or updated if it was already there
+    setBills(prev => prev.map(b => b.id === updatedBill.id ? { ...updatedBill, companyGstin: updatedBill.companyGstin || b.companyGstin } : b).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }, [setBills]);
 
   const deleteBill = useCallback((billId: string) => {
@@ -215,3 +217,4 @@ export const useAppContext = (): AppContextType => {
   }
   return context;
 };
+
