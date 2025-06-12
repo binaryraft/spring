@@ -41,7 +41,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const itemRefs = useRef<Array<Array<HTMLInputElement | HTMLButtonElement | null>>>([]);
 
 
-  const calculateItemAmount = useCallback((item: Partial<BillItem>): number => {
+  const calculateItemTaxableAmount = useCallback((item: Partial<BillItem>): number => {
     if (typeof item.weightOrQuantity !== 'number' || item.weightOrQuantity <= 0 || !item.valuableId) return 0;
 
     let effectiveRate = 0;
@@ -56,8 +56,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         case 'fixed_net_price':
           effectiveRate = item.purchaseNetFixedValue || 0;
           break;
-        default: // Should not happen with UI constraints
-          effectiveRate = item.rate || 0; // Fallback for purchase rate if no net type somehow
+        default: 
+          effectiveRate = item.rate || 0; 
           break;
       }
     } else { // Sales bill
@@ -70,14 +70,14 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
     if (item.makingCharge && !isPurchase) {
       if (item.makingChargeType === 'percentage') {
-        const mcBaseForSales = item.weightOrQuantity * (item.rate || 0);
+        const mcBaseForSales = item.weightOrQuantity * (item.rate || 0); // Making charge calculated on item value before MC
         baseAmount += mcBaseForSales * (item.makingCharge / 100);
       } else {
         baseAmount += item.makingCharge;
       }
     }
     return parseFloat(baseAmount.toFixed(2));
-  }, [isPurchase, getValuableById, settings.valuables]); // Added settings.valuables for marketPrice dependency
+  }, [isPurchase, getValuableById]);
 
 
  useEffect(() => {
@@ -85,14 +85,30 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       setCustomerName(existingBill.customerName || '');
       setCustomerAddress(existingBill.customerAddress || '');
       setCustomerPhone(existingBill.customerPhone || '');
-      setItems(existingBill.items.map(item => ({...item, id: item.id || uuidv4() })) || [{ id: uuidv4() }]);
+      setItems(existingBill.items.map(item => {
+        const taxableAmount = calculateItemTaxableAmount(item);
+        let itemCgst = 0;
+        let itemSgst = 0;
+        if (billType === 'sales-bill') {
+          itemCgst = parseFloat((taxableAmount * (settings.cgstRate / 100)).toFixed(2));
+          itemSgst = parseFloat((taxableAmount * (settings.sgstRate / 100)).toFixed(2));
+        }
+        return {
+          ...item, 
+          id: item.id || uuidv4(),
+          amount: taxableAmount, // Ensure amount is the taxable amount
+          itemCgstAmount: item.itemCgstAmount ?? itemCgst, // Use existing or recalculate
+          itemSgstAmount: item.itemSgstAmount ?? itemSgst
+        };
+      }) || [{ id: uuidv4() }]);
       setNotes(existingBill.notes || '');
       itemRefs.current = existingBill.items.map(() => []);
     } else {
       resetForm();
       itemRefs.current = [[]];
     }
-  }, [existingBill]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingBill, billType, settings.cgstRate, settings.sgstRate]); // calculateItemTaxableAmount removed to avoid loops if it's not stable
 
  useEffect(() => {
     const reCalculatedItems = items.map(currentItem => {
@@ -100,9 +116,17 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       if (!newItem.valuableId || newItem.weightOrQuantity === undefined) {
         return newItem;
       }
-      const newAmount = calculateItemAmount(newItem);
-      if (newItem.amount !== newAmount) {
-        return { ...newItem, amount: newAmount };
+      const newTaxableAmount = calculateItemTaxableAmount(newItem);
+      let newItemCgstAmount = 0;
+      let newItemSgstAmount = 0;
+
+      if (isSalesBill) {
+          newItemCgstAmount = parseFloat((newTaxableAmount * (settings.cgstRate / 100)).toFixed(2));
+          newItemSgstAmount = parseFloat((newTaxableAmount * (settings.sgstRate / 100)).toFixed(2));
+      }
+
+      if (newItem.amount !== newTaxableAmount || newItem.itemCgstAmount !== newItemCgstAmount || newItem.itemSgstAmount !== newItemSgstAmount) {
+        return { ...newItem, amount: newTaxableAmount, itemCgstAmount: newItemCgstAmount, itemSgstAmount: newItemSgstAmount };
       }
       return newItem;
     });
@@ -110,26 +134,20 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     if (JSON.stringify(items) !== JSON.stringify(reCalculatedItems)) {
       setItems(reCalculatedItems);
     }
-  }, [items, calculateItemAmount]);
+  }, [items, calculateItemTaxableAmount, isSalesBill, settings.cgstRate, settings.sgstRate]);
 
 
   const subTotal = parseFloat(items.reduce((acc, item) => acc + (item.amount || 0), 0).toFixed(2));
-
-  let totalAmount = subTotal;
-  let cgstAmount = 0;
-  let sgstAmount = 0;
+  let billCgstAmount = 0;
+  let billSgstAmount = 0;
+  let finalTotalAmount = subTotal;
 
   if (isSalesBill) {
-    cgstAmount = subTotal * (settings.cgstRate / 100);
-    sgstAmount = subTotal * (settings.sgstRate / 100);
-    totalAmount += cgstAmount + sgstAmount;
+    billCgstAmount = parseFloat(items.reduce((acc, item) => acc + (item.itemCgstAmount || 0), 0).toFixed(2));
+    billSgstAmount = parseFloat(items.reduce((acc, item) => acc + (item.itemSgstAmount || 0), 0).toFixed(2));
+    finalTotalAmount = parseFloat((subTotal + billCgstAmount + billSgstAmount).toFixed(2));
   }
 
-  totalAmount = parseFloat(totalAmount.toFixed(2));
-  cgstAmount = parseFloat(cgstAmount.toFixed(2));
-  sgstAmount = parseFloat(sgstAmount.toFixed(2));
-
-  const estimateTotal = subTotal;
 
   const handleItemChange = (index: number, updatedFields: Partial<BillItem>) => {
     setItems(prevItems => {
@@ -137,17 +155,16 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         const currentItem = { ...(newItems[index] || { id: uuidv4() }) };
         const itemWithUpdates = { ...currentItem, ...updatedFields };
 
-        if (itemWithUpdates.valuableId && typeof itemWithUpdates.weightOrQuantity === 'number') {
-            itemWithUpdates.amount = calculateItemAmount(itemWithUpdates);
-        } else if (Object.keys(updatedFields).length === 1 && 'name' in updatedFields && currentItem.name === updatedFields.name) {
-            // If only name changed but is same as before, no need to recalc if other critical fields are missing
-        } else if (Object.keys(updatedFields).some(k => ['valuableId', 'weightOrQuantity', 'rate', 'makingCharge', 'makingChargeType', 'purchaseNetType', 'purchaseNetPercentValue', 'purchaseNetFixedValue'].includes(k))) {
-            // If any calculation-relevant field changes, ensure amount is recalculated
-            itemWithUpdates.amount = calculateItemAmount(itemWithUpdates);
-        } else {
-             itemWithUpdates.amount = itemWithUpdates.amount || 0;
-        }
+        itemWithUpdates.amount = calculateItemTaxableAmount(itemWithUpdates);
 
+        if (isSalesBill) {
+            itemWithUpdates.itemCgstAmount = parseFloat((itemWithUpdates.amount * (settings.cgstRate / 100)).toFixed(2));
+            itemWithUpdates.itemSgstAmount = parseFloat((itemWithUpdates.amount * (settings.sgstRate / 100)).toFixed(2));
+        } else {
+            itemWithUpdates.itemCgstAmount = 0;
+            itemWithUpdates.itemSgstAmount = 0;
+        }
+        
         newItems[index] = itemWithUpdates;
         return newItems;
     });
@@ -164,24 +181,24 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       id: uuidv4(),
       name: '',
       weightOrQuantity: 1,
-      unit: settings.valuables[0]?.unit || 'gram', // Default unit from first valuable
+      unit: settings.valuables[0]?.unit || 'gram', 
+      amount: 0, // taxable amount
+      itemCgstAmount: 0,
+      itemSgstAmount: 0,
     };
     if (isPurchase) {
       newItemShell.purchaseNetType = 'net_percentage';
       newItemShell.purchaseNetPercentValue = settings.defaultPurchaseItemNetPercentage;
       newItemShell.purchaseNetFixedValue = settings.defaultPurchaseItemNetFixedValue;
-      // For purchases, rate is not set by default from valuable, it's derived
     } else { // Sales
       newItemShell.makingChargeType = settings.defaultMakingCharge.type;
       newItemShell.makingCharge = settings.defaultMakingCharge.value;
-      // For sales, rate will be set if valuable is selected, or manually entered.
     }
-    newItemShell.amount = 0;
+    
     setItems(prevItems => [...prevItems, newItemShell]);
-    itemRefs.current.push([]); // Add a new empty array for the new row's refs
-    // Focus logic after adding item is handled by useEffect in BillItemRow
+    itemRefs.current.push([]); 
     setTimeout(() => {
-      const newRowIndex = items.length; // index will be current length before new item is rendered
+      const newRowIndex = items.length; 
       if (itemRefs.current[newRowIndex] && itemRefs.current[newRowIndex][0]) {
         (itemRefs.current[newRowIndex][0] as HTMLElement)?.focus();
       }
@@ -203,40 +220,55 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           console.warn("Item missing valuableId or unit", item);
           return null;
         }
+        const taxableAmount = item.amount || 0;
+        let itemCgst = 0;
+        let itemSgst = 0;
+
+        if (billType === 'sales-bill' && !isEstimateMode) {
+            itemCgst = item.itemCgstAmount || 0;
+            itemSgst = item.itemSgstAmount || 0;
+        } else if (billType === 'sales-bill' && isEstimateMode) {
+            // For sales estimates, item-level GST is not applied/shown in this version
+            itemCgst = 0;
+            itemSgst = 0;
+        }
+
+
         return {
           id: item.id || uuidv4(),
           valuableId: item.valuableId,
           name: item.name || '',
           weightOrQuantity: item.weightOrQuantity || 0,
           unit: item.unit,
-          rate: item.rate || 0, // rate is always stored, even if derived for purchase
+          rate: item.rate || 0, 
           makingCharge: item.makingCharge,
           makingChargeType: item.makingChargeType,
-          amount: item.amount || 0,
+          amount: taxableAmount, // This is the taxable amount
           purchaseNetType: item.purchaseNetType,
           purchaseNetPercentValue: item.purchaseNetPercentValue,
           purchaseNetFixedValue: item.purchaseNetFixedValue,
+          itemCgstAmount: itemCgst,
+          itemSgstAmount: itemSgst,
         } as BillItem;
       }).filter(item => item !== null) as BillItem[];
 
-    const currentSubTotal = parseFloat(finalItems.reduce((acc, item) => acc + (item.amount || 0), 0).toFixed(2));
-    let currentTotalAmount = currentSubTotal;
-    let currentCgst = 0;
-    let currentSgst = 0;
-
-    if (isSalesBill && !isEstimateMode) {
-      currentCgst = currentSubTotal * (settings.cgstRate / 100);
-      currentSgst = currentSubTotal * (settings.sgstRate / 100);
-      currentTotalAmount = currentSubTotal + currentCgst + currentSgst;
-    } else if (isEstimateMode && isSalesBill) { // Sales Estimate
-      currentTotalAmount = currentSubTotal;
-      currentCgst = 0;
-      currentSgst = 0;
-    } else if (isPurchase) { // Purchase Bill or Purchase Estimate
-        currentTotalAmount = currentSubTotal; // For purchases, total is subtotal as no GST/bill-level adjustments here
-        currentCgst = 0;
-        currentSgst = 0;
+    const currentSubTotal = parseFloat(finalItems.reduce((acc, item) => acc + (item.amount || 0), 0).toFixed(2)); // Sum of taxable amounts
+    let currentBillCgst = 0;
+    let currentBillSgst = 0;
+    
+    if (billType === 'sales-bill' && !isEstimateMode) {
+        currentBillCgst = parseFloat(finalItems.reduce((acc, item) => acc + (item.itemCgstAmount || 0), 0).toFixed(2));
+        currentBillSgst = parseFloat(finalItems.reduce((acc, item) => acc + (item.itemSgstAmount || 0), 0).toFixed(2));
     }
+    
+    let currentTotalAmount = currentSubTotal + currentBillCgst + currentBillSgst;
+    
+    if (isEstimateMode) { // For all estimates (sales or purchase), total is just subtotal
+        currentTotalAmount = currentSubTotal;
+        currentBillCgst = 0; // No GST on estimates in this flow
+        currentBillSgst = 0;
+    }
+
 
     return {
       type: billType,
@@ -245,8 +277,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       customerPhone,
       items: finalItems,
       subTotal: currentSubTotal,
-      cgstAmount: parseFloat(currentCgst.toFixed(2)),
-      sgstAmount: parseFloat(currentSgst.toFixed(2)),
+      cgstAmount: currentBillCgst,
+      sgstAmount: currentBillSgst,
       totalAmount: parseFloat(currentTotalAmount.toFixed(2)),
       notes,
     };
@@ -273,7 +305,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
   const handleShowEstimate = () => {
     if (onShowEstimate) {
-      const estimateDetails = getCurrentBillData(true);
+      const estimateDetails = getCurrentBillData(true); // isEstimateMode = true
        const estimateBillForView: Bill = {
         ...estimateDetails,
         id: `estimate-preview-${uuidv4()}`,
@@ -292,7 +324,9 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       id: uuidv4(),
       name: '',
       weightOrQuantity: 1,
-      amount: 0,
+      amount: 0, // taxable amount
+      itemCgstAmount: 0,
+      itemSgstAmount: 0,
       unit: settings.valuables[0]?.unit || 'gram',
     };
     if (isPurchase) {
@@ -305,7 +339,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     }
     setItems([initialItem]);
     setNotes('');
-    itemRefs.current = [[]]; // Reset refs for a single row
+    itemRefs.current = [[]]; 
   }, [settings, isPurchase]);
 
   const billTypeLabel = () => {
@@ -322,7 +356,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       if (nextFieldRef?.current) {
         nextFieldRef.current.focus();
       } else if (itemRefs.current[0] && itemRefs.current[0][0]) {
-        // Focus the first focusable element in the first item row
         (itemRefs.current[0][0] as HTMLElement).focus();
       }
     }
@@ -373,7 +406,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 ref={customerAddressRef}
                 value={customerAddress}
                 onChange={(e) => setCustomerAddress(e.target.value)}
-                onKeyDown={(e) => handleCustomerKeyDown(e)} // Will focus first item row
+                onKeyDown={(e) => handleCustomerKeyDown(e)} 
               />
             </div>
           </div>
@@ -389,7 +422,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
             <div className="col-span-1 text-center">{isPurchase ? "Value" : "Rate"}</div>
             {!isPurchase && <div className="col-span-1 text-center">MC Type</div>}
             {!isPurchase && <div className="col-span-1 text-center">Making</div>}
-            <div className="col-span-1 text-right">Amount</div>
+            <div className="col-span-1 text-right">Taxable Amt</div> {/* Changed from Amount to Taxable Amount */}
             <div className="col-span-1 text-center">Action</div>
           </div>
           {items.map((item, index) => (
@@ -428,14 +461,14 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         </div>
 
         <div className="space-y-2 text-right font-medium pr-4">
-          <div>Subtotal: <span className="text-lg">{subTotal.toFixed(2)}</span></div>
+          <div>Subtotal (Taxable Value): <span className="text-lg">{subTotal.toFixed(2)}</span></div>
           {(isSalesBill) && (
             <>
-              <div>CGST ({settings.cgstRate}%): <span className="text-lg">{cgstAmount.toFixed(2)}</span></div>
-              <div>SGST ({settings.sgstRate}%): <span className="text-lg">{sgstAmount.toFixed(2)}</span></div>
+              <div>CGST ({settings.cgstRate}%): <span className="text-lg">{billCgstAmount.toFixed(2)}</span></div>
+              <div>SGST ({settings.sgstRate}%): <span className="text-lg">{billSgstAmount.toFixed(2)}</span></div>
             </>
           )}
-          <div className="text-xl font-bold text-primary">Total: <span className="text-2xl">{totalAmount.toFixed(2)}</span></div>
+          <div className="text-xl font-bold text-primary">Total: <span className="text-2xl">{finalTotalAmount.toFixed(2)}</span></div>
         </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center">
@@ -446,12 +479,12 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           {onShowEstimate && (
             <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent flex flex-col h-auto py-2">
               <span className="flex items-center"><FileText className="mr-2 h-4 w-4" /> Create Estimate</span>
-              <span className="text-xs text-muted-foreground mt-1">Total: {(isPurchase ? subTotal : estimateTotal).toFixed(2)}</span>
+              <span className="text-xs text-muted-foreground mt-1">Total (Est.): {subTotal.toFixed(2)}</span> {/* Estimate shows subtotal */}
             </Button>
           )}
           <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/80 flex flex-col h-auto py-2">
              <span className="flex items-center"><Save className="mr-2 h-4 w-4" /> {existingBill ? 'Update' : 'Save'} & Print</span>
-             <span className="text-xs text-primary-foreground/80 mt-1">Total: {totalAmount.toFixed(2)}</span>
+             <span className="text-xs text-primary-foreground/80 mt-1">Total: {finalTotalAmount.toFixed(2)}</span>
           </Button>
         </div>
       </CardFooter>

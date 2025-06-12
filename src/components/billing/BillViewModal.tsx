@@ -51,28 +51,15 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         return;
     }
     
-    // Ensure content is fully laid out by waiting for the next animation frame
     await new Promise(resolve => requestAnimationFrame(resolve));
-    // Additional small delay
     await new Promise(resolve => setTimeout(resolve, 50));
-
-
-    console.log('Bill content element details for PDF generation:');
-    console.log('ID:', billContentElement.id);
-    console.log('OffsetWidth:', billContentElement.offsetWidth, 'OffsetHeight:', billContentElement.offsetHeight);
-    console.log('ScrollWidth:', billContentElement.scrollWidth, 'ScrollHeight:', billContentElement.scrollHeight);
-    console.log('ClientWidth:', billContentElement.clientWidth, 'ClientHeight:', billContentElement.clientHeight);
-    console.log('Computed Display:', window.getComputedStyle(billContentElement).display);
-    console.log('Computed Visibility:', window.getComputedStyle(billContentElement).visibility);
-    console.log('Parent Display:', window.getComputedStyle(billContentElement.parentElement!).display);
-
 
     try {
         const canvas = await html2canvas(billContentElement, {
             scale: 2, 
             useCORS: true,
             logging: true, 
-            backgroundColor: "#ffffff",
+            backgroundColor: "#ffffff", // Ensure canvas itself has white background
             width: billContentElement.scrollWidth,
             height: billContentElement.scrollHeight,
             windowWidth: billContentElement.scrollWidth,
@@ -80,14 +67,12 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             onclone: (documentClone) => {
                 const clonedContent = documentClone.getElementById('bill-to-print');
                 if (clonedContent) {
-                    // Force white background on the main container
                     clonedContent.style.backgroundColor = '#ffffff !important';
                     clonedContent.style.margin = '0';
                     clonedContent.style.padding = '15mm'; // Simulate page margins
                     clonedContent.style.boxSizing = 'border-box';
-                    clonedContent.style.width = '210mm'; // Approximate A4 width for consistent capture base
+                    clonedContent.style.width = '210mm'; 
 
-                    // Apply styles to all elements within the cloned content
                     const allElements = clonedContent.getElementsByTagName('*');
                     for (let i = 0; i < allElements.length; i++) {
                         const el = allElements[i] as HTMLElement;
@@ -97,27 +82,27 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                             el.style.webkitPrintColorAdjust = 'exact';
                             el.style.printColorAdjust = 'exact';
                             el.style.boxShadow = 'none !important';
-                            el.style.borderCollapse = 'collapse'; // Useful for tables
+                            el.style.borderCollapse = 'collapse';
                         }
                     }
                     
-                    // Style specific elements like tables for print within the clone
                     const tables = clonedContent.getElementsByTagName('table');
                     for (let i = 0; i < tables.length; i++) {
                         tables[i].style.width = '100%';
                         tables[i].style.border = '1px solid #cccccc !important';
+                        tables[i].style.fontSize = '9pt'; // Smaller font for tables in PDF
                     }
                     const ths = clonedContent.getElementsByTagName('th');
                     for (let i = 0; i < ths.length; i++) {
                         ths[i].style.border = '1px solid #cccccc !important';
-                        ths[i].style.padding = '5px !important';
+                        ths[i].style.padding = '4px !important';
                         ths[i].style.backgroundColor = '#f0f0f0 !important'; 
                         ths[i].style.textAlign = 'left';
                     }
                     const tds = clonedContent.getElementsByTagName('td');
                     for (let i = 0; i < tds.length; i++) {
                         tds[i].style.border = '1px solid #cccccc !important';
-                        tds[i].style.padding = '5px !important';
+                        tds[i].style.padding = '4px !important';
                     }
                     
                     const separators = clonedContent.querySelectorAll('hr, [role="separator"]');
@@ -128,12 +113,11 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                         (sep as HTMLElement).style.height = '1px !important';
                     });
 
-
                     const logo = clonedContent.querySelector('.print-logo') as HTMLElement;
                     if (logo) {
                         logo.style.filter = 'grayscale(100%) contrast(150%) !important';
-                        (logo as HTMLImageElement).style.maxWidth = '100px !important';
-                        (logo as HTMLImageElement).style.maxHeight = '50px !important';
+                        (logo as HTMLImageElement).style.maxWidth = '80px !important';
+                        (logo as HTMLImageElement).style.maxHeight = '40px !important';
                         (logo as HTMLImageElement).style.objectFit = 'contain';
                     }
                     const placeholderLogoSvg = clonedContent.querySelector('.print-placeholder-logo svg');
@@ -143,19 +127,13 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                          const parentPlaceholder = placeholderLogoSvg.parentElement;
                          if(parentPlaceholder){
                             parentPlaceholder.style.border = '1px solid #000000 !important';
+                            (parentPlaceholder as HTMLElement).style.width = '40px !important';
+                            (parentPlaceholder as HTMLElement).style.height = '40px !important';
                          }
                     }
                 }
             }
         });
-
-        // For debugging:
-        // document.body.appendChild(canvas); 
-        // const testImg = document.createElement('img');
-        // testImg.src = canvas.toDataURL('image/png');
-        // document.body.appendChild(testImg);
-        // console.log('Canvas data URL length:', canvas.toDataURL('image/png').length);
-
 
         const imgData = canvas.toDataURL('image/png');
         if (imgData.length < 200) { 
@@ -172,13 +150,12 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10; // 10mm margin
+        const margin = 10; 
 
         const imgProps = pdf.getImageProperties(imgData);
         const canvasImgWidth = imgProps.width;
         const canvasImgHeight = imgProps.height;
         
-        // Calculate the width and height of the image in the PDF, maintaining aspect ratio
         const availableWidth = pdfWidth - 2 * margin;
         const availableHeight = pdfHeight - 2 * margin;
 
@@ -187,7 +164,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         const finalPdfImgWidth = canvasImgWidth * ratio;
         const finalPdfImgHeight = canvasImgHeight * ratio;
 
-        // Center the image on the page
         const x = margin + (availableWidth - finalPdfImgWidth) / 2;
         const y = margin + (availableHeight - finalPdfImgHeight) / 2;
         
@@ -208,18 +184,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 
-  const displaySubTotal = bill.subTotal;
-  let displayCgstAmount = bill.cgstAmount || 0;
-  let displaySgstAmount = bill.sgstAmount || 0;
-  let displayTotalAmount = bill.totalAmount;
-
-  if (isEstimateView) {
-    displayCgstAmount = 0;
-    displaySgstAmount = 0;
-    displayTotalAmount = displaySubTotal;
-  }
-
-
   const getEffectiveRateForItem = (item: BillItem): number => {
     if (bill.type === 'purchase') {
         const valuable = getValuableById(item.valuableId);
@@ -233,7 +197,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 return item.rate || 0;
         }
     }
-    return item.rate || 0;
+    return item.rate || 0; // For sales, rate is direct
   };
 
   const PlaceholderLogo = () => (
@@ -242,9 +206,11 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     </div>
   );
 
+  const showItemLevelGst = bill.type === 'sales-bill' && !isEstimateView;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl text-primary">
             {effectiveBillType}
@@ -254,7 +220,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto p-1"> {/* Parent scroll container */}
+        <div className="flex-grow overflow-y-auto p-1"> 
           <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm text-foreground">
             <header className="mb-6">
               <div className="flex justify-between items-start">
@@ -265,7 +231,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                       <p className="text-xs">Phone: {company.phoneNumber}</p>
                   </div>
                   {company.showCompanyLogo && (
-                    <div className="w-20 h-20 flex-shrink-0"> {/* Fixed size for logo container */}
+                    <div className="w-20 h-20 flex-shrink-0">
                         {company.companyLogo ? (
                             <Image src={company.companyLogo} alt={`${company.companyName} Logo`} width={80} height={80} className="object-contain print-logo" />
                         ) : (
@@ -308,14 +274,27 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     <th className="py-2 px-1 text-left font-semibold border border-border">Item (Material)</th>
                     <th className="py-2 px-1 text-right font-semibold border border-border">Qty/Wt</th>
                     <th className="py-2 px-1 text-right font-semibold border border-border">Rate</th>
-                    {(bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0)) && <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
-                    <th className="py-2 px-1 text-right font-semibold border border-border">Amount</th>
+                    {(bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0)) && 
+                        <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
+                    <th className="py-2 px-1 text-right font-semibold border border-border">Taxable Amt</th>
+                    {showItemLevelGst && (
+                        <>
+                            <th className="py-2 px-1 text-right font-semibold border border-border">CGST ({settings.cgstRate}%)</th>
+                            <th className="py-2 px-1 text-right font-semibold border border-border">SGST ({settings.sgstRate}%)</th>
+                        </>
+                    )}
+                    <th className="py-2 px-1 text-right font-semibold border border-border">Line Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bill.items.map((item, index) => {
                     const valuableDetails = getValuableById(item.valuableId);
                     const effectiveRate = getEffectiveRateForItem(item);
+                    const taxableAmount = item.amount; // item.amount is the taxable amount
+                    const itemCgst = showItemLevelGst ? (item.itemCgstAmount || 0) : 0;
+                    const itemSgst = showItemLevelGst ? (item.itemSgstAmount || 0) : 0;
+                    const lineTotal = taxableAmount + itemCgst + itemSgst;
+
                     return (
                     <tr key={item.id} className="border-b last:border-b-0">
                       <td className="py-2 px-1 border border-border">{index + 1}</td>
@@ -331,7 +310,14 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                            : '-'}
                         </td>
                       )}
-                      <td className="py-2 px-1 text-right font-medium border border-border">{item.amount.toFixed(2)}</td>
+                      <td className="py-2 px-1 text-right border border-border">{taxableAmount.toFixed(2)}</td>
+                      {showItemLevelGst && (
+                        <>
+                            <td className="py-2 px-1 text-right border border-border">{itemCgst.toFixed(2)}</td>
+                            <td className="py-2 px-1 text-right border border-border">{itemSgst.toFixed(2)}</td>
+                        </>
+                      )}
+                      <td className="py-2 px-1 text-right font-medium border border-border">{lineTotal.toFixed(2)}</td>
                     </tr>
                   )})}
                 </tbody>
@@ -350,13 +336,17 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 )}
               </div>
               <div className="col-span-2 text-sm space-y-1 text-right">
-                <p>Subtotal: <span className="font-semibold">{displaySubTotal.toFixed(2)}</span></p>
+                <p>Subtotal (Taxable): <span className="font-semibold">{bill.subTotal.toFixed(2)}</span></p>
 
-                {!isEstimateView && bill.type === 'sales-bill' && displayCgstAmount > 0 && <p>CGST ({settings.cgstRate}%): <span className="font-semibold">{displayCgstAmount.toFixed(2)}</span></p>}
-                {!isEstimateView && bill.type === 'sales-bill' && displaySgstAmount > 0 && <p>SGST ({settings.sgstRate}%): <span className="font-semibold">{displaySgstAmount.toFixed(2)}</span></p>}
+                {bill.type === 'sales-bill' && !isEstimateView && (bill.cgstAmount || 0) > 0 && <p>Total CGST ({settings.cgstRate}%): <span className="font-semibold">{(bill.cgstAmount || 0).toFixed(2)}</span></p>}
+                {bill.type === 'sales-bill' && !isEstimateView && (bill.sgstAmount || 0) > 0 && <p>Total SGST ({settings.sgstRate}%): <span className="font-semibold">{(bill.sgstAmount || 0).toFixed(2)}</span></p>}
+                
+                {/* For estimates, bill.cgstAmount and bill.sgstAmount will be 0 based on getCurrentBillData logic */}
+                {isEstimateView && <p className="text-xs text-muted-foreground">(GST not applied on estimates)</p>}
+
 
                 <Separator className="my-1"/>
-                <p className="text-lg font-bold">Total: <span className="text-primary">{displayTotalAmount.toFixed(2)}</span></p>
+                <p className="text-lg font-bold">Total: <span className="text-primary">{bill.totalAmount.toFixed(2)}</span></p>
               </div>
             </div>
 
@@ -373,7 +363,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             ) : (
               <Printer className="mr-2 h-4 w-4"/>
             )}
-            Generate & View PDF
+            Generate &amp; View PDF
           </Button>
           <Button variant="outline" onClick={onClose} disabled={isGeneratingPdf}>Close</Button>
         </DialogFooter>
@@ -383,4 +373,3 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
-
