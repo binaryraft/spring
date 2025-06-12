@@ -12,7 +12,8 @@ interface AppContextType {
   updateSettings: (newSettings: Partial<Settings>) => void;
   updateValuablePrice: (valuableId: string, newPrice: number) => void;
   toggleValuableInHeader: (valuableId: string) => void;
-  addCustomItemName: (name: string) => void;
+  addProductName: (name: string) => void;
+  removeProductName: (name: string) => void;
   bills: Bill[];
   addBill: (bill: Omit<Bill, 'id' | 'date' | 'billNumber'>) => Bill;
   updateBill: (updatedBill: Bill) => void;
@@ -48,17 +49,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }));
   }, [setSettings]);
   
-  const addCustomItemName = useCallback((name: string) => {
+  const addProductName = useCallback((name: string) => {
+    if (!name || name.trim() === '') return;
     setSettings(prev => {
-      const lowerCaseName = name.toLowerCase();
-      if (prev.customItemNames.some(n => n.toLowerCase() === lowerCaseName)) {
+      const lowerCaseName = name.trim().toLowerCase();
+      if (prev.productNames.some(n => n.toLowerCase() === lowerCaseName)) {
         return prev; 
       }
       return {
         ...prev,
-        customItemNames: [...prev.customItemNames, name].sort(), 
+        productNames: [...prev.productNames, name.trim()].sort(), 
       };
     });
+  }, [setSettings]);
+
+  const removeProductName = useCallback((nameToRemove: string) => {
+    setSettings(prev => ({
+      ...prev,
+      productNames: prev.productNames.filter(name => name !== nameToRemove),
+    }));
   }, [setSettings]);
 
   const getValuableById = useCallback((id: string): Valuable | undefined => {
@@ -90,7 +99,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updateSettings, 
       updateValuablePrice,
       toggleValuableInHeader,
-      addCustomItemName,
+      addProductName,
+      removeProductName,
       bills, 
       addBill,
       updateBill,

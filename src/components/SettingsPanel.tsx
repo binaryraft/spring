@@ -18,14 +18,15 @@ import {
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
-import { Settings as SettingsIcon, Save } from "lucide-react";
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2 } from "lucide-react";
 import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "./ValuableIcon";
 
 const SettingsPanel: React.FC = () => {
-  const { settings, updateSettings, toggleValuableInHeader } = useAppContext();
+  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName } = useAppContext();
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
+  const [newProductName, setNewProductName] = useState('');
 
   useEffect(() => {
     setLocalSettings(settings);
@@ -55,8 +56,29 @@ const SettingsPanel: React.FC = () => {
     }));
   };
 
+  const handleAddProductName = () => {
+    if (newProductName.trim() !== '') {
+      const updatedProductNames = [...localSettings.productNames, newProductName.trim()].sort();
+      setLocalSettings(prev => ({ ...prev, productNames: updatedProductNames }));
+      setNewProductName(''); // Clear input after adding
+    }
+  };
+
+  const handleRemoveProductName = (productNameToRemove: string) => {
+    const updatedProductNames = localSettings.productNames.filter(name => name !== productNameToRemove);
+    setLocalSettings(prev => ({ ...prev, productNames: updatedProductNames }));
+  };
+
+
   const handleSave = () => {
-    updateSettings(localSettings);
+    // Ensure productNames are updated in context before saving all settings
+    // This is slightly redundant if addProductName directly updates context,
+    // but ensures settings panel changes are captured if context update isn't immediate
+    // or if localSettings were manipulated directly.
+    const finalSettings = {...localSettings};
+    // The AppContext addProductName/removeProductName already handle updating the context's settings state
+    // So, just calling updateSettings with the current localSettings is sufficient
+    updateSettings(finalSettings);
   };
 
   return (
@@ -72,7 +94,7 @@ const SettingsPanel: React.FC = () => {
           <SheetHeader>
             <SheetTitle className="font-headline">Application Settings</SheetTitle>
             <SheetDescription>
-              Manage your company details, valuable items, and tax rates.
+              Manage your company details, valuable items, products, and tax rates.
             </SheetDescription>
           </SheetHeader>
           
@@ -119,7 +141,7 @@ const SettingsPanel: React.FC = () => {
                       <Checkbox
                         id={`select-${valuable.id}`}
                         checked={valuable.selectedInHeader}
-                        onCheckedChange={() => toggleValuableInHeader(valuable.id)}
+                        onCheckedChange={() => toggleValuableInHeader(valuable.id)} 
                       />
                     </div>
                   </div>
@@ -143,6 +165,44 @@ const SettingsPanel: React.FC = () => {
                 </div>
               ))}
             </div>
+            
+            <Separator />
+
+            <div>
+              <h3 className="text-lg font-medium font-headline mb-2 text-primary">Product Management</h3>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="newProductName">Add New Product Name</Label>
+                <div className="flex space-x-2">
+                  <Input 
+                    id="newProductName" 
+                    value={newProductName} 
+                    onChange={(e) => setNewProductName(e.target.value)}
+                    placeholder="e.g., Ring, Bangle"
+                  />
+                  <Button onClick={handleAddProductName} size="sm">
+                    <PlusCircle className="mr-1 h-4 w-4" /> Add
+                  </Button>
+                </div>
+              </div>
+              {localSettings.productNames.length > 0 ? (
+                <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {localSettings.productNames.map((productName) => (
+                    <div key={productName} className="flex items-center justify-between p-1.5 bg-muted/50 rounded text-sm">
+                      <span>{productName}</span>
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveProductName(productName)} className="h-6 w-6 text-destructive">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No custom product names added yet.</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Product names are also automatically added here when entered in bills.
+              </p>
+            </div>
+
 
             <Separator />
             

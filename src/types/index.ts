@@ -25,13 +25,13 @@ export interface Settings {
   defaultPurchaseItemNetFixedValue: number; 
   cgstRate: number; // Percentage
   sgstRate: number; // Percentage
-  customItemNames: string[]; // For storing unique item names for suggestions
+  productNames: string[]; // Stores unique product names for suggestions
 }
 
 export interface BillItem {
   id: string;
   valuableId: string; // links to Valuable.id
-  name: string; // User-editable product name (e.g., "Ring", "Bangle")
+  name: string; // User-editable product name (e.g., "Ring", "Bangle") - should be independent
   weightOrQuantity: number;
   unit: string; // copied from Valuable.unit
   rate: number; // For sales: price per unit. For purchases: used as base for % calc, or supplier's rate.
@@ -40,7 +40,7 @@ export interface BillItem {
   amount: number; // (weightOrQuantity * effective_rate) + makingCharge (for sales)
 
   // For Purchase Items Only:
-  purchaseNetType?: 'net_percentage' | 'fixed_net_price'; // 'market_rate' removed
+  purchaseNetType?: 'net_percentage' | 'fixed_net_price';
   purchaseNetPercentValue?: number; 
   purchaseNetFixedValue?: number;   
 }
@@ -81,9 +81,8 @@ export const DEFAULT_SETTINGS: Settings = {
   valuables: DEFAULT_VALUABLES,
   defaultMakingCharge: { type: 'percentage', value: 10 },
   defaultPurchaseItemNetPercentage: 10, 
-  defaultPurchaseItemNetFixedValue: 0, 
+  defaultPurchaseItemNetFixedValue: 4500, 
   cgstRate: 9,
   sgstRate: 9,
-  customItemNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle", "Bangles", "Rings", "Necklace"], 
+  productNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle", "Bangles", "Rings", "Necklace"], 
 };
-

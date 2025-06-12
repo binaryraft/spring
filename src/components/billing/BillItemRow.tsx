@@ -11,25 +11,25 @@ import ValuableIcon from '../ValuableIcon';
 interface BillItemRowProps {
   item: Partial<BillItem>;
   onItemChange: (updatedFields: Partial<BillItem>) => void;
-  onItemNameBlur: (name: string) => void;
+  onProductNameBlur: (name: string) => void; // Renamed from onItemNameBlur
   onRemoveItem: () => void;
   availableValuables: Valuable[];
-  customItemNames: string[];
+  productNames: string[]; // Renamed from customItemNames
   isPurchase: boolean;
   defaultMakingCharge: MakingChargeSetting;
   defaultPurchaseNetPercentage: number;
   defaultPurchaseNetFixedValue: number;
   getValuablePrice: (valuableId: string) => number;
-  onEnterInLastField?: () => void; // New prop for keyboard navigation
+  onEnterInLastField?: () => void;
 }
 
 const BillItemRow: React.FC<BillItemRowProps> = ({
   item,
   onItemChange,
-  onItemNameBlur,
+  onProductNameBlur, // Renamed
   onRemoveItem,
   availableValuables,
-  customItemNames,
+  productNames, // Renamed
   isPurchase,
   defaultMakingCharge,
   defaultPurchaseNetPercentage,
@@ -44,22 +44,12 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       const updates: Partial<BillItem> = {
         valuableId,
         unit: selectedValuable.unit,
-        rate: selectedValuable.price, // Base rate for sales, or basis for purchase % calc
+        rate: selectedValuable.price,
       };
-
-      const previousValuable = item.valuableId ? availableValuables.find(v => v.id === item.valuableId) : null;
-      const currentProductName = item.name || '';
-
-      // If current product name is empty OR it was the default name of the PREVIOUS material, then update it.
-      // Otherwise, the user has entered a custom name, so keep it.
-      if (currentProductName.trim() === '' || (previousValuable && currentProductName === previousValuable.name)) {
-        updates.name = selectedValuable.name;
-      } else {
-        updates.name = currentProductName;
-      }
+      // Product name (item.name) is NOT auto-filled from valuable.name
       
       if (isPurchase) {
-        updates.purchaseNetType = item.purchaseNetType || 'net_percentage';
+        updates.purchaseNetType = item.purchaseNetType || 'net_percentage'; // Default to net_percentage
         if (updates.purchaseNetType === 'net_percentage') {
            updates.purchaseNetPercentValue = item.purchaseNetPercentValue ?? defaultPurchaseNetPercentage;
         } else if (updates.purchaseNetType === 'fixed_net_price') {
@@ -94,7 +84,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   };
   
   const selectedValuableDetails = item.valuableId ? availableValuables.find(v => v.id === item.valuableId) : null;
-  const datalistId = `item-names-datalist-${item.id || 'new'}`;
+  const datalistId = `product-names-datalist-${item.id || 'new'}`; // Changed for clarity
 
   const marketPriceForPurchase = isPurchase && item.valuableId ? getValuablePrice(item.valuableId) : 0;
   let effectiveRateForPurchaseDisplay = 0;
@@ -123,13 +113,13 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   return (
     <div className={`grid ${gridColsClass} gap-2 items-start py-2 border-b last:border-b-0`}>
       <datalist id={datalistId}>
-        {customItemNames.map(name => <option key={name} value={name} />)}
+        {productNames.map(name => <option key={name} value={name} />)}
       </datalist>
 
       <div className="col-span-2">
         <Select value={item.valuableId || ''} onValueChange={handleValuableSelect}>
           <SelectTrigger className="h-9 text-sm">
-            <SelectValue placeholder="Select Type" />
+            <SelectValue placeholder="Select Material" />
           </SelectTrigger>
           <SelectContent>
             {availableValuables.map(v => (
@@ -146,10 +136,10 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
       <div className="col-span-3">
         <Input
-          placeholder="Item Name (e.g. Ring)"
-          value={item.name || ''}
+          placeholder="Product Name (e.g. Ring)"
+          value={item.name || ''} // Ensure item.name is not undefined
           onChange={(e) => handleFieldChange('name', e.target.value)}
-          onBlur={(e) => onItemNameBlur(e.target.value)}
+          onBlur={(e) => onProductNameBlur(e.target.value)}
           list={datalistId}
           className="h-9 text-sm"
         />
@@ -171,7 +161,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         <>
           <div className="col-span-2 flex flex-col space-y-1"> 
             <Select 
-              value={item.purchaseNetType || 'net_percentage'}
+              value={item.purchaseNetType || 'net_percentage'} // Default to 'net_percentage'
               onValueChange={(val: 'net_percentage' | 'fixed_net_price') => handleFieldChange('purchaseNetType', val)}
             >
               <SelectTrigger className="h-9 text-xs">
@@ -197,7 +187,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                 className="h-9 text-sm text-center" 
                 min="0" 
                 step="0.01"
-                onKeyDown={handleKeyDown} // Add item on Enter
+                onKeyDown={handleKeyDown}
               />
             )}
             {item.purchaseNetType === 'fixed_net_price' && (
@@ -209,7 +199,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                 className="h-9 text-sm text-center" 
                 min="0" 
                 step="0.01"
-                onKeyDown={handleKeyDown} // Add item on Enter
+                onKeyDown={handleKeyDown}
               />
             )}
             {(item.purchaseNetType === 'net_percentage' || item.purchaseNetType === 'fixed_net_price') && item.valuableId && (
@@ -255,7 +245,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               min="0"
               step="0.01"
               className="h-9 text-sm text-center"
-              onKeyDown={handleKeyDown} // Add item on Enter
+              onKeyDown={handleKeyDown}
             />
           </div>
         </>
