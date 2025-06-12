@@ -50,39 +50,34 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       return;
     }
 
-    // Temporarily adjust styles for html2canvas capture for better quality
     const originalStyles = {
       transform: billContentElement.style.transform,
       width: billContentElement.style.width,
       border: billContentElement.style.border,
       boxShadow: billContentElement.style.boxShadow,
     };
-    billContentElement.style.transform = 'scale(1)'; // Ensure no scaling during capture
-    billContentElement.style.width = '210mm'; // A4 width
+    billContentElement.style.transform = 'scale(1)'; 
+    billContentElement.style.width = '210mm'; 
     billContentElement.style.border = 'none';
     billContentElement.style.boxShadow = 'none';
 
 
     try {
       const canvas = await html2canvas(billContentElement, {
-        scale: 2, // Increase scale for better resolution
-        useCORS: true, // For external images if any (logo)
+        scale: 2, 
+        useCORS: true, 
         logging: false,
         onclone: (document) => {
-          // Apply print styles directly to the cloned document for html2canvas
           const style = document.createElement('style');
-          style.innerHTML = printStyles; // printStyles defined below
+          style.innerHTML = printStyles; 
           document.head.appendChild(style);
-          // Ensure the specific element is targeted
           const clonedContent = document.getElementById('bill-to-print');
           if (clonedContent) {
-            // You can force additional styles here if needed for the capture
              clonedContent.style.backgroundColor = '#ffffff';
           }
         }
       });
 
-      // Restore original styles after capture
       billContentElement.style.transform = originalStyles.transform;
       billContentElement.style.width = originalStyles.width;
       billContentElement.style.border = originalStyles.border;
@@ -101,22 +96,19 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       const canvasHeight = canvas.height;
       const aspectRatio = canvasWidth / canvasHeight;
 
-      let imgWidth = pdfWidth - 20; // A4 width in mm minus 10mm margin on each side
+      let imgWidth = pdfWidth - 20; 
       let imgHeight = imgWidth / aspectRatio;
       
-      let position = 0; // For multi-page, not fully implemented here
-
-      if (imgHeight > pdfHeight - 20) { // check if image is taller than page
-        imgHeight = pdfHeight - 20; // max height with margin
+      if (imgHeight > pdfHeight - 20) { 
+        imgHeight = pdfHeight - 20; 
         imgWidth = imgHeight * aspectRatio;
       }
 
       const xOffset = (pdfWidth - imgWidth) / 2;
-      const yOffset = 10; // 10mm margin from top
+      const yOffset = 10; 
 
       pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
       
-      // Open PDF in a new tab
       pdf.output('dataurlnewwindow');
 
     } catch (error) {
@@ -149,7 +141,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             case 'fixed_net_price':
                 return item.purchaseNetFixedValue || 0;
             default: 
-                return item.rate || 0;
+                return item.rate || 0; // Should not happen with new types
         }
     }
     return item.rate || 0;
@@ -157,7 +149,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   const PlaceholderLogo = () => (
     <div className="w-16 h-16 bg-muted/50 flex items-center justify-center rounded print-placeholder-logo">
-      <Building className="w-8 h-8 text-muted-foreground print:fill-black" />
+      <Building className="w-8 h-8 text-muted-foreground" />
     </div>
   );
 
@@ -174,7 +166,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         </DialogHeader>
 
         <div className="flex-grow overflow-y-auto p-1 print:overflow-visible print:p-0">
-          {/* This is the div that will be captured for PDF */}
           <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm print:border-gray-300 print:shadow-none print:rounded-none print:bg-white print:text-black">
             <header className="mb-6 print:mb-4">
               <div className="flex justify-between items-start">
@@ -303,7 +294,12 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 // Define printStyles as a template literal string to be injected
-const printStyles = \`
+const printStyles = `
+  @page {
+    size: A4 portrait;
+    margin: 10mm; /* Reduced default page margins */
+  }
+
   body, html {
     background-color: #ffffff !important;
     color: #000000 !important;
@@ -314,31 +310,30 @@ const printStyles = \`
   }
 
   /* Hide everything except the bill content for html2canvas capture */
-  body > *:not(#bill-to-print-wrapper), /* If you wrap #bill-to-print for capture */
-  body > *:not(.fixed.inset-0.z-50) > *:not(#bill-to-print) /* More specific if needed */
-   {
-    /* visibility: hidden !important; */ /* May not be needed if html2canvas targets specific element */
+  body > *:not(#bill-to-print-wrapper), 
+  body > *:not(.fixed.inset-0.z-50) > *:not(#bill-to-print) {
+    /* visibility: hidden !important; */ /* This might be too broad if not targeting html2canvas clone */
   }
   
   #bill-to-print {
-    position: static !important; /* Reset any fixed/absolute positioning for capture */
-    width: 100% !important; /* Or specific width like 210mm if scaling for A4 */
+    position: static !important; 
+    width: 100% !important; /* Full width within page margins */
     height: auto !important;
-    margin: 0 !important;
-    padding: 15mm !important; /* Page margins for content */
+    margin: 0 !important; /* Margins handled by @page and padding */
+    padding: 15mm !important; /* Content padding inside the printable area */
     background-color: #ffffff !important;
-    border: none !important;
+    border: 1px solid #dedede !important; /* A light border for the bill itself */
     box-shadow: none !important;
-    color: #000000 !important; /* Ensure base text color is black */
+    color: #000000 !important; 
   }
 
   #bill-to-print * {
     color: #000000 !important;
     background-color: transparent !important;
-    border-color: #aaaaaa !important;
+    border-color: #aaaaaa !important; /* Default border color for elements within */
     box-shadow: none !important;
     text-shadow: none !important;
-    visibility: visible !important; /* Ensure all children are visible */
+    visibility: visible !important; 
   }
   
   #bill-to-print .text-primary,
@@ -347,6 +342,11 @@ const printStyles = \`
   #bill-to-print [class*="text-gray-"] {
       color: #000000 !important;
   }
+  #bill-to-print .text-primary.print\\:text-black { /* for Total amount if it needs to be prominent but still black */
+      color: #000000 !important;
+      font-weight: bold !important;
+  }
+
 
   #bill-to-print .font-headline {
     font-family: 'Playfair Display', 'Times New Roman', serif !important;
@@ -362,7 +362,7 @@ const printStyles = \`
     page-break-after: auto !important;
   }
   #bill-to-print thead {
-    display: table-header-group !important;
+    display: table-header-group !important; /* Ensures header repeats on new pages */
     background-color: #f0f0f0 !important;
   }
   #bill-to-print th, #bill-to-print td {
@@ -383,7 +383,7 @@ const printStyles = \`
   #bill-to-print .print\\:text-xxs { font-size: 0.7rem !important; line-height: 1.1 !important; }
 
   .print-logo {
-    filter: grayscale(100%) contrast(120%) !important;
+    filter: grayscale(100%) contrast(150%) !important; /* Sharper B&W */
     max-width: 100px !important; 
     max-height: 50px !important;
     object-fit: contain !important;
@@ -412,10 +412,10 @@ const printStyles = \`
   #bill-to-print .border-t,
   #bill-to-print .border-b {
     border-color: #cccccc !important;
-    background-color: #cccccc !important; 
+    background-color: transparent !important; /* Separators should not have a background */
     height: 1px !important;
     border-style: solid !important;
-    border-width: 1px 0 0 0 !important;
+    border-width: 1px 0 0 0 !important; /* Only top border for hr-like separators */
   }
   #bill-to-print .whitespace-pre-line {
       white-space: pre-wrap !important;
@@ -426,18 +426,20 @@ const printStyles = \`
     display: none !important; 
   }
   
-  /* Specific layout adjustments */
+  /* Specific layout adjustments for print using flex */
   #bill-to-print header > div.flex { display: flex !important; justify-content: space-between !important; align-items: flex-start !important; }
   #bill-to-print header > div.flex > div.text-left { flex-grow: 1; }
   #bill-to-print header > div.flex > div.w-20 { flex-shrink: 0; }
   
   #bill-to-print .grid.grid-cols-2.gap-4 { display: flex !important; justify-content: space-between !important; }
-  #bill-to-print .grid.grid-cols-2.gap-4 > div { width: 48% !important; }
+  #bill-to-print .grid.grid-cols-2.gap-4 > div { width: 48% !important; } /* Give some space between */
   
   #bill-to-print .grid.grid-cols-5.gap-x-4 { display: flex !important; justify-content: space-between !important; }
   #bill-to-print .grid.grid-cols-5.gap-x-4 > div.col-span-3 { width: 60% !important; }
   #bill-to-print .grid.grid-cols-5.gap-x-4 > div.col-span-2 { width: 35% !important; text-align: right !important; }
 
-\`;
+`;
 
 export default BillViewModal;
+
+    
