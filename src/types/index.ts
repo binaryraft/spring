@@ -83,7 +83,7 @@ export interface Bill {
 
 export const DEFAULT_VALUABLES: Valuable[] = [
   { id: 'gold-18k', name: '18K Gold', price: 5000, icon: 'gold', selectedInHeader: true, unit: 'gram', isDefault: true },
-  { id: 'gold-bis', name: 'BIS Gold', price: 5500, icon: 'gold', selectedInHeader: true, unit: 'gram', isDefault: true },
+  { id: 'gold-bis', name: 'BIS 916', price: 5500, icon: 'gold', selectedInHeader: true, unit: 'gram', isDefault: true },
   { id: 'gold-22k', name: '22K Gold', price: 6000, icon: 'gold', selectedInHeader: true, unit: 'gram', isDefault: true },
   { id: 'gold-24k', name: '24K Gold', price: 6500, icon: 'gold', selectedInHeader: false, unit: 'gram', isDefault: true },
   { id: 'silver', name: 'Silver', price: 70, icon: 'silver', selectedInHeader: true, unit: 'gram', isDefault: true },
@@ -96,7 +96,7 @@ export const DEFAULT_VALUABLES: Valuable[] = [
 ];
 
 export const AVAILABLE_CURRENCIES: CurrencyDefinition[] = [
-  { symbol: '₹', code: 'INR', name: 'Indian Rupee' },
+  { symbol: 'Rs ', code: 'INR', name: 'Indian Rupee' },
   { symbol: '$', code: 'USD', name: 'US Dollar' },
   { symbol: '€', code: 'EUR', name: 'Euro' },
   { symbol: '£', code: 'GBP', name: 'British Pound' },
