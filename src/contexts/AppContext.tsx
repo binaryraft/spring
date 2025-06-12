@@ -2,7 +2,7 @@
 "use client";
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { Settings, Valuable, Bill, BillItem, BillType } from '@/types'; // Added BillItem
+import type { Settings, Valuable, Bill, BillItem, BillType } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,6 +19,8 @@ interface AppContextType {
   updateBill: (updatedBill: Bill) => void;
   deleteBill: (billId: string) => void;
   getValuableById: (id: string) => Valuable | undefined;
+  setCompanyLogo: (logoDataUri?: string) => void;
+  toggleShowCompanyLogo: (show: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -48,17 +50,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ),
     }));
   }, [setSettings]);
-  
+
   const addProductName = useCallback((name: string) => {
     if (!name || name.trim() === '') return;
     setSettings(prev => {
       const lowerCaseName = name.trim().toLowerCase();
       if (prev.productNames.some(n => n.toLowerCase() === lowerCaseName)) {
-        return prev; 
+        return prev;
       }
       return {
         ...prev,
-        productNames: [...prev.productNames, name.trim()].sort(), 
+        productNames: [...prev.productNames, name.trim()].sort(),
       };
     });
   }, [setSettings]);
@@ -93,19 +95,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setBills(prev => prev.filter(b => b.id !== billId));
   }, [setBills]);
 
+  const setCompanyLogo = useCallback((logoDataUri?: string) => {
+    setSettings(prev => ({ ...prev, companyLogo: logoDataUri }));
+  }, [setSettings]);
+
+  const toggleShowCompanyLogo = useCallback((show: boolean) => {
+    setSettings(prev => ({ ...prev, showCompanyLogo: show }));
+  }, [setSettings]);
+
   return (
-    <AppContext.Provider value={{ 
-      settings, 
-      updateSettings, 
+    <AppContext.Provider value={{
+      settings,
+      updateSettings,
       updateValuablePrice,
       toggleValuableInHeader,
       addProductName,
       removeProductName,
-      bills, 
+      bills,
       addBill,
       updateBill,
       deleteBill,
-      getValuableById
+      getValuableById,
+      setCompanyLogo,
+      toggleShowCompanyLogo,
     }}>
       {children}
     </AppContext.Provider>

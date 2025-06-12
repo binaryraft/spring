@@ -18,15 +18,17 @@ import {
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2 } from "lucide-react";
-import React, { useState, useEffect } from 'react';
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, Upload, XCircle } from "lucide-react";
+import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "./ValuableIcon";
+import Image from "next/image"; // For logo preview
 
 const SettingsPanel: React.FC = () => {
-  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName } = useAppContext();
+  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo } = useAppContext();
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
   const [newProductName, setNewProductName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLocalSettings(settings);
@@ -56,30 +58,43 @@ const SettingsPanel: React.FC = () => {
     }));
   };
 
-  const handleAddProductName = () => {
+  const handleAddProductNameToList = () => {
     if (newProductName.trim() !== '') {
-      const updatedProductNames = [...localSettings.productNames, newProductName.trim()].sort();
-      setLocalSettings(prev => ({ ...prev, productNames: updatedProductNames }));
-      setNewProductName(''); // Clear input after adding
+      addProductName(newProductName.trim()); // Directly update context
+      setNewProductName('');
+    }
+  };
+  
+  const handleRemoveProductNameFromList = (productNameToRemove: string) => {
+    removeProductName(productNameToRemove); // Directly update context
+  };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === "image/png") {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCompanyLogo(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Handle error: invalid file type or no file
+      alert("Please upload a PNG file.");
     }
   };
 
-  const handleRemoveProductName = (productNameToRemove: string) => {
-    const updatedProductNames = localSettings.productNames.filter(name => name !== productNameToRemove);
-    setLocalSettings(prev => ({ ...prev, productNames: updatedProductNames }));
+  const handleRemoveLogo = () => {
+    setCompanyLogo(undefined);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // Reset file input
+    }
   };
-
 
   const handleSave = () => {
-    // Ensure productNames are updated in context before saving all settings
-    // This is slightly redundant if addProductName directly updates context,
-    // but ensures settings panel changes are captured if context update isn't immediate
-    // or if localSettings were manipulated directly.
-    const finalSettings = {...localSettings};
-    // The AppContext addProductName/removeProductName already handle updating the context's settings state
-    // So, just calling updateSettings with the current localSettings is sufficient
-    updateSettings(finalSettings);
+    updateSettings(localSettings); // Save all local changes, including company info, rates, etc.
+    // Logo and product names are already saved to context via their specific handlers.
   };
+
 
   return (
     <Sheet>
@@ -94,10 +109,10 @@ const SettingsPanel: React.FC = () => {
           <SheetHeader>
             <SheetTitle className="font-headline">Application Settings</SheetTitle>
             <SheetDescription>
-              Manage your company details, valuable items, products, and tax rates.
+              Manage your company details, logo, valuable items, products, and tax rates.
             </SheetDescription>
           </SheetHeader>
-          
+
           <div className="space-y-6 py-6">
             <div>
               <h3 className="text-lg font-medium font-headline mb-2 text-primary">Company Information</h3>
@@ -120,6 +135,48 @@ const SettingsPanel: React.FC = () => {
                 </div>
               </div>
             </div>
+            
+            <Separator />
+
+            <div>
+                <h3 className="text-lg font-medium font-headline mb-3 text-primary">Company Logo</h3>
+                <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id="showCompanyLogo"
+                            checked={settings.showCompanyLogo}
+                            onCheckedChange={(checked) => toggleShowCompanyLogo(!!checked)}
+                        />
+                        <Label htmlFor="showCompanyLogo" className="text-sm font-medium">
+                            Show company logo on bills
+                        </Label>
+                    </div>
+                    {settings.showCompanyLogo && (
+                        <>
+                            <Input
+                                id="logoUpload"
+                                type="file"
+                                accept="image/png"
+                                onChange={handleLogoUpload}
+                                ref={fileInputRef}
+                                className="text-sm"
+                            />
+                            {settings.companyLogo && (
+                                <div className="mt-2 p-2 border rounded-md bg-muted/50 inline-flex flex-col items-center">
+                                    <Image src={settings.companyLogo} alt="Company Logo Preview" width={100} height={100} className="object-contain rounded" />
+                                    <Button variant="link" size="sm" onClick={handleRemoveLogo} className="text-destructive mt-1">
+                                      <XCircle className="mr-1 h-3 w-3" /> Remove Logo
+                                    </Button>
+                                </div>
+                            )}
+                            {!settings.companyLogo && (
+                                <p className="text-xs text-muted-foreground mt-1">No logo uploaded. A default placeholder will be used if enabled.</p>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+
 
             <Separator />
 
@@ -130,8 +187,8 @@ const SettingsPanel: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-5 h-5 mr-2" />
-                      <Input 
-                        value={valuable.name} 
+                      <Input
+                        value={valuable.name}
                         onChange={(e) => handleValuableChange(valuable.id, 'name', e.target.value)}
                         className="text-md font-semibold mr-2 w-auto inline-flex"
                       />
@@ -141,7 +198,7 @@ const SettingsPanel: React.FC = () => {
                       <Checkbox
                         id={`select-${valuable.id}`}
                         checked={valuable.selectedInHeader}
-                        onCheckedChange={() => toggleValuableInHeader(valuable.id)} 
+                        onCheckedChange={() => toggleValuableInHeader(valuable.id)}
                       />
                     </div>
                   </div>
@@ -165,7 +222,7 @@ const SettingsPanel: React.FC = () => {
                 </div>
               ))}
             </div>
-            
+
             <Separator />
 
             <div>
@@ -173,23 +230,23 @@ const SettingsPanel: React.FC = () => {
               <div className="space-y-2 mb-4">
                 <Label htmlFor="newProductName">Add New Product Name</Label>
                 <div className="flex space-x-2">
-                  <Input 
-                    id="newProductName" 
-                    value={newProductName} 
+                  <Input
+                    id="newProductName"
+                    value={newProductName}
                     onChange={(e) => setNewProductName(e.target.value)}
                     placeholder="e.g., Ring, Bangle"
                   />
-                  <Button onClick={handleAddProductName} size="sm">
+                  <Button onClick={handleAddProductNameToList} size="sm">
                     <PlusCircle className="mr-1 h-4 w-4" /> Add
                   </Button>
                 </div>
               </div>
-              {localSettings.productNames.length > 0 ? (
+              {settings.productNames.length > 0 ? (
                 <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
-                  {localSettings.productNames.map((productName) => (
+                  {settings.productNames.map((productName) => (
                     <div key={productName} className="flex items-center justify-between p-1.5 bg-muted/50 rounded text-sm">
                       <span>{productName}</span>
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveProductName(productName)} className="h-6 w-6 text-destructive">
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveProductNameFromList(productName)} className="h-6 w-6 text-destructive">
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
@@ -205,7 +262,7 @@ const SettingsPanel: React.FC = () => {
 
 
             <Separator />
-            
+
             <div>
               <h3 className="text-lg font-medium font-headline mb-2 text-primary">Default Making Charge (for Sales)</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -226,11 +283,11 @@ const SettingsPanel: React.FC = () => {
                 </div>
                 <div>
                   <Label htmlFor="defaultMakingChargeValue">Value</Label>
-                  <Input 
-                    id="defaultMakingChargeValue" 
-                    type="number" 
-                    value={localSettings.defaultMakingCharge?.value || 0} 
-                    onChange={(e) => handleNestedChange('defaultMakingCharge', 'value', parseFloat(e.target.value))} 
+                  <Input
+                    id="defaultMakingChargeValue"
+                    type="number"
+                    value={localSettings.defaultMakingCharge?.value || 0}
+                    onChange={(e) => handleNestedChange('defaultMakingCharge', 'value', parseFloat(e.target.value))}
                   />
                 </div>
               </div>
@@ -251,7 +308,7 @@ const SettingsPanel: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <Separator />
 
             <div>
@@ -259,10 +316,10 @@ const SettingsPanel: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="defaultPurchaseItemNetPercentage">Default Net Percentage (%)</Label>
-                  <Input 
-                    id="defaultPurchaseItemNetPercentage" 
-                    type="number" 
-                    value={localSettings.defaultPurchaseItemNetPercentage} 
+                  <Input
+                    id="defaultPurchaseItemNetPercentage"
+                    type="number"
+                    value={localSettings.defaultPurchaseItemNetPercentage}
                     onChange={(e) => handleChange('defaultPurchaseItemNetPercentage', parseFloat(e.target.value))}
                     placeholder="e.g., 10 for 10% off market price"
                   />
@@ -272,10 +329,10 @@ const SettingsPanel: React.FC = () => {
                 </div>
                 <div>
                   <Label htmlFor="defaultPurchaseItemNetFixedValue">Default Fixed Net Rate</Label>
-                  <Input 
-                    id="defaultPurchaseItemNetFixedValue" 
-                    type="number" 
-                    value={localSettings.defaultPurchaseItemNetFixedValue} 
+                  <Input
+                    id="defaultPurchaseItemNetFixedValue"
+                    type="number"
+                    value={localSettings.defaultPurchaseItemNetFixedValue}
                     onChange={(e) => handleChange('defaultPurchaseItemNetFixedValue', parseFloat(e.target.value))}
                     placeholder="e.g., 4500"
                   />

@@ -1,6 +1,6 @@
 
 "use client";
-import React from 'react';
+import React, { useRef } from 'react'; // Added useRef
 import type { BillItem, Valuable, MakingChargeSetting } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,32 +11,64 @@ import ValuableIcon from '../ValuableIcon';
 interface BillItemRowProps {
   item: Partial<BillItem>;
   onItemChange: (updatedFields: Partial<BillItem>) => void;
-  onProductNameBlur: (name: string) => void; // Renamed from onItemNameBlur
+  onProductNameBlur: (name: string) => void;
   onRemoveItem: () => void;
   availableValuables: Valuable[];
-  productNames: string[]; // Renamed from customItemNames
+  productNames: string[];
   isPurchase: boolean;
   defaultMakingCharge: MakingChargeSetting;
   defaultPurchaseNetPercentage: number;
   defaultPurchaseNetFixedValue: number;
   getValuablePrice: (valuableId: string) => number;
   onEnterInLastField?: () => void;
+  focusNextRowFirstElement?: () => void; // For focusing on the next row
+  rowIndex: number; // To manage refs
+  itemRefs: React.MutableRefObject<Array<Array<HTMLInputElement | HTMLButtonElement | null>>>;
 }
 
 const BillItemRow: React.FC<BillItemRowProps> = ({
   item,
   onItemChange,
-  onProductNameBlur, // Renamed
+  onProductNameBlur,
   onRemoveItem,
   availableValuables,
-  productNames, // Renamed
+  productNames,
   isPurchase,
   defaultMakingCharge,
   defaultPurchaseNetPercentage,
   defaultPurchaseNetFixedValue,
   getValuablePrice,
   onEnterInLastField,
+  focusNextRowFirstElement,
+  rowIndex,
+  itemRefs,
 }) => {
+
+  // Refs for input fields within the row for keyboard navigation
+  const materialSelectRef = useRef<HTMLButtonElement>(null); // SelectTrigger is a button
+  const productNameInputRef = useRef<HTMLInputElement>(null);
+  const qtyInputRef = useRef<HTMLInputElement>(null);
+  const rateInputRef = useRef<HTMLInputElement>(null); // Sales
+  const mcTypeSelectRef = useRef<HTMLButtonElement>(null); // Sales
+  const mcValueInputRef = useRef<HTMLInputElement>(null); // Sales
+  const purchaseNetTypeSelectRef = useRef<HTMLButtonElement>(null); // Purchase
+  const purchaseNetPercentInputRef = useRef<HTMLInputElement>(null); // Purchase
+  const purchaseNetFixedInputRef = useRef<HTMLInputElement>(null); // Purchase
+
+  // Store refs in the parent's collection
+  React.useEffect(() => {
+    itemRefs.current[rowIndex] = [
+      materialSelectRef.current,
+      productNameInputRef.current,
+      qtyInputRef.current,
+      isPurchase ? purchaseNetTypeSelectRef.current : rateInputRef.current,
+      isPurchase
+        ? item.purchaseNetType === 'net_percentage' ? purchaseNetPercentInputRef.current : purchaseNetFixedInputRef.current
+        : mcTypeSelectRef.current,
+      isPurchase ? null : mcValueInputRef.current, // Purchase has fewer fields here
+    ].filter(Boolean) as Array<HTMLInputElement | HTMLButtonElement>;
+  }, [rowIndex, itemRefs, isPurchase, item.purchaseNetType]);
+
 
   const handleValuableSelect = (valuableId: string) => {
     const selectedValuable = availableValuables.find(v => v.id === valuableId);
@@ -44,20 +76,20 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       const updates: Partial<BillItem> = {
         valuableId,
         unit: selectedValuable.unit,
-        rate: selectedValuable.price,
       };
-      // Product name (item.name) is NOT auto-filled from valuable.name
-      
-      if (isPurchase) {
-        updates.purchaseNetType = item.purchaseNetType || 'net_percentage'; // Default to net_percentage
-        if (updates.purchaseNetType === 'net_percentage') {
-           updates.purchaseNetPercentValue = item.purchaseNetPercentValue ?? defaultPurchaseNetPercentage;
-        } else if (updates.purchaseNetType === 'fixed_net_price') {
-           updates.purchaseNetFixedValue = item.purchaseNetFixedValue ?? defaultPurchaseNetFixedValue;
-        }
-      } else { 
+
+      if (!isPurchase) { // For sales bill
+        updates.rate = selectedValuable.price;
         updates.makingChargeType = item.makingChargeType || defaultMakingCharge.type;
         updates.makingCharge = item.makingCharge === undefined ? defaultMakingCharge.value : item.makingCharge;
+      } else { // For purchase bill
+        updates.purchaseNetType = item.purchaseNetType || 'net_percentage'; // Default for new purchase items
+        if (updates.purchaseNetType === 'net_percentage') {
+          updates.purchaseNetPercentValue = item.purchaseNetPercentValue ?? defaultPurchaseNetPercentage;
+        } else if (updates.purchaseNetType === 'fixed_net_price') {
+          updates.purchaseNetFixedValue = item.purchaseNetFixedValue ?? defaultPurchaseNetFixedValue;
+        }
+        // Rate is not directly set from valuable for purchases, it's derived or manually input
       }
       onItemChange(updates);
     }
@@ -66,14 +98,14 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   const handleFieldChange = (field: keyof BillItem, value: any) => {
     let numericValue = value;
     const numericFields: (keyof BillItem)[] = ['weightOrQuantity', 'rate', 'makingCharge', 'purchaseNetPercentValue', 'purchaseNetFixedValue'];
-    
+
     if (numericFields.includes(field)) {
       numericValue = parseFloat(value);
       if (isNaN(numericValue)) {
         numericValue = field === 'weightOrQuantity' ? 0 : (item[field] as number || 0);
       }
     }
-    
+
     const updates: Partial<BillItem> = { [field]: numericValue };
 
     if (field === 'purchaseNetType' && isPurchase) {
@@ -82,9 +114,9 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
     }
     onItemChange(updates);
   };
-  
+
   const selectedValuableDetails = item.valuableId ? availableValuables.find(v => v.id === item.valuableId) : null;
-  const datalistId = `product-names-datalist-${item.id || 'new'}`; // Changed for clarity
+  const datalistId = `product-names-datalist-${item.id || 'new'}`;
 
   const marketPriceForPurchase = isPurchase && item.valuableId ? getValuablePrice(item.valuableId) : 0;
   let effectiveRateForPurchaseDisplay = 0;
@@ -99,16 +131,27 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
     effectiveRateForPurchaseDisplay = item.rate || 0;
   }
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && onEnterInLastField) {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLButtonElement>, currentFieldIndex: number) => {
+    if (event.key === 'Enter') {
       event.preventDefault();
-      onEnterInLastField();
+      const currentRowFields = itemRefs.current[rowIndex];
+      if (currentFieldIndex < currentRowFields.length - 1) {
+        const nextField = currentRowFields[currentFieldIndex + 1];
+        if (nextField && typeof (nextField as any).focus === 'function') { // Check if focus is a function
+            (nextField as HTMLElement).focus();
+          }
+      } else {
+        if (onEnterInLastField) {
+          onEnterInLastField();
+        }
+      }
     }
   };
 
-  const gridColsClass = isPurchase 
-    ? "grid-cols-12" 
-    : "grid-cols-12"; 
+
+  const gridColsClass = isPurchase
+    ? "grid-cols-12"
+    : "grid-cols-12";
 
   return (
     <div className={`grid ${gridColsClass} gap-2 items-start py-2 border-b last:border-b-0`}>
@@ -117,8 +160,15 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       </datalist>
 
       <div className="col-span-2">
-        <Select value={item.valuableId || ''} onValueChange={handleValuableSelect}>
-          <SelectTrigger className="h-9 text-sm">
+        <Select
+          value={item.valuableId || ''}
+          onValueChange={handleValuableSelect}
+        >
+          <SelectTrigger
+            ref={materialSelectRef}
+            className="h-9 text-sm"
+            onKeyDown={(e) => handleKeyDown(e, 0)}
+          >
             <SelectValue placeholder="Select Material" />
           </SelectTrigger>
           <SelectContent>
@@ -136,21 +186,25 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
       <div className="col-span-3">
         <Input
+          ref={productNameInputRef}
           placeholder="Product Name (e.g. Ring)"
-          value={item.name || ''} // Ensure item.name is not undefined
+          value={item.name || ''}
           onChange={(e) => handleFieldChange('name', e.target.value)}
           onBlur={(e) => onProductNameBlur(e.target.value)}
+          onKeyDown={(e) => handleKeyDown(e, 1)}
           list={datalistId}
           className="h-9 text-sm"
         />
       </div>
 
       <div className="col-span-1">
-        <Input 
-          type="number" 
+        <Input
+          ref={qtyInputRef}
+          type="number"
           placeholder={`Qty/${selectedValuableDetails?.unit || 'unit'}`}
           value={item.weightOrQuantity === undefined ? '' : item.weightOrQuantity}
           onChange={(e) => handleFieldChange('weightOrQuantity', e.target.value)}
+          onKeyDown={(e) => handleKeyDown(e, 2)}
           min="0"
           step={selectedValuableDetails?.unit === 'carat' || selectedValuableDetails?.unit === 'ct' ? '0.001' : '0.01'}
           className="h-9 text-sm text-center"
@@ -159,12 +213,16 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
       {isPurchase && (
         <>
-          <div className="col-span-2 flex flex-col space-y-1"> 
-            <Select 
-              value={item.purchaseNetType || 'net_percentage'} // Default to 'net_percentage'
+          <div className="col-span-2 flex flex-col space-y-1">
+            <Select
+              value={item.purchaseNetType || 'net_percentage'}
               onValueChange={(val: 'net_percentage' | 'fixed_net_price') => handleFieldChange('purchaseNetType', val)}
             >
-              <SelectTrigger className="h-9 text-xs">
+              <SelectTrigger
+                ref={purchaseNetTypeSelectRef}
+                className="h-9 text-xs"
+                onKeyDown={(e) => handleKeyDown(e, 3)}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -176,30 +234,32 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                 <p className="text-xs text-muted-foreground text-center">Mkt: {marketPriceForPurchase.toFixed(2)}</p>
             )}
           </div>
-          
-          <div className="col-span-1 flex flex-col space-y-1"> 
+
+          <div className="col-span-1 flex flex-col space-y-1">
             {item.purchaseNetType === 'net_percentage' && (
-              <Input 
-                type="number" 
-                placeholder="%" 
-                value={item.purchaseNetPercentValue === undefined ? '' : item.purchaseNetPercentValue} 
-                onChange={(e) => handleFieldChange('purchaseNetPercentValue', e.target.value)} 
-                className="h-9 text-sm text-center" 
-                min="0" 
+              <Input
+                ref={purchaseNetPercentInputRef}
+                type="number"
+                placeholder="%"
+                value={item.purchaseNetPercentValue === undefined ? '' : item.purchaseNetPercentValue}
+                onChange={(e) => handleFieldChange('purchaseNetPercentValue', e.target.value)}
+                className="h-9 text-sm text-center"
+                min="0"
                 step="0.01"
-                onKeyDown={handleKeyDown}
+                onKeyDown={(e) => handleKeyDown(e, 4)}
               />
             )}
             {item.purchaseNetType === 'fixed_net_price' && (
-              <Input 
-                type="number" 
-                placeholder="Net Rate" 
-                value={item.purchaseNetFixedValue === undefined ? '' : item.purchaseNetFixedValue} 
-                onChange={(e) => handleFieldChange('purchaseNetFixedValue', e.target.value)} 
-                className="h-9 text-sm text-center" 
-                min="0" 
+              <Input
+                ref={purchaseNetFixedInputRef}
+                type="number"
+                placeholder="Net Rate"
+                value={item.purchaseNetFixedValue === undefined ? '' : item.purchaseNetFixedValue}
+                onChange={(e) => handleFieldChange('purchaseNetFixedValue', e.target.value)}
+                className="h-9 text-sm text-center"
+                min="0"
                 step="0.01"
-                onKeyDown={handleKeyDown}
+                onKeyDown={(e) => handleKeyDown(e, 4)}
               />
             )}
             {(item.purchaseNetType === 'net_percentage' || item.purchaseNetType === 'fixed_net_price') && item.valuableId && (
@@ -211,23 +271,29 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
       {!isPurchase && (
         <>
-          <div className="col-span-1"> 
-            <Input 
-              type="number" 
+          <div className="col-span-1">
+            <Input
+              ref={rateInputRef}
+              type="number"
               placeholder="Rate"
               value={item.rate === undefined ? '' : item.rate}
               onChange={(e) => handleFieldChange('rate', e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, 3)}
               min="0"
               step="0.01"
               className="h-9 text-sm text-center"
             />
           </div>
-          <div className="col-span-1"> 
-            <Select 
-              value={item.makingChargeType || defaultMakingCharge.type} 
+          <div className="col-span-1">
+            <Select
+              value={item.makingChargeType || defaultMakingCharge.type}
               onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}
             >
-              <SelectTrigger className="text-xs px-1 h-9">
+              <SelectTrigger
+                ref={mcTypeSelectRef}
+                className="text-xs px-1 h-9"
+                onKeyDown={(e) => handleKeyDown(e, 4)}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -236,21 +302,22 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-1"> 
-            <Input 
-              type="number" 
+          <div className="col-span-1">
+            <Input
+              ref={mcValueInputRef}
+              type="number"
               placeholder="Making"
               value={item.makingCharge === undefined ? '' : item.makingCharge}
               onChange={(e) => handleFieldChange('makingCharge', e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, 5)}
               min="0"
               step="0.01"
               className="h-9 text-sm text-center"
-              onKeyDown={handleKeyDown}
             />
           </div>
         </>
       )}
-      
+
       <div className={`col-span-1 text-right self-center`}>
         <span className="font-medium text-sm">{item.amount?.toFixed(2) || '0.00'}</span>
       </div>
