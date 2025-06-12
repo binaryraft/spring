@@ -41,7 +41,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   const handlePrint = () => {
     setTimeout(() => {
         window.print();
-    }, 100); 
+    }, 100);
   };
 
   const displaySubTotal = bill.subTotal;
@@ -52,7 +52,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   if (isEstimateView) {
     displayCgstAmount = 0;
     displaySgstAmount = 0;
-    displayTotalAmount = displaySubTotal; 
+    displayTotalAmount = displaySubTotal;
   }
 
 
@@ -65,16 +65,18 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 return marketPrice * (1 - ((item.purchaseNetPercentValue || 0) / 100));
             case 'fixed_net_price':
                 return item.purchaseNetFixedValue || 0;
-            default: 
-                return item.rate; 
+            default:
+                // This case should ideally not be reached if purchaseNetType is always set for purchase items.
+                // Fallback to item.rate if available, otherwise 0.
+                return item.rate || 0;
         }
     }
-    return item.rate; 
+    return item.rate || 0; // For sales bills
   };
 
   const PlaceholderLogo = () => (
     <div className="w-16 h-16 bg-muted/50 flex items-center justify-center rounded print:bg-transparent print-placeholder-logo">
-      <Building className="w-8 h-8 text-muted-foreground print:fill-gray-600" />
+      <Building className="w-8 h-8 text-muted-foreground print:fill-black" />
     </div>
   );
 
@@ -208,21 +210,23 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </Button>
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
-      </DialogContent>
       <style jsx global>{`
         @media print {
-          body {
-            font-family: 'PT Sans', sans-serif;
-            font-size: 10pt;
-            color: #000000 !important; 
-            background-color: #ffffff !important; 
+          html, body {
+            font-family: 'PT Sans', sans-serif !important;
+            font-size: 10pt !important;
+            color: #000000 !important;
+            background-color: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
           }
           body * {
             visibility: hidden;
-            color: #000000 !important; 
-            background-color: transparent !important; /* Make backgrounds transparent */
-            border-color: #cccccc !important; 
-            box-shadow: none !important; 
+            color: #000000 !important;
+            background-color: transparent !important;
+            border-color: #aaaaaa !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
           }
           #bill-to-print, #bill-to-print * {
             visibility: visible;
@@ -234,98 +238,126 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             width: 100%;
             height: auto;
             margin: 0;
-            padding: 0; /* Remove padding from the main container, @page margin will handle it */
+            padding: 0;
             background-color: #ffffff !important;
             border: none !important;
-          }
-          .print\\:hidden { display: none !important; }
-          
-          /* Specific text color overrides for print if Tailwind classes are too strong */
-          #bill-to-print .text-primary,
-          #bill-to-print .text-accent {
-             color: #000000 !important;
-          }
-          #bill-to-print .text-muted-foreground {
-             color: #333333 !important;
-          }
-          #bill-to-print .text-destructive {
-             color: #000000 !important; /* Or a dark gray if distinction needed */
-          }
-          #bill-to-print .font-headline {
-            font-family: 'Playfair Display', serif; /* Keep headline font if desired, or standardize */
-          }
-          #bill-to-print .font-body {
-            font-family: 'PT Sans', sans-serif;
+            color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
           }
 
-          /* Table styling */
-          table {
+          #bill-to-print p,
+          #bill-to-print span,
+          #bill-to-print div,
+          #bill-to-print th,
+          #bill-to-print td,
+          #bill-to-print li,
+          #bill-to-print h1,
+          #bill-to-print h2,
+          #bill-to-print h3,
+          #bill-to-print h4,
+          #bill-to-print h5,
+          #bill-to-print h6 {
+            color: #000000 !important;
+            background-color: transparent !important;
+          }
+
+          #bill-to-print .text-primary,
+          #bill-to-print .text-accent,
+          #bill-to-print .text-muted-foreground,
+          #bill-to-print .text-destructive,
+          #bill-to-print .text-gray-800,
+          #bill-to-print .text-gray-700,
+          #bill-to-print .text-gray-600,
+          #bill-to-print .text-gray-500 {
+             color: #000000 !important;
+           }
+
+          #bill-to-print .font-headline {
+            font-family: 'Playfair Display', serif !important;
+          }
+          #bill-to-print .font-body {
+            font-family: 'PT Sans', sans-serif !important;
+          }
+
+          #bill-to-print table {
             width: 100% !important;
             border-collapse: collapse !important;
             page-break-inside: auto !important;
           }
-          tr {
+          #bill-to-print tr {
             page-break-inside: avoid !important;
             page-break-after: auto !important;
           }
-          thead {
+          #bill-to-print thead {
             display: table-header-group !important;
             background-color: #f0f0f0 !important;
           }
-          th, td {
-             border: 1px solid #cccccc !important;
-             padding: 4px 6px !important;
-             color: #000000 !important; /* Ensure all table text is black */
-          }
-          th {
+           #bill-to-print th {
             font-weight: bold !important;
             text-align: left !important;
             background-color: #f0f0f0 !important;
+            color: #000000 !important;
+            border: 1px solid #aaaaaa !important;
+            padding: 4px 6px !important;
           }
-          
-          /* Logo Styling */
+          #bill-to-print td {
+             border: 1px solid #aaaaaa !important;
+             padding: 4px 6px !important;
+             color: #000000 !important;
+          }
+          #bill-to-print .print\\:font-bold { font-weight: bold !important; }
+          #bill-to-print .print\\:font-semibold { font-weight: 600 !important; }
+          #bill-to-print .print\\:text-xs { font-size: 0.8rem !important; }
+          #bill-to-print .print\\:text-xxs { font-size: 0.7rem !important; }
+
           .print-logo {
-            filter: grayscale(100%);
-            max-width: 150px !important;
-            max-height: 70px !important;
+            filter: grayscale(100%) contrast(150%) !important;
+            max-width: 120px !important;
+            max-height: 60px !important;
             object-fit: contain !important;
-            display: block; /* Ensure it behaves predictably */
+            display: block !important;
           }
           .print-placeholder-logo {
-            background-color: transparent !important; /* No background for placeholder container */
-            border: 1px solid #cccccc !important; /* Optional: light border for placeholder */
-            width: 70px !important; /* Fixed size for placeholder */
-            height: 70px !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background-color: transparent !important;
+            border: 1px solid #aaaaaa !important;
+            width: 60px !important;
+            height: 60px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
           }
           .print-placeholder-logo svg {
-             width: 40px !important;
-             height: 40px !important;
-             fill: #555555 !important;
+             width: 35px !important;
+             height: 35px !important;
+             fill: #000000 !important;
+             stroke: #000000 !important;
           }
 
-          /* Ensure separators are light gray */
-          hr, .print\\:border-gray-400, .print\\:border-gray-300 {
-            border-color: #cccccc !important;
-            background-color: #cccccc !important;
+          #bill-to-print hr,
+          #bill-to-print .print\\:border-gray-400,
+          #bill-to-print .print\\:border-gray-300,
+          #bill-to-print .border-t,
+          #bill-to-print .border-b {
+            border-color: #aaaaaa !important;
+            background-color: #aaaaaa !important; /* For hr elements */
           }
-           .whitespace-pre-line {
+           #bill-to-print .whitespace-pre-line {
              white-space: pre-wrap !important;
              word-break: break-word;
           }
+          .print\\:hidden { display: none !important; }
         }
         @page {
           size: A4;
-          margin: 15mm; /* Consistent margin */
+          margin: 10mm 15mm;
         }
       `}</style>
-    </Dialog>
+    </DialogContent>
+  </Dialog>
   );
 };
 
 export default BillViewModal;
 
-        
     
