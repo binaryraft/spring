@@ -47,45 +47,85 @@ const handleGeneratePdf = async () => {
 
     if (!billContentElement) {
         console.error('Bill content element not found for PDF generation.');
-        setIsGeneratingPdf(false);
         alert("Error: Bill content element not found. PDF generation aborted.");
+        setIsGeneratingPdf(false);
         return;
     }
     
+    // Store original parent and next sibling to restore later
+    const originalParent = billContentElement.parentNode;
+    const originalNextSibling = billContentElement.nextSibling;
+
+    // Create a temporary wrapper for capture
+    const captureWrapper = document.createElement('div');
+    captureWrapper.id = 'pdf-capture-wrapper';
+    Object.assign(captureWrapper.style, {
+        position: 'absolute',
+        left: '0px', // Keep on-screen for debugging initially
+        top: '0px',  // Keep on-screen for debugging initially
+        zIndex: '10000', // Ensure it's on top
+        width: '794px', // A4-ish width
+        backgroundColor: 'white',
+        padding: '0',
+        border: '1px dashed #ccc' // For debugging visibility
+    });
+    document.body.appendChild(captureWrapper);
+    
+    // Move the content to the wrapper
+    captureWrapper.appendChild(billContentElement);
+
     document.body.classList.add('print-capture-active');
     
-    // Ensure styles are applied and layout is stable
+    // Ensure styles are applied and layout is stable in the new wrapper
     await new Promise(resolve => requestAnimationFrame(resolve));
-    await new Promise(resolve => setTimeout(resolve, 300)); // Slightly increased delay
+    await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
 
     if (billContentElement.scrollWidth === 0 || billContentElement.scrollHeight === 0) {
-        console.error('Bill content element has no dimensions for capture. Width:', billContentElement.scrollWidth, 'Height:', billContentElement.scrollHeight);
-        alert("Error: Bill content not rendered with dimensions. PDF generation aborted.");
+        console.error('Bill content element (in wrapper) has no dimensions. Width:', billContentElement.scrollWidth, 'Height:', billContentElement.scrollHeight);
+        alert("Error: Bill content not rendered with dimensions in capture wrapper. PDF generation aborted.");
+        
+        // Restore element and cleanup
+        if (originalParent && billContentElement.parentNode === captureWrapper) { // Check if it was moved
+            if (originalNextSibling) {
+                originalParent.insertBefore(billContentElement, originalNextSibling);
+            } else {
+                originalParent.appendChild(billContentElement);
+            }
+        }
+        if (captureWrapper.parentNode === document.body) {
+           document.body.removeChild(captureWrapper);
+        }
         document.body.classList.remove('print-capture-active');
         setIsGeneratingPdf(false);
         return;
     }
 
     try {
-        console.log(`Attempting to capture element: #bill-to-print. Element OffsetWidth: ${billContentElement.offsetWidth}, OffsetHeight: ${billContentElement.offsetHeight}, ScrollWidth: ${billContentElement.scrollWidth}, ScrollHeight: ${billContentElement.scrollHeight}`);
+        console.log(`Attempting to capture element: #bill-to-print (now in #pdf-capture-wrapper). OffsetWidth: ${billContentElement.offsetWidth}, OffsetHeight: ${billContentElement.offsetHeight}, ScrollWidth: ${billContentElement.scrollWidth}, ScrollHeight: ${billContentElement.scrollHeight}`);
         
-        const canvas = await html2canvas(billContentElement, {
+        const canvas = await html2canvas(billContentElement, { // Target the element (which is now in the wrapper)
             scale: 2, 
             useCORS: true,
             logging: true, 
-            backgroundColor: "#ffffff", // Ensure canvas background is white
-            // Let html2canvas derive width/height from the element's computed styles
+            backgroundColor: "#ffffff", 
         });
 
         const imgData = canvas.toDataURL('image/png');
         console.log('Canvas toDataURL length:', imgData.length);
-
-        if (imgData.length < 200 || imgData === 'data:,') { 
+        if (imgData.length < 250 || imgData === 'data:,') { // Increased threshold slightly
              console.error("Generated canvas image is too small or empty. Data (first 100 chars):", imgData.substring(0,100));
-             alert("Error: Failed to capture bill content for PDF. The generated image was empty or too small. Check console for details.");
+             alert("Error: Failed to capture bill content for PDF. The generated image was empty or too small. Check console for details. The capture wrapper will remain on screen for inspection if left/top are 0px.");
+             // Don't restore immediately if left/top are 0 for debugging the wrapper
+             if (captureWrapper.style.left !== "0px") {
+                // Restore element and cleanup if it was off-screen
+                if (originalParent && billContentElement.parentNode === captureWrapper) {
+                    if (originalNextSibling) { originalParent.insertBefore(billContentElement, originalNextSibling); } else { originalParent.appendChild(billContentElement); }
+                }
+                if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
+                document.body.classList.remove('print-capture-active');
+             }
              setIsGeneratingPdf(false);
-             document.body.classList.remove('print-capture-active');
-             return;
+             return; 
         }
 
         const pdf = new jsPDF({
@@ -107,9 +147,7 @@ const handleGeneratePdf = async () => {
         if (canvasImgWidth === 0 || canvasImgHeight === 0) {
             console.error("Canvas image properties (from PDF lib) report zero width or height.");
             alert("Error: Captured image for PDF has no dimensions according to PDF library.");
-            setIsGeneratingPdf(false);
-            document.body.classList.remove('print-capture-active');
-            return;
+            return; // Finally will still run
         }
 
         const availableWidth = pdfWidth - 2 * margin;
@@ -125,9 +163,7 @@ const handleGeneratePdf = async () => {
         if (finalPdfImgWidth <= 0 || finalPdfImgHeight <= 0) {
             console.error("Calculated PDF image dimensions are invalid (<=0). Width:", finalPdfImgWidth, "Height:", finalPdfImgHeight);
             alert("Error: Calculated PDF dimensions are invalid.");
-            setIsGeneratingPdf(false);
-            document.body.classList.remove('print-capture-active');
-            return;
+            return; // Finally will still run
         }
 
         const x = margin + (availableWidth - finalPdfImgWidth) / 2; 
@@ -140,6 +176,17 @@ const handleGeneratePdf = async () => {
         console.error("Error generating PDF with html2canvas and jspdf:", error);
         alert(`An error occurred while generating the PDF: ${error instanceof Error ? error.message : String(error)}. Check console for details.`);
     } finally {
+        // Restore the element to its original position and remove the wrapper
+        if (originalParent && billContentElement.parentNode === captureWrapper) { // Check if it was moved
+            if (originalNextSibling) {
+                originalParent.insertBefore(billContentElement, originalNextSibling);
+            } else {
+                originalParent.appendChild(billContentElement);
+            }
+        }
+         if (captureWrapper.parentNode === document.body) { // Check if it's still there
+           document.body.removeChild(captureWrapper);
+        }
         document.body.classList.remove('print-capture-active');
         setIsGeneratingPdf(false);
     }
@@ -185,34 +232,32 @@ const handleGeneratePdf = async () => {
         </DialogHeader>
 
         <div className="flex-grow overflow-y-auto p-1"> 
-          <div id="bill-to-print" className="bg-card text-foreground"> {/* Removed border, shadow, rounded for capture */}
+          <div id="bill-to-print" className="bg-card text-foreground">
            <style jsx global>{`
-                /* Styles applied when body.print-capture-active is present for html2canvas */
                 body.print-capture-active {
-                    background: white !important; /* Ensure body background is white for capture */
+                    background: white !important; 
                 }
                 body.print-capture-active #bill-to-print {
                     background-color: #ffffff !important;
-                    padding: 0 !important; /* NO PADDING for the capture element itself */
-                    margin: 0 auto !important; /* Centering if a fixed width is used */
+                    padding: 0 !important; 
+                    margin: 0 auto !important; 
                     border: none !important;
                     box-shadow: none !important;
-                    width: 780px !important; /* A4-like width for html2canvas rendering consistency */
-                    /* height: auto; /* Let content determine height */
+                    width: 780px !important; 
+                    height: auto !important; /* Let content determine height */
                     box-sizing: border-box !important;
                     overflow: visible !important;
+                    transform: none !important; /* Crucial for html2canvas */
                 }
 
-                /* Hide elements not part of the bill during capture */
                 body.print-capture-active .print-hidden {
                     display: none !important;
                 }
-                 body.print-capture-active [role="dialog"] > button[class*="absolute"] { /* ShadCN Dialog Close button */
+                 body.print-capture-active [role="dialog"] > button[class*="absolute"] { 
                     display: none !important;
                 }
 
 
-                /* Common styles for both actual print and html2canvas capture (triggered by body.print-capture-active) */
                 @media print, body.print-capture-active {
                     html, body { 
                         background-color: #ffffff !important;
@@ -222,26 +267,22 @@ const handleGeneratePdf = async () => {
                         print-color-adjust: exact !important;
                     }
                     
-                    /* Actual print specific: Hide everything not part of the bill */
                     @media print {
-                        body > *:not(#bill-to-print-wrapper):not(#bill-to-print-wrapper *) { /* This needs a wrapper if #bill-to-print is deep */
+                        body > *:not(#bill-to-print-wrapper):not(#bill-to-print-wrapper *) {
                             display: none !important; 
                         }
-                         /* Hide Radix Dialog's default close X button for actual print */
                         [role="dialog"] > button[class*="absolute"][class*="right-4"][class*="top-4"] {
                            display: none !important;
                         }
                     }
                     
-                    /* Ensure the #bill-to-print element itself is styled for print/capture */
-                    /* Styles for #bill-to-print when @media print (browser printing) */
                     @media print {
                       #bill-to-print {
-                        padding: 15mm !important; /* Page margins for browser printing */
+                        padding: 15mm !important; 
                         margin: 0 !important;
                         border: none !important;
                         box-shadow: none !important;
-                        width: auto !important; /* Browser print handles width */
+                        width: auto !important; 
                         background-color: #ffffff !important;
                       }
                     }
@@ -291,7 +332,7 @@ const handleGeneratePdf = async () => {
                     }
                     #bill-to-print th, body.print-capture-active #bill-to-print th,
                     #bill-to-print td, body.print-capture-active #bill-to-print td {
-                        border: 1px solid #b0b0b0 !important; /* Slightly darker for clarity */
+                        border: 1px solid #b0b0b0 !important; 
                         padding: 3px 5px !important;
                         text-align: left !important;
                     }
@@ -306,7 +347,7 @@ const handleGeneratePdf = async () => {
 
                     #bill-to-print .print-logo, body.print-capture-active #bill-to-print .print-logo {
                         max-width: 50px !important; 
-                        max-height: 25px !important; /* Adjusted for smaller print */
+                        max-height: 25px !important; 
                         object-fit: contain !important;
                         filter: grayscale(100%) contrast(150%) !important;
                     }
@@ -319,7 +360,7 @@ const handleGeneratePdf = async () => {
                      #bill-to-print .print-placeholder-logo svg, body.print-capture-active #bill-to-print .print-placeholder-logo svg {
                         fill: #000000 !important;
                         stroke: #000000 !important;
-                        width: 20px !important; /* Adjusted for smaller placeholder */
+                        width: 20px !important; 
                         height: 20px !important;
                     }
 
@@ -333,17 +374,16 @@ const handleGeneratePdf = async () => {
                     }
                 }
 
-                @media print { /* @page is only for actual browser printing */
+                @media print { 
                     @page {
                         size: A4 portrait;
-                        margin: 10mm; /* Browser print margins */
+                        margin: 10mm; 
                     }
                 }
             `}</style>
-            {/* Assign classes to top-level flex containers for easier targeting in print CSS */}
             <header className="mb-6 bill-section-grid">
               <div className="text-left company-details">
-                  <h1 className="text-primary">{company.companyName}</h1> {/* Tailwind class for screen, print CSS overrides */}
+                  <h1 className="text-primary">{company.companyName}</h1>
                   {company.slogan && <p className="text-muted-foreground">{company.slogan}</p>}
                   <p className="text-xs">{company.address}</p>
                   <p className="text-xs">Phone: {company.phoneNumber}</p>
@@ -358,7 +398,7 @@ const handleGeneratePdf = async () => {
                 </div>
               )}
             </header>
-            <h2 className="text-accent text-center">{effectiveBillType.toUpperCase()}</h2> {/* Tailwind class for screen, print CSS overrides */}
+            <h2 className="text-accent text-center">{effectiveBillType.toUpperCase()}</h2>
 
             <Separator className="my-4"/>
 
@@ -391,7 +431,7 @@ const handleGeneratePdf = async () => {
                     <th className="py-2 px-1 text-left font-semibold border border-border">Item (Material)</th>
                     <th className="py-2 px-1 text-right font-semibold border border-border">Qty/Wt</th>
                     <th className="py-2 px-1 text-right font-semibold border border-border">
-                        Rate {isEstimateView && bill.items.length > 0 ? `/ ${bill.items[0].unit}` : isEstimateView ? '/ unit' : '/ unit'}
+                        Rate {isEstimateView && bill.items.length > 0 && bill.items[0].unit ? `/ ${bill.items[0].unit}` : (isEstimateView ? '/ unit' : '/ unit')}
                     </th>
                     {showMakingChargeColumn && <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
                     {!isEstimateView && <th className="py-2 px-1 text-right font-semibold border border-border">Taxable Amt</th>}
@@ -412,14 +452,13 @@ const handleGeneratePdf = async () => {
                     
                     let itemCgst = 0;
                     let itemSgst = 0;
-                    let lineTotal = taxableAmount;
+                    let lineTotal = taxableAmount; // For estimates or purchases
 
-                    if (showItemLevelGstColumns) { 
+                    if (showItemLevelGstColumns) { // This is only true for non-estimate sales bills
                         itemCgst = item.itemCgstAmount || 0;
                         itemSgst = item.itemSgstAmount || 0;
                         lineTotal = taxableAmount + itemCgst + itemSgst;
                     }
-
 
                     return (
                     <tr key={item.id} className="border-b last:border-b-0">
@@ -452,7 +491,6 @@ const handleGeneratePdf = async () => {
 
             <Separator className="my-4"/>
 
-             {/* Assign bill-section-grid for notes/totals too */}
             <div className="bill-section-grid gap-x-4 mt-4">
               <div className="col-span-3 customer-details-column"> 
                 {bill.notes && (
@@ -471,7 +509,7 @@ const handleGeneratePdf = async () => {
                 {isEstimateView && <p className="text-xs text-muted-foreground">(GST not applicable for estimates)</p>}
 
                 <Separator className="my-1"/>
-                <p className="text-lg font-bold">Total: <span className="text-primary">{bill.totalAmount.toFixed(2)}</span></p> {/* Tailwind class for screen, print CSS overrides */}
+                <p className="text-lg font-bold">Total: <span className="text-primary">{bill.totalAmount.toFixed(2)}</span></p>
               </div>
             </div>
 
@@ -498,4 +536,6 @@ const handleGeneratePdf = async () => {
 };
 
 export default BillViewModal;
+    
+
     
