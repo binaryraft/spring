@@ -44,79 +44,133 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true);
     const billContentElement = document.getElementById('bill-to-print');
+    
     if (!billContentElement) {
-      console.error('Bill content element not found.');
-      setIsGeneratingPdf(false);
-      return;
+        console.error('Bill content element not found for PDF generation.');
+        setIsGeneratingPdf(false);
+        return;
     }
 
-    const originalStyles = {
-      transform: billContentElement.style.transform,
-      width: billContentElement.style.width,
-      border: billContentElement.style.border,
-      boxShadow: billContentElement.style.boxShadow,
-    };
-    billContentElement.style.transform = 'scale(1)'; 
-    billContentElement.style.width = '210mm'; 
-    billContentElement.style.border = 'none';
-    billContentElement.style.boxShadow = 'none';
-
+    // Ensure the element is visible and has dimensions before capture
+    const rect = billContentElement.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+        console.warn("Bill content element has zero dimensions. Attempting capture anyway, but this might result in a blank PDF.", rect);
+    }
 
     try {
-      const canvas = await html2canvas(billContentElement, {
-        scale: 2, 
-        useCORS: true, 
-        logging: false,
-        onclone: (document) => {
-          const style = document.createElement('style');
-          style.innerHTML = printStyles; 
-          document.head.appendChild(style);
-          const clonedContent = document.getElementById('bill-to-print');
-          if (clonedContent) {
-             clonedContent.style.backgroundColor = '#ffffff';
-          }
+        const canvas = await html2canvas(billContentElement, {
+            scale: 2, 
+            useCORS: true,
+            logging: true, 
+            backgroundColor: "#ffffff", 
+            onclone: (documentClone) => {
+                const clonedContent = documentClone.getElementById('bill-to-print');
+                if (clonedContent) {
+                    clonedContent.style.backgroundColor = '#ffffff';
+                    clonedContent.style.padding = '10mm'; 
+                    clonedContent.style.width = 'auto'; // Let content determine width, or set fixed e.g. '800px'
+                    clonedContent.style.boxSizing = 'border-box';
+
+                    const allElements = clonedContent.getElementsByTagName('*');
+                    for (let i = 0; i < allElements.length; i++) {
+                        const el = allElements[i] as HTMLElement;
+                        if (el.style) { 
+                            el.style.color = '#000000';
+                            el.style.backgroundColor = 'transparent'; 
+                            el.style.webkitPrintColorAdjust = 'exact';
+                            el.style.printColorAdjust = 'exact';
+                            // Avoid removing all borders, some are needed for tables
+                            // el.style.border = 'none'; 
+                            el.style.boxShadow = 'none';
+                        }
+                    }
+                    
+                    // Style specific elements like tables for print within the clone
+                    const tables = clonedContent.getElementsByTagName('table');
+                    for (let i = 0; i < tables.length; i++) {
+                        tables[i].style.borderCollapse = 'collapse';
+                        tables[i].style.width = '100%';
+                    }
+                    const ths = clonedContent.getElementsByTagName('th');
+                    for (let i = 0; i < ths.length; i++) {
+                        ths[i].style.border = '1px solid #ccc';
+                        ths[i].style.padding = '4px';
+                        ths[i].style.backgroundColor = '#f0f0f0'; // Light grey for header
+                    }
+                    const tds = clonedContent.getElementsByTagName('td');
+                    for (let i = 0; i < tds.length; i++) {
+                        tds[i].style.border = '1px solid #ccc';
+                        tds[i].style.padding = '4px';
+                    }
+
+
+                    const logo = clonedContent.querySelector('.print-logo') as HTMLElement;
+                    if (logo) {
+                        logo.style.filter = 'grayscale(100%) contrast(150%)';
+                        (logo as HTMLImageElement).style.maxWidth = '100px';
+                        (logo as HTMLImageElement).style.maxHeight = '50px';
+                        (logo as HTMLImageElement).style.objectFit = 'contain';
+                    }
+                    const placeholderLogoSvg = clonedContent.querySelector('.print-placeholder-logo svg');
+                    if (placeholderLogoSvg) {
+                        (placeholderLogoSvg as HTMLElement).style.fill = '#000000';
+                        (placeholderLogoSvg as HTMLElement).style.stroke = '#000000';
+                         const parentPlaceholder = placeholderLogoSvg.parentElement;
+                         if(parentPlaceholder){
+                            parentPlaceholder.style.border = '1px solid #000000';
+                         }
+                    }
+                }
+            }
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        if (imgData.length < 200) { 
+             console.error("Generated canvas image is too small or empty.");
+             setIsGeneratingPdf(false);
+             return;
         }
-      });
 
-      billContentElement.style.transform = originalStyles.transform;
-      billContentElement.style.width = originalStyles.width;
-      billContentElement.style.border = originalStyles.border;
-      billContentElement.style.boxShadow = originalStyles.boxShadow;
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+        });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const aspectRatio = canvasWidth / canvasHeight;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10; 
 
-      let imgWidth = pdfWidth - 20; 
-      let imgHeight = imgWidth / aspectRatio;
-      
-      if (imgHeight > pdfHeight - 20) { 
-        imgHeight = pdfHeight - 20; 
-        imgWidth = imgHeight * aspectRatio;
-      }
+        const imgProps = pdf.getImageProperties(imgData);
+        const canvasImgWidth = imgProps.width;
+        const canvasImgHeight = imgProps.height;
+        
+        const maxPdfPageImgWidth = pdfWidth - 2 * margin;
+        const maxPdfPageImgHeight = pdfHeight - 2 * margin;
 
-      const xOffset = (pdfWidth - imgWidth) / 2;
-      const yOffset = 10; 
+        let ratio = Math.min(maxPdfPageImgWidth / canvasImgWidth, maxPdfPageImgHeight / canvasImgHeight);
+        
+        const finalPdfImgWidth = canvasImgWidth * ratio;
+        const finalPdfImgHeight = canvasImgHeight * ratio;
 
-      pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
-      
-      pdf.output('dataurlnewwindow');
+        const x = margin + (maxPdfPageImgWidth - finalPdfImgWidth) / 2;
+        const y = margin + (maxPdfPageImgHeight - finalPdfImgHeight) / 2;
+        
+        if (finalPdfImgWidth <= 0 || finalPdfImgHeight <= 0) {
+            console.error("Calculated PDF image dimensions are invalid (<=0).");
+            setIsGeneratingPdf(false);
+            return;
+        }
+
+        pdf.addImage(imgData, 'PNG', x, y, finalPdfImgWidth, finalPdfImgHeight);
+        pdf.output('dataurlnewwindow');
 
     } catch (error) {
-      console.error("Error generating PDF:", error);
+        console.error("Error generating PDF:", error);
     } finally {
-      setIsGeneratingPdf(false);
+        setIsGeneratingPdf(false);
     }
-  };
+};
 
 
   const displaySubTotal = bill.subTotal;
@@ -140,8 +194,10 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 return marketPrice * (1 - ((item.purchaseNetPercentValue || 0) / 100));
             case 'fixed_net_price':
                 return item.purchaseNetFixedValue || 0;
+            // Removed 'market_rate' as it's no longer a type for purchase
             default: 
-                return item.rate || 0; // Should not happen with new types
+                 // Fallback or error if unexpected type, though types should restrict this
+                return item.rate || 0;
         }
     }
     return item.rate || 0;
@@ -155,8 +211,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] flex flex-col print:shadow-none print:border-none print:max-h-full print:w-full print:m-0 print:p-0">
-        <DialogHeader className="print:hidden">
+      <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
           <DialogTitle className="font-headline text-2xl text-primary">
             {effectiveBillType}
           </DialogTitle>
@@ -165,18 +221,18 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto p-1 print:overflow-visible print:p-0">
-          <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm print:border-gray-300 print:shadow-none print:rounded-none print:bg-white print:text-black">
-            <header className="mb-6 print:mb-4">
+        <div className="flex-grow overflow-y-auto p-1">
+          <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm text-foreground"> {/* Base text color */}
+            <header className="mb-6">
               <div className="flex justify-between items-start">
                   <div className="text-left">
-                      <h1 className="text-3xl font-bold font-headline text-primary print:text-2xl print:text-black print:font-bold">{company.companyName}</h1>
-                      {company.slogan && <p className="text-sm text-muted-foreground print:text-xs print:text-gray-700">{company.slogan}</p>}
-                      <p className="text-xs print:text-xxs print:text-gray-600">{company.address}</p>
-                      <p className="text-xs print:text-xxs print:text-gray-600">Phone: {company.phoneNumber}</p>
+                      <h1 className="text-3xl font-bold font-headline text-primary">{company.companyName}</h1>
+                      {company.slogan && <p className="text-sm text-muted-foreground">{company.slogan}</p>}
+                      <p className="text-xs">{company.address}</p>
+                      <p className="text-xs">Phone: {company.phoneNumber}</p>
                   </div>
                   {company.showCompanyLogo && (
-                    <div className="w-20 h-20 flex-shrink-0 print:w-auto print:h-auto print:max-w-[120px] print:max-h-[60px]">
+                    <div className="w-20 h-20 flex-shrink-0">
                         {company.companyLogo ? (
                             <Image src={company.companyLogo} alt={`${company.companyName} Logo`} width={80} height={80} className="object-contain print-logo" />
                         ) : (
@@ -185,42 +241,42 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     </div>
                   )}
               </div>
-              <h2 className="text-xl font-semibold mt-3 text-accent text-center print:text-lg print:text-black print:font-semibold print:mt-2">{effectiveBillType.toUpperCase()}</h2>
+              <h2 className="text-xl font-semibold mt-3 text-accent text-center">{effectiveBillType.toUpperCase()}</h2>
             </header>
 
-            <Separator className="my-4 print:my-3 print:border-gray-400"/>
+            <Separator className="my-4"/>
 
-             <div className="grid grid-cols-2 gap-4 mb-4 text-sm print:text-xs print:mb-3">
+             <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                 <div>
-                    <h3 className="font-semibold mb-1 print:font-bold">
+                    <h3 className="font-semibold mb-1">
                         {bill.type === 'purchase' ? 'From (Supplier):' : 'To (Customer):'}
                     </h3>
-                    <p className="print:text-gray-800">{bill.customerName || 'N/A'}</p>
-                    {bill.customerAddress && <p className="text-xs print:text-xxs print:text-gray-700">{bill.customerAddress}</p>}
-                    {bill.customerPhone && <p className="text-xs print:text-xxs print:text-gray-700">Phone: {bill.customerPhone}</p>}
+                    <p>{bill.customerName || 'N/A'}</p>
+                    {bill.customerAddress && <p className="text-xs">{bill.customerAddress}</p>}
+                    {bill.customerPhone && <p className="text-xs">Phone: {bill.customerPhone}</p>}
                 </div>
                 <div className="text-right">
-                    <h3 className="font-semibold mb-1 print:font-bold">
+                    <h3 className="font-semibold mb-1">
                         Details:
                     </h3>
-                    <p className="print:text-gray-800">
+                    <p>
                         {isEstimateView ? 'Estimate Ref:' : bill.type === 'purchase' ? 'P.O. No:' : 'Invoice No:'}
                         <span className="font-medium"> {bill.billNumber || (isEstimateView ? 'N/A (Estimate)' : 'N/A')}</span>
                     </p>
-                    <p className="print:text-gray-800">Date: <span className="font-medium">{format(new Date(bill.date), 'dd MMM, yyyy')}</span></p>
+                    <p>Date: <span className="font-medium">{format(new Date(bill.date), 'dd MMM, yyyy')}</span></p>
                 </div>
             </div>
 
-            <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-sm print:text-xs print:border-collapse">
-                <thead className="print:bg-gray-100">
-                  <tr className="border-b print:border-b-2 print:border-gray-400">
-                    <th className="py-2 px-1 text-left font-semibold print:px-2 print:py-1.5 print:font-bold print:text-black">#</th>
-                    <th className="py-2 px-1 text-left font-semibold print:px-2 print:py-1.5 print:font-bold print:text-black">Item (Material)</th>
-                    <th className="py-2 px-1 text-right font-semibold print:px-2 print:py-1.5 print:font-bold print:text-black">Qty/Wt</th>
-                    <th className="py-2 px-1 text-right font-semibold print:px-2 print:py-1.5 print:font-bold print:text-black">Rate</th>
-                    {(bill.type === 'sales-bill' && !isEstimateView && bill.items.some(i => i.makingCharge && i.makingCharge > 0)) && <th className="py-2 px-1 text-right font-semibold print:px-2 print:py-1.5 print:font-bold print:text-black">Making</th>}
-                    <th className="py-2 px-1 text-right font-semibold print:px-2 print:py-1.5 print:font-bold print:text-black">Amount</th>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 px-1 text-left font-semibold border border-border">#</th>
+                    <th className="py-2 px-1 text-left font-semibold border border-border">Item (Material)</th>
+                    <th className="py-2 px-1 text-right font-semibold border border-border">Qty/Wt</th>
+                    <th className="py-2 px-1 text-right font-semibold border border-border">Rate</th>
+                    {(bill.type === 'sales-bill' && !isEstimateView && bill.items.some(i => i.makingCharge && i.makingCharge > 0)) && <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
+                    <th className="py-2 px-1 text-right font-semibold border border-border">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -228,56 +284,56 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     const valuableDetails = getValuableById(item.valuableId);
                     const effectiveRate = getEffectiveRateForItem(item);
                     return (
-                    <tr key={item.id} className="border-b last:border-b-0 print:border-b print:border-gray-300">
-                      <td className="py-2 px-1 print:py-1 print:px-2 print:text-black">{index + 1}</td>
-                      <td className="py-2 px-1 print:py-1 print:px-2 print:text-black">
+                    <tr key={item.id} className="border-b last:border-b-0">
+                      <td className="py-2 px-1 border border-border">{index + 1}</td>
+                      <td className="py-2 px-1 border border-border">
                         {item.name} {valuableDetails ? `(${valuableDetails.name})` : ''}
                       </td>
-                      <td className="py-2 px-1 text-right print:py-1 print:px-2 print:text-black">{item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} {item.unit}</td>
-                      <td className="py-2 px-1 text-right print:py-1 print:px-2 print:text-black">{effectiveRate.toFixed(2)}</td>
+                      <td className="py-2 px-1 text-right border border-border">{item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} {item.unit}</td>
+                      <td className="py-2 px-1 text-right border border-border">{effectiveRate.toFixed(2)}</td>
                       {(bill.type === 'sales-bill' && !isEstimateView && bill.items.some(i => i.makingCharge && i.makingCharge > 0)) && (
-                        <td className="py-2 px-1 text-right print:py-1 print:px-2 print:text-black">
+                        <td className="py-2 px-1 text-right border border-border">
                           {item.makingCharge && item.makingCharge > 0 ?
                            (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : item.makingCharge.toFixed(2))
                            : '-'}
                         </td>
                       )}
-                      <td className="py-2 px-1 text-right font-medium print:py-1 print:px-2 print:font-semibold print:text-black">{item.amount.toFixed(2)}</td>
+                      <td className="py-2 px-1 text-right font-medium border border-border">{item.amount.toFixed(2)}</td>
                     </tr>
                   )})}
                 </tbody>
               </table>
             </div>
 
-            <Separator className="my-4 print:my-3 print:border-gray-400"/>
+            <Separator className="my-4"/>
 
-            <div className="grid grid-cols-5 gap-x-4 mt-4 print:mt-3">
+            <div className="grid grid-cols-5 gap-x-4 mt-4">
               <div className="col-span-3">
                 {bill.notes && (
                   <>
-                    <h4 className="font-semibold text-xs mb-1 print:font-bold print:text-black">Notes:</h4>
-                    <p className="text-xs text-muted-foreground whitespace-pre-line print:text-gray-700 print:text-xxs">{bill.notes}</p>
+                    <h4 className="font-semibold text-xs mb-1">Notes:</h4>
+                    <p className="text-xs text-muted-foreground whitespace-pre-line">{bill.notes}</p>
                   </>
                 )}
               </div>
-              <div className="col-span-2 text-sm space-y-1 text-right print:text-xs">
-                <p className="print:text-black">Subtotal: <span className="font-semibold print:text-black">{displaySubTotal.toFixed(2)}</span></p>
+              <div className="col-span-2 text-sm space-y-1 text-right">
+                <p>Subtotal: <span className="font-semibold">{displaySubTotal.toFixed(2)}</span></p>
 
-                {!isEstimateView && bill.type === 'sales-bill' && displayCgstAmount > 0 && <p className="print:text-black">CGST ({settings.cgstRate}%): <span className="font-semibold print:text-black">{displayCgstAmount.toFixed(2)}</span></p>}
-                {!isEstimateView && bill.type === 'sales-bill' && displaySgstAmount > 0 && <p className="print:text-black">SGST ({settings.sgstRate}%): <span className="font-semibold print:text-black">{displaySgstAmount.toFixed(2)}</span></p>}
+                {!isEstimateView && bill.type === 'sales-bill' && displayCgstAmount > 0 && <p>CGST ({settings.cgstRate}%): <span className="font-semibold">{displayCgstAmount.toFixed(2)}</span></p>}
+                {!isEstimateView && bill.type === 'sales-bill' && displaySgstAmount > 0 && <p>SGST ({settings.sgstRate}%): <span className="font-semibold">{displaySgstAmount.toFixed(2)}</span></p>}
 
-                <Separator className="my-1 print:border-gray-300"/>
-                <p className="text-lg font-bold print:text-base print:font-extrabold print:text-black">Total: <span className="text-primary print:text-black">{displayTotalAmount.toFixed(2)}</span></p>
+                <Separator className="my-1"/>
+                <p className="text-lg font-bold">Total: <span className="text-primary">{displayTotalAmount.toFixed(2)}</span></p>
               </div>
             </div>
 
-            <div className="mt-8 text-center text-xs text-muted-foreground print:text-gray-600 print:text-xxs print:mt-6">
+            <div className="mt-8 text-center text-xs text-muted-foreground">
               Thank you for your business!
-              <p className="print:mt-4 print:text-gray-500">--- {company.companyName} ---</p>
+              <p className="mt-4">--- {company.companyName} ---</p>
             </div>
           </div>
         </div>
-        <DialogFooter className="p-4 border-t mt-auto print:hidden">
+        <DialogFooter className="p-4 border-t mt-auto">
           <Button variant="outline" onClick={handleGeneratePdf} disabled={isGeneratingPdf}>
             {isGeneratingPdf ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -293,153 +349,4 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   );
 };
 
-// Define printStyles as a template literal string to be injected
-const printStyles = `
-  @page {
-    size: A4 portrait;
-    margin: 10mm; /* Reduced default page margins */
-  }
-
-  body, html {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    font-family: 'PT Sans', Arial, sans-serif !important;
-    font-size: 10pt !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* Hide everything except the bill content for html2canvas capture */
-  body > *:not(#bill-to-print-wrapper), 
-  body > *:not(.fixed.inset-0.z-50) > *:not(#bill-to-print) {
-    /* visibility: hidden !important; */ /* This might be too broad if not targeting html2canvas clone */
-  }
-  
-  #bill-to-print {
-    position: static !important; 
-    width: 100% !important; /* Full width within page margins */
-    height: auto !important;
-    margin: 0 !important; /* Margins handled by @page and padding */
-    padding: 15mm !important; /* Content padding inside the printable area */
-    background-color: #ffffff !important;
-    border: 1px solid #dedede !important; /* A light border for the bill itself */
-    box-shadow: none !important;
-    color: #000000 !important; 
-  }
-
-  #bill-to-print * {
-    color: #000000 !important;
-    background-color: transparent !important;
-    border-color: #aaaaaa !important; /* Default border color for elements within */
-    box-shadow: none !important;
-    text-shadow: none !important;
-    visibility: visible !important; 
-  }
-  
-  #bill-to-print .text-primary,
-  #bill-to-print .text-accent,
-  #bill-to-print .text-muted-foreground,
-  #bill-to-print [class*="text-gray-"] {
-      color: #000000 !important;
-  }
-  #bill-to-print .text-primary.print\\:text-black { /* for Total amount if it needs to be prominent but still black */
-      color: #000000 !important;
-      font-weight: bold !important;
-  }
-
-
-  #bill-to-print .font-headline {
-    font-family: 'Playfair Display', 'Times New Roman', serif !important;
-  }
-  
-  #bill-to-print table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    page-break-inside: auto !important;
-  }
-  #bill-to-print tr {
-    page-break-inside: avoid !important;
-    page-break-after: auto !important;
-  }
-  #bill-to-print thead {
-    display: table-header-group !important; /* Ensures header repeats on new pages */
-    background-color: #f0f0f0 !important;
-  }
-  #bill-to-print th, #bill-to-print td {
-    font-weight: normal !important;
-    text-align: left !important;
-    border: 1px solid #cccccc !important;
-    padding: 4px 6px !important;
-    word-break: break-word;
-  }
-  #bill-to-print th {
-    font-weight: bold !important;
-    background-color: #e9e9e9 !important;
-  }
-  
-  #bill-to-print .print\\:font-bold { font-weight: bold !important; }
-  #bill-to-print .print\\:font-semibold { font-weight: 600 !important; }
-  #bill-to-print .print\\:text-xs { font-size: 0.8rem !important; line-height: 1.2 !important; }
-  #bill-to-print .print\\:text-xxs { font-size: 0.7rem !important; line-height: 1.1 !important; }
-
-  .print-logo {
-    filter: grayscale(100%) contrast(150%) !important; /* Sharper B&W */
-    max-width: 100px !important; 
-    max-height: 50px !important;
-    object-fit: contain !important;
-    display: block !important;
-  }
-  .print-placeholder-logo {
-    background-color: transparent !important;
-    border: 1px solid #bbbbbb !important;
-    width: 60px !important;
-    height: 50px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 5px !important;
-  }
-  .print-placeholder-logo svg {
-      width: 30px !important;
-      height: 30px !important;
-      fill: #000000 !important;
-      stroke: #000000 !important;
-  }
-
-  #bill-to-print hr,
-  #bill-to-print .print\\:border-gray-400,
-  #bill-to-print .print\\:border-gray-300,
-  #bill-to-print .border-t,
-  #bill-to-print .border-b {
-    border-color: #cccccc !important;
-    background-color: transparent !important; /* Separators should not have a background */
-    height: 1px !important;
-    border-style: solid !important;
-    border-width: 1px 0 0 0 !important; /* Only top border for hr-like separators */
-  }
-  #bill-to-print .whitespace-pre-line {
-      white-space: pre-wrap !important;
-      word-break: break-word !important;
-  }
-  
-  #bill-to-print .print\\:hidden, .print\\:hidden * { 
-    display: none !important; 
-  }
-  
-  /* Specific layout adjustments for print using flex */
-  #bill-to-print header > div.flex { display: flex !important; justify-content: space-between !important; align-items: flex-start !important; }
-  #bill-to-print header > div.flex > div.text-left { flex-grow: 1; }
-  #bill-to-print header > div.flex > div.w-20 { flex-shrink: 0; }
-  
-  #bill-to-print .grid.grid-cols-2.gap-4 { display: flex !important; justify-content: space-between !important; }
-  #bill-to-print .grid.grid-cols-2.gap-4 > div { width: 48% !important; } /* Give some space between */
-  
-  #bill-to-print .grid.grid-cols-5.gap-x-4 { display: flex !important; justify-content: space-between !important; }
-  #bill-to-print .grid.grid-cols-5.gap-x-4 > div.col-span-3 { width: 60% !important; }
-  #bill-to-print .grid.grid-cols-5.gap-x-4 > div.col-span-2 { width: 35% !important; text-align: right !important; }
-
-`;
-
 export default BillViewModal;
-
-    
