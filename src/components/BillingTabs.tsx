@@ -26,6 +26,7 @@ const BillingTabs: React.FC = () => {
     } else if (savedBill.type === 'purchase') {
       setShowPurchaseForm(false);
     }
+    // For actual bills, always view as non-estimate
     handleViewBill(savedBill, false); 
   };
 
@@ -46,20 +47,22 @@ const BillingTabs: React.FC = () => {
     setIsViewingEstimate(isEstimate);
   };
 
+  // This function is now used by both sales and purchase forms for showing estimates
   const handleShowEstimatePreview = (estimateData: Bill) => {
     handleViewBill(estimateData, true);
   }
 
   const commonFormProps = {
     onSaveAndPrint: handleSaveAndPrintBill, 
+    onShowEstimate: handleShowEstimatePreview, // Pass this to both forms
   };
 
   return (
     <div className="container mx-auto py-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-8 bg-primary/10 rounded-lg p-1.5 h-auto">
-          <TabsTrigger value="sales-bill" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-md text-lg py-2.5">Sales</TabsTrigger>
-          <TabsTrigger value="purchase" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-md text-lg py-2.5">Purchases</TabsTrigger>
+          <TabsTrigger value="sales-bill" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-md text-lg py-3">Sales</TabsTrigger>
+          <TabsTrigger value="purchase" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-md text-lg py-3">Purchases</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales-bill">
@@ -72,13 +75,12 @@ const BillingTabs: React.FC = () => {
                   existingBill={editingBill && editingBill.type === 'sales-bill' ? editingBill : undefined}
                   {...commonFormProps}
                   onCancel={() => { setEditingBill(undefined); setShowSalesForm(false); }}
-                  onShowEstimate={handleShowEstimatePreview}
                 />
               ) : (
                 <>
                   <div className="flex justify-end mb-6">
-                    <Button onClick={() => { setEditingBill(undefined); setShowSalesForm(true); }} className="shadow-md hover:shadow-lg transition-shadow text-base px-5 py-2.5 h-auto">
-                      <PlusCircle className="mr-2 h-5 w-5" /> Create Sales Bill
+                    <Button onClick={() => { setEditingBill(undefined); setShowSalesForm(true); }} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
+                      <PlusCircle className="mr-2.5 h-5 w-5" /> Create Sales Bill
                     </Button>
                   </div>
                   <BillHistoryList billType="sales-bill" onEditBill={handleEditBill} onViewBill={(bill) => handleViewBill(bill, false)} />
@@ -96,15 +98,14 @@ const BillingTabs: React.FC = () => {
                   key={editingBill && editingBill.type === 'purchase' ? editingBill.id : 'new-purchase'}
                   billType="purchase"
                   existingBill={editingBill && editingBill.type === 'purchase' ? editingBill : undefined}
-                  {...commonFormProps}
+                  {...commonFormProps} // Pass onShowEstimate here as well
                   onCancel={() => { setEditingBill(undefined); setShowPurchaseForm(false); }}
-                  onShowEstimate={handleShowEstimatePreview} 
                 />
               ) : (
                 <>
                   <div className="flex justify-end mb-6">
-                    <Button onClick={() => { setEditingBill(undefined); setShowPurchaseForm(true); }} className="shadow-md hover:shadow-lg transition-shadow text-base px-5 py-2.5 h-auto">
-                      <PlusCircle className="mr-2 h-5 w-5" /> Create Purchase Bill
+                    <Button onClick={() => { setEditingBill(undefined); setShowPurchaseForm(true); }} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
+                      <PlusCircle className="mr-2.5 h-5 w-5" /> Create Purchase Bill
                     </Button>
                   </div>
                   <BillHistoryList billType="purchase" onEditBill={handleEditBill} onViewBill={(bill) => handleViewBill(bill, false)} />

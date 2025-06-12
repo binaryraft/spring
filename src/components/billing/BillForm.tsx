@@ -19,7 +19,7 @@ interface BillFormProps {
   existingBill?: Bill;
   onSaveAndPrint: (bill: Bill) => void;
   onCancel: () => void;
-  onShowEstimate?: (estimateData: Bill) => void;
+  onShowEstimate?: (estimateData: Bill) => void; // Now optional, used by both sales and purchase
 }
 
 const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPrint, onCancel, onShowEstimate }) => {
@@ -99,9 +99,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           id: item.id || uuidv4(),
           amount: taxableAmount, 
           itemCgstAmount: item.itemCgstAmount ?? itemCgst, 
-          itemSgstAmount: item.itemSgstAmount ?? itemSgst
+          itemSgstAmount: item.itemSgstAmount ?? itemSgst,
+          hsnCode: item.hsnCode || '',
         };
-      }) || [{ id: uuidv4() }]);
+      }) || [{ id: uuidv4(), hsnCode: '' }]);
       setNotes(existingBill.notes || '');
       itemRefs.current = existingBill.items.map(() => []);
     } else {
@@ -181,6 +182,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     const newItemShell: Partial<BillItem> = {
       id: uuidv4(),
       name: '',
+      hsnCode: '',
       weightOrQuantity: 1,
       unit: settings.valuables[0]?.unit || 'gram', 
       amount: 0,
@@ -224,19 +226,20 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         let itemCgst = 0;
         let itemSgst = 0;
 
+        // For sales bills that are NOT estimates, calculate GST
         if (billType === 'sales-bill' && !isEstimateMode) {
             itemCgst = item.itemCgstAmount || 0;
             itemSgst = item.itemSgstAmount || 0;
-        } else if (billType === 'sales-bill' && isEstimateMode) {
+        } else { // For purchase bills OR sales estimates, GST is 0 at item level
             itemCgst = 0;
             itemSgst = 0;
         }
-
 
         return {
           id: item.id || uuidv4(),
           valuableId: item.valuableId,
           name: item.name || '',
+          hsnCode: item.hsnCode || '',
           weightOrQuantity: item.weightOrQuantity || 0,
           unit: item.unit,
           rate: item.rate || 0, 
@@ -255,6 +258,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     let currentBillCgst = 0;
     let currentBillSgst = 0;
     
+    // Bill-level GST only for actual sales bills
     if (billType === 'sales-bill' && !isEstimateMode) {
         currentBillCgst = parseFloat(finalItems.reduce((acc, item) => acc + (item.itemCgstAmount || 0), 0).toFixed(2));
         currentBillSgst = parseFloat(finalItems.reduce((acc, item) => acc + (item.itemSgstAmount || 0), 0).toFixed(2));
@@ -262,6 +266,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     
     let currentTotalAmount = currentSubTotal + currentBillCgst + currentBillSgst;
     
+    // For estimates (both sales and purchase), total is just subtotal
     if (isEstimateMode) { 
         currentTotalAmount = currentSubTotal;
         currentBillCgst = 0; 
@@ -284,7 +289,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   };
 
   const handleSubmit = () => {
-    const billDetails = getCurrentBillData(false);
+    const billDetails = getCurrentBillData(false); // false for actual bill
     if (billDetails.items.length === 0) {
       toast({ title: "Error", description: "Please add at least one valid item with a selected material type.", variant: "destructive" });
       return;
@@ -304,12 +309,12 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
   const handleShowEstimate = () => {
     if (onShowEstimate) {
-      const estimateDetails = getCurrentBillData(true); 
+      const estimateDetails = getCurrentBillData(true); // true for estimate mode
        const estimateBillForView: Bill = {
         ...estimateDetails,
         id: `estimate-preview-${uuidv4()}`,
         date: new Date().toISOString(),
-        billNumber: 'ESTIMATE',
+        billNumber: 'ESTIMATE', // Or specific prefix for purchase estimates
       };
       onShowEstimate(estimateBillForView);
     }
@@ -322,6 +327,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     const initialItem: Partial<BillItem> = {
       id: uuidv4(),
       name: '',
+      hsnCode: '',
       weightOrQuantity: 1,
       amount: 0,
       itemCgstAmount: 0,
@@ -371,63 +377,63 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   return (
     <Card className="shadow-xl border-primary/20 bg-card">
       <CardHeader className="pb-6">
-        <CardTitle className="font-headline text-3xl lg:text-4xl text-primary flex items-center">
-          <Calculator className="mr-3 h-8 w-8 lg:h-9 lg:w-9" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
+        <CardTitle className="font-headline text-4xl lg:text-5xl text-primary flex items-center">
+          <Calculator className="mr-4 h-10 w-10 lg:h-12 lg:w-12" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-8 pt-2">
-        {(isSalesBill || isPurchase) && (
-          <div className="space-y-5 p-6 border border-border rounded-lg bg-background shadow-sm">
-            <h3 className="text-xl lg:text-2xl font-semibold text-accent mb-5 flex items-center">
-                {isPurchase ? <ShoppingBag className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/> : <Users className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/>}
+      <CardContent className="space-y-10 pt-2">
+        <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
+            <h3 className="text-2xl lg:text-3xl font-semibold text-accent mb-6 flex items-center">
+                {isPurchase ? <ShoppingBag className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/> : <Users className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>}
                 {isPurchase ? "Supplier" : "Customer"} Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-7 gap-y-6">
                 <div>
-                <Label htmlFor="customerName" className="text-base">{isPurchase ? "Supplier" : "Customer"} Name</Label>
+                <Label htmlFor="customerName" className="text-lg">{isPurchase ? "Supplier" : "Customer"} Name</Label>
                 <Input
                     id="customerName"
                     ref={customerNameRef}
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     onKeyDown={(e) => handleCustomerKeyDown(e, customerPhoneRef)}
-                    className="mt-1.5 h-11 text-base"
+                    className="mt-2 h-12 text-lg"
                 />
                 </div>
                 <div>
-                <Label htmlFor="customerPhone" className="text-base">{isPurchase ? "Supplier" : "Customer"} Phone</Label>
+                <Label htmlFor="customerPhone" className="text-lg">{isPurchase ? "Supplier" : "Customer"} Phone</Label>
                 <Input
                     id="customerPhone"
                     ref={customerPhoneRef}
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     onKeyDown={(e) => handleCustomerKeyDown(e, customerAddressRef)}
-                    className="mt-1.5 h-11 text-base"
+                    className="mt-2 h-12 text-lg"
                 />
                 </div>
                 <div className="md:col-span-3">
-                <Label htmlFor="customerAddress" className="text-base">{isPurchase ? "Supplier" : "Customer"} Address</Label>
+                <Label htmlFor="customerAddress" className="text-lg">{isPurchase ? "Supplier" : "Customer"} Address</Label>
                 <Textarea
                     id="customerAddress"
                     ref={customerAddressRef}
                     value={customerAddress}
                     onChange={(e) => setCustomerAddress(e.target.value)}
                     onKeyDown={(e) => handleCustomerKeyDown(e)} 
-                    className="mt-1.5 text-base"
-                    rows={2}
+                    className="mt-2 text-lg"
+                    rows={3}
                 />
                 </div>
             </div>
           </div>
-        )}
+        
 
         <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
-          <h3 className="text-xl lg:text-2xl font-semibold text-accent mb-5 flex items-center"><ListOrdered className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/>Items</h3>
-           <div className={`py-2.5 px-3.5 grid ${isPurchase ? 'grid-cols-12' : 'grid-cols-12'} gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
-            <div className="col-span-2">Material</div>
-            <div className="col-span-3">Product Name</div>
+          <h3 className="text-2xl lg:text-3xl font-semibold text-accent mb-6 flex items-center"><ListOrdered className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>Items</h3>
+           <div className={`py-3 px-4 grid ${isPurchase ? 'grid-cols-[2fr,3fr,1fr,1fr,2fr,1fr,1fr,1fr]' : 'grid-cols-[2fr,3fr,1fr,1fr,1fr,1fr,1fr,1fr]'} gap-3 text-base font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
+            <div className="col-span-1">Material</div>
+            <div className="col-span-1">Product Name</div>
+            <div className="col-span-1 text-center">HSN</div>
             <div className="col-span-1 text-center">Qty/Wt</div>
-            {isPurchase && <div className="col-span-2 text-center">Net Type</div>}
+            {isPurchase && <div className="col-span-1 text-center">Net Type</div>}
             <div className="col-span-1 text-center">{isPurchase ? "Value" : "Rate"}</div>
             {!isPurchase && <div className="col-span-1 text-center">MC Type</div>}
             {!isPurchase && <div className="col-span-1 text-center">Making</div>}
@@ -457,57 +463,57 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 />
             ))}
           </div>
-          <Button variant="outline" size="default" onClick={addItem} className="mt-5 shadow hover:shadow-md transition-shadow text-base px-5 py-2.5 h-auto">
-            <PlusCircle className="mr-2 h-5 w-5" /> Add Item
+          <Button variant="outline" size="default" onClick={addItem} className="mt-6 shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto">
+            <PlusCircle className="mr-2.5 h-5 w-5" /> Add Item
           </Button>
         </div>
         
         <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
-            <h3 className="text-xl lg:text-2xl font-semibold text-accent mb-4 flex items-center"><StickyNote className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/>Notes</h3>
+            <h3 className="text-2xl lg:text-3xl font-semibold text-accent mb-5 flex items-center"><StickyNote className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>Notes</h3>
             <Textarea
                 id="notes"
                 ref={notesRef}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="shadow-sm text-base"
-                rows={3}
+                className="shadow-sm text-lg"
+                rows={4}
                 placeholder="Any additional notes for the bill..."
             />
         </div>
         
-        <div className="p-6 border-2 border-primary/30 rounded-lg bg-primary/5 space-y-3.5 text-right shadow-sm">
-          <h3 className="text-xl lg:text-2xl font-semibold text-primary mb-4 flex items-center justify-end"><Banknote className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/>Totals</h3>
-          <div className="text-lg">Subtotal (Taxable Value): <span className="font-semibold text-xl ml-2.5">{settings.currencySymbol}{subTotal.toFixed(2)}</span></div>
+        <div className="p-7 border-2 border-primary/30 rounded-lg bg-primary/5 space-y-4 text-right shadow-md">
+          <h3 className="text-2xl lg:text-3xl font-semibold text-primary mb-5 flex items-center justify-end"><Banknote className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>Totals</h3>
+          <div className="text-xl">Subtotal (Taxable Value): <span className="font-semibold text-2xl ml-3">{settings.currencySymbol}{subTotal.toFixed(2)}</span></div>
           {(isSalesBill) && (
             <>
-              <div className="text-lg">CGST ({settings.cgstRate}%): <span className="font-semibold text-xl ml-2.5">{settings.currencySymbol}{billCgstAmount.toFixed(2)}</span></div>
-              <div className="text-lg">SGST ({settings.sgstRate}%): <span className="font-semibold text-xl ml-2.5">{settings.currencySymbol}{billSgstAmount.toFixed(2)}</span></div>
+              <div className="text-xl">CGST ({settings.cgstRate}%): <span className="font-semibold text-2xl ml-3">{settings.currencySymbol}{billCgstAmount.toFixed(2)}</span></div>
+              <div className="text-xl">SGST ({settings.sgstRate}%): <span className="font-semibold text-2xl ml-3">{settings.currencySymbol}{billSgstAmount.toFixed(2)}</span></div>
             </>
           )}
-          <Separator className="my-2.5 bg-primary/20"/>
-          <div className="text-2xl lg:text-3xl font-bold text-primary">Total: <span className="text-3xl lg:text-4xl ml-2.5">{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span></div>
+          <Separator className="my-3 bg-primary/20"/>
+          <div className="text-3xl lg:text-4xl font-bold text-primary">Total: <span className="text-4xl lg:text-5xl ml-3">{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span></div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between items-end border-t pt-6 mt-6">
-        <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive shadow hover:shadow-md transition-shadow text-base px-5 py-2.5 h-auto">
-          <XCircle className="mr-2 h-5 w-5" /> Cancel
+      <CardFooter className="flex justify-between items-end border-t pt-8 mt-8">
+        <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto">
+          <XCircle className="mr-2.5 h-5 w-5" /> Cancel
         </Button>
-        <div className="flex items-end space-x-4">
-          {onShowEstimate && isSalesBill && (
+        <div className="flex items-end space-x-5">
+          {onShowEstimate && ( // This button will now show for both sales and purchase if onShowEstimate is passed
             <div className="flex flex-col items-center">
-                <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent shadow hover:shadow-md transition-shadow text-base px-5 py-2.5 h-auto w-full">
-                <FileText className="mr-2 h-5 w-5" /> Create Estimate
+                <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto w-full">
+                <FileText className="mr-2.5 h-5 w-5" /> Create Estimate
                 </Button>
-                <p className="text-sm text-muted-foreground mt-1.5">
+                <p className="text-base text-muted-foreground mt-2">
                     Est. Total: {settings.currencySymbol}{subTotal.toFixed(2)}
                 </p>
             </div>
           )}
            <div className="flex flex-col items-center">
-                <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-base px-5 py-2.5 h-auto w-full">
-                <Save className="mr-2 h-5 w-5" /> {existingBill ? 'Update' : 'Save'} & Print Bill
+                <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto w-full">
+                <Save className="mr-2.5 h-5 w-5" /> {existingBill ? 'Update' : 'Save'} & Print Bill
                 </Button>
-                 <p className="text-sm text-primary-foreground/90 mt-1.5 bg-primary/90 px-2.5 py-1 rounded">
+                 <p className="text-base text-primary-foreground/90 mt-2 bg-primary/90 px-3 py-1.5 rounded-md">
                     Bill Total: {settings.currencySymbol}{finalTotalAmount.toFixed(2)}
                 </p>
             </div>

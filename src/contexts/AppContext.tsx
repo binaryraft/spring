@@ -12,6 +12,11 @@ interface AppContextType {
   updateSettings: (newSettings: Partial<Settings>) => void;
   updateValuablePrice: (valuableId: string, newPrice: number) => void;
   toggleValuableInHeader: (valuableId: string) => void;
+  
+  addValuable: (newValuable: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>) => void;
+  updateValuableData: (valuableId: string, updatedData: Partial<Omit<Valuable, 'id' | 'isDefault'>>) => void;
+  removeValuable: (valuableId: string) => void;
+
   addProductName: (name: string) => void;
   removeProductName: (name: string) => void;
   bills: Bill[];
@@ -29,7 +34,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useLocalStorage<Settings>('goldsmith-settings', {
     ...DEFAULT_SETTINGS,
-    availableCurrencies: AVAILABLE_CURRENCIES, // Ensure this is part of stored settings
+    availableCurrencies: AVAILABLE_CURRENCIES, 
   });
   const [bills, setBills] = useLocalStorage<Bill[]>('goldsmith-bills', []);
 
@@ -54,6 +59,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ),
     }));
   }, [setSettings]);
+
+  const addValuable = useCallback((newValuableData: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>) => {
+    setSettings(prev => {
+      const newFullValuable: Valuable = {
+        ...newValuableData,
+        id: uuidv4(),
+        selectedInHeader: false, // Custom valuables not in header by default
+        isDefault: false,
+      };
+      return {
+        ...prev,
+        valuables: [...prev.valuables, newFullValuable].sort((a, b) => a.name.localeCompare(b.name)),
+      };
+    });
+  }, [setSettings]);
+
+  const updateValuableData = useCallback((valuableId: string, updatedData: Partial<Omit<Valuable, 'id' | 'isDefault'>>) => {
+    setSettings(prev => ({
+      ...prev,
+      valuables: prev.valuables.map(v =>
+        v.id === valuableId ? { ...v, ...updatedData } : v
+      ).sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+  }, [setSettings]);
+
+  const removeValuable = useCallback((valuableId: string) => {
+    setSettings(prev => ({
+      ...prev,
+      valuables: prev.valuables.filter(v => v.id !== valuableId),
+    }));
+    // Optionally, could remove this valuable from any existing bill items if strict data integrity is needed,
+    // but that might be too destructive or complex for this app.
+  }, [setSettings]);
+
 
   const addProductName = useCallback((name: string) => {
     if (!name || name.trim() === '') return;
@@ -125,6 +164,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updateSettings,
       updateValuablePrice,
       toggleValuableInHeader,
+      addValuable,
+      updateValuableData,
+      removeValuable,
       addProductName,
       removeProductName,
       bills,
