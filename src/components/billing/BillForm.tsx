@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // Added useRef
 import type { Bill, BillItem, BillType, Settings, Valuable } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
@@ -34,11 +34,17 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const isSalesBill = billType === 'sales-bill';
   const isPurchase = billType === 'purchase';
 
+  // Refs for keyboard navigation
+  const customerNameRef = useRef<HTMLInputElement>(null);
+  const customerPhoneRef = useRef<HTMLInputElement>(null);
+  const customerAddressRef = useRef<HTMLTextAreaElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null); // For notes, if needed later
+
   const calculateItemAmount = useCallback((item: Partial<BillItem>): number => {
     if (typeof item.weightOrQuantity !== 'number' || item.weightOrQuantity <= 0 || !item.valuableId) return 0;
 
     let effectiveRate = 0;
-    const valuable = getValuableById(item.valuableId); // For market price
+    const valuable = getValuableById(item.valuableId);
     const marketPrice = valuable ? valuable.price : 0;
 
     if (isPurchase) {
@@ -49,11 +55,11 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         case 'fixed_net_price':
           effectiveRate = item.purchaseNetFixedValue || 0;
           break;
-        default: // Should not happen as 'market_rate' is removed for purchaseNetType
+        default: 
           effectiveRate = 0; 
           break;
       }
-    } else { // Sales Bill
+    } else { 
       effectiveRate = typeof item.rate === 'number' ? item.rate : 0;
     }
     
@@ -63,8 +69,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
     if (item.makingCharge && !isPurchase) { 
       if (item.makingChargeType === 'percentage') {
-        // Making charge % is on (qty * rate), not on (qty * effectiveRate for purchase)
-        // For sales, item.rate is the correct base for MC percentage calculation.
         const mcBaseForSales = item.weightOrQuantity * (item.rate || 0);
         baseAmount += mcBaseForSales * (item.makingCharge / 100);
       } else {
@@ -85,45 +89,26 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     } else {
       resetForm();
     }
-  }, [existingBill]); // resetForm removed from deps as it causes loops, handled by initialBill state.
+  }, [existingBill]); 
   
-  useEffect(() => {
-    // Debounce or make smarter to avoid excessive recalculations if possible
+ useEffect(() => {
     const reCalculatedItems = items.map(currentItem => {
-      if (!currentItem.id) return { ...currentItem, id: uuidv4() }; // Ensure ID
-      
-      // Only recalculate if essential fields that affect amount are present
-      if (!currentItem.valuableId || currentItem.weightOrQuantity === undefined) {
-        return currentItem; // Not enough info to calculate, keep as is
+      const newItem = { ...(currentItem.id ? currentItem : { ...currentItem, id: uuidv4() }) };
+      if (!newItem.valuableId || newItem.weightOrQuantity === undefined) {
+        return newItem; 
       }
-
-      const newAmount = calculateItemAmount(currentItem);
-      if (currentItem.amount !== newAmount) {
-        return { ...currentItem, amount: newAmount };
+      const newAmount = calculateItemAmount(newItem);
+      if (newItem.amount !== newAmount) {
+        return { ...newItem, amount: newAmount };
       }
-      return currentItem;
+      return newItem;
     });
   
-    // Check if there's an actual change in items structure or amounts
-    let itemsChanged = items.length !== reCalculatedItems.length;
-    if (!itemsChanged) {
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].amount !== reCalculatedItems[i].amount || 
-            items[i].name !== reCalculatedItems[i].name ||
-            items[i].valuableId !== reCalculatedItems[i].valuableId ||
-            items[i].weightOrQuantity !== reCalculatedItems[i].weightOrQuantity ||
-            items[i].rate !== reCalculatedItems[i].rate // Add other relevant fields
-            ) {
-          itemsChanged = true;
-          break;
-        }
-      }
-    }
-
-    if (itemsChanged) {
+    // Deep comparison to check if items actually changed
+    if (JSON.stringify(items) !== JSON.stringify(reCalculatedItems)) {
       setItems(reCalculatedItems);
     }
-  }, [items, calculateItemAmount]); // Keep calculateItemAmount, items is the primary trigger
+  }, [items, calculateItemAmount]);
 
   const subTotal = parseFloat(items.reduce((acc, item) => acc + (item.amount || 0), 0).toFixed(2));
   
@@ -141,21 +126,14 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   cgstAmount = parseFloat(cgstAmount.toFixed(2));
   sgstAmount = parseFloat(sgstAmount.toFixed(2));
 
-  // Calculate estimate total (subtotal for sales, no GST)
   const estimateTotal = subTotal;
-
 
   const handleItemChange = (index: number, updatedFields: Partial<BillItem>) => {
     setItems(prevItems => {
         const newItems = [...prevItems];
-        // Ensure the item at index exists and create a full copy
         const currentItem = { ...(newItems[index] || { id: uuidv4() }) }; 
-        
         const itemWithUpdates = { ...currentItem, ...updatedFields };
-        
-        // Recalculate amount based on the fully updated item state
         itemWithUpdates.amount = calculateItemAmount(itemWithUpdates);
-        
         newItems[index] = itemWithUpdates; 
         return newItems;
     });
@@ -167,27 +145,28 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     }
   };
 
-  const addItem = () => {
+  const addItem = useCallback(() => {
     const newItemShell: Partial<BillItem> = { 
       id: uuidv4(), 
-      name: '', // User will type this, or it defaults from valuable IF item.name is empty
+      name: '',
       weightOrQuantity: 1, 
-      // rate will be set upon valuable selection
-      // makingCharge will use defaults upon valuable selection (for sales)
-      unit: '', // Will be set when valuable is selected
+      unit: '', 
     };
     if (isPurchase) {
-      newItemShell.purchaseNetType = 'net_percentage'; // Default for new purchase items
+      newItemShell.purchaseNetType = 'net_percentage'; 
       newItemShell.purchaseNetPercentValue = settings.defaultPurchaseItemNetPercentage;
-      newItemShell.purchaseNetFixedValue = settings.defaultPurchaseItemNetFixedValue; // Will be used if type changes
-    } else { // Sales
+      newItemShell.purchaseNetFixedValue = settings.defaultPurchaseItemNetFixedValue;
+    } else { 
       newItemShell.makingChargeType = settings.defaultMakingCharge.type;
       newItemShell.makingCharge = settings.defaultMakingCharge.value;
     }
-    // Amount will be calculated once a valuable is selected and rate/type is known. Initial amount is 0.
     newItemShell.amount = 0; 
-    setItems([...items, newItemShell]);
-  };
+    setItems(prevItems => [...prevItems, newItemShell]);
+
+    // Focus the material select of the new item - might need more complex logic
+    // For now, just adding the item. Focus management can be a further enhancement.
+  }, [isPurchase, settings.defaultPurchaseItemNetPercentage, settings.defaultPurchaseItemNetFixedValue, settings.defaultMakingCharge]);
+
 
   const removeItem = (index: number) => {
     const newItems = items.filter((_, i) => i !== index);
@@ -198,19 +177,17 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     const finalItems = items
       .filter(item => item.valuableId && item.name && item.name.trim() !== '' && typeof item.weightOrQuantity === 'number' && item.weightOrQuantity > 0) 
       .map(item => {
-        // Ensure all required fields for BillItem are present
         if (!item.valuableId || !item.unit) {
           console.warn("Item missing valuableId or unit", item);
           return null; 
         }
-        // Make sure to include all necessary fields from Partial<BillItem> to BillItem
         return {
           id: item.id || uuidv4(),
           valuableId: item.valuableId,
           name: item.name || '',
           weightOrQuantity: item.weightOrQuantity || 0,
           unit: item.unit,
-          rate: item.rate || 0, // Base rate
+          rate: item.rate || 0, 
           makingCharge: item.makingCharge,
           makingChargeType: item.makingChargeType,
           amount: item.amount || 0,
@@ -230,7 +207,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       currentSgst = currentSubTotal * (settings.sgstRate / 100);
       currentTotalAmount = currentSubTotal + currentCgst + currentSgst;
     } else if (isEstimateMode) {
-      currentTotalAmount = currentSubTotal; // For estimates, total is subtotal
+      currentTotalAmount = currentSubTotal;
     }
         
     return {
@@ -287,20 +264,19 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       id: uuidv4(), 
       name: '',
       weightOrQuantity: 1,
-      // rate, unit, valuableId, makingCharge will be set on valuable selection
       amount: 0, 
     };
     if (isPurchase) {
-      initialItem.purchaseNetType = 'net_percentage'; // Default purchase type
+      initialItem.purchaseNetType = 'net_percentage'; 
       initialItem.purchaseNetPercentValue = settings.defaultPurchaseItemNetPercentage;
       initialItem.purchaseNetFixedValue = settings.defaultPurchaseItemNetFixedValue;
-    } else { // Sales
+    } else { 
       initialItem.makingChargeType = settings.defaultMakingCharge.type; 
       initialItem.makingCharge = settings.defaultMakingCharge.value;
     }
     setItems([initialItem]);
     setNotes('');
-  }, [settings, isPurchase]); // Added settings and isPurchase
+  }, [settings, isPurchase]);
 
   const billTypeLabel = () => {
     switch(billType) {
@@ -309,6 +285,14 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       default: return 'Bill';
     }
   };
+
+  const handleCustomerKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>, nextFieldRef?: React.RefObject<HTMLElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      nextFieldRef?.current?.focus();
+    }
+  };
+
 
   return (
     <Card className="shadow-lg">
@@ -322,15 +306,37 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="customerName">{isPurchase ? "Supplier" : "Customer"} Name</Label>
-              <Input id="customerName" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+              <Input 
+                id="customerName" 
+                ref={customerNameRef}
+                value={customerName} 
+                onChange={(e) => setCustomerName(e.target.value)} 
+                onKeyDown={(e) => handleCustomerKeyDown(e, customerPhoneRef)}
+              />
             </div>
             <div>
               <Label htmlFor="customerPhone">{isPurchase ? "Supplier" : "Customer"} Phone</Label>
-              <Input id="customerPhone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+              <Input 
+                id="customerPhone" 
+                ref={customerPhoneRef}
+                value={customerPhone} 
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                onKeyDown={(e) => handleCustomerKeyDown(e, customerAddressRef)}
+              />
             </div>
             <div className="md:col-span-3">
               <Label htmlFor="customerAddress">{isPurchase ? "Supplier" : "Customer"} Address</Label>
-              <Textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} />
+              <Textarea 
+                id="customerAddress" 
+                ref={customerAddressRef}
+                value={customerAddress} 
+                onChange={(e) => setCustomerAddress(e.target.value)} 
+                onKeyDown={(e) => {
+                  // For textarea, Enter usually means new line.
+                  // If we want Enter to move to next (e.g., first item's input), more complex logic is needed.
+                  // For now, Enter behaves normally in textarea.
+                }}
+              />
             </div>
           </div>
         )}
@@ -362,6 +368,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
               defaultPurchaseNetPercentage={settings.defaultPurchaseItemNetPercentage}
               defaultPurchaseNetFixedValue={settings.defaultPurchaseItemNetFixedValue}
               getValuablePrice={(valuableId) => getValuableById(valuableId)?.price || 0}
+              onEnterInLastField={addItem} // Pass addItem to be called on Enter in last field
             />
           ))}
           <Button variant="outline" size="sm" onClick={addItem} className="mt-2">
@@ -371,7 +378,12 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         
         <div>
           <Label htmlFor="notes">Notes</Label>
-          <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <Textarea 
+            id="notes" 
+            ref={notesRef} 
+            value={notes} 
+            onChange={(e) => setNotes(e.target.value)} 
+          />
         </div>
 
         <div className="space-y-2 text-right font-medium pr-4">
@@ -407,3 +419,4 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 };
 
 export default BillForm;
+
