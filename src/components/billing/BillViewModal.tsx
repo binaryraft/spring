@@ -29,13 +29,23 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   const { settings, getValuableById } = useAppContext();
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   
-  const billContentRef = useRef<HTMLDivElement>(null); 
+  const billContentRef = useRef<HTMLDivElement>(null); // Ref for the content displayed in the modal
   const billOriginalParentRef = useRef<HTMLElement | null>(null);
   const billPlaceholderRef = useRef<HTMLDivElement>(null);
 
+
   useEffect(() => {
-    if (isOpen && billContentRef.current && !billOriginalParentRef.current) {
-        billOriginalParentRef.current = billContentRef.current.parentElement;
+    // This effect helps manage restoring the bill content if it's moved for PDF generation
+    // and the modal is closed before restoration.
+    if (isOpen && billContentRef.current) {
+        if (!billOriginalParentRef.current && billContentRef.current.parentElement) {
+            billOriginalParentRef.current = billContentRef.current.parentElement;
+        }
+    } else if (!isOpen && billContentRef.current && billPlaceholderRef.current && billOriginalParentRef.current) {
+        // If modal is closed and content might be detached, try to restore
+        if (!billOriginalParentRef.current.contains(billContentRef.current)) {
+            billOriginalParentRef.current.replaceChild(billContentRef.current, billPlaceholderRef.current);
+        }
     }
   }, [isOpen]);
 
@@ -83,49 +93,50 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       let itemSgst = 0;
       let lineTotal = taxableAmount;
 
-      // HSN is only for non-estimate Sales bills
       const showHsnInPdf = bill.type === 'sales-bill' && !isEstimateView;
+      const showItemGstCols = bill.type === 'sales-bill' && !isEstimateView;
 
-      if (bill.type === 'sales-bill' && !isEstimateView) {
+
+      if (showItemGstCols) {
         itemCgst = item.itemCgstAmount || 0;
         itemSgst = item.itemSgstAmount || 0;
         lineTotal = taxableAmount + itemCgst + itemSgst;
       }
 
       return `
-        <tr style="font-size: 14pt; page-break-inside: avoid;">
+        <tr style="font-size: 16pt; page-break-inside: avoid;">
           <td style="border: 1px solid #333333; padding: 9px; text-align: center;">${index + 1}</td>
           <td style="border: 1px solid #333333; padding: 9px;">${item.name} ${valuableDetails ? `(${valuableDetails.name})` : ''}</td>
           ${showHsnInPdf ? `<td style="border: 1px solid #333333; padding: 9px; text-align: center;">${item.hsnCode || '-'}</td>` : ''}
           <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} ${item.unit}</td>
           <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${effectiveRate.toFixed(2)}</td>
           ${bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0) ? `<td style="border: 1px solid #333333; padding: 9px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : currency + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
-          ${bill.type === 'sales-bill' && !isEstimateView ? `<td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${taxableAmount.toFixed(2)}</td>` : ''}
-          ${bill.type === 'sales-bill' && !isEstimateView ? `
-            <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${itemCgst.toFixed(2)}<br/><span style="font-size:11pt;">(${settings.cgstRate}%)</span></td>
-            <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${itemSgst.toFixed(2)}<br/><span style="font-size:11pt;">(${settings.sgstRate}%)</span></td>
+          ${showItemGstCols ? `<td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${taxableAmount.toFixed(2)}</td>` : ''}
+          ${showItemGstCols ? `
+            <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${itemCgst.toFixed(2)}<br/><span style="font-size:13pt;">(${settings.cgstRate}%)</span></td>
+            <td style="border: 1px solid #333333; padding: 9px; text-align: right;">${currency}${itemSgst.toFixed(2)}<br/><span style="font-size:13pt;">(${settings.sgstRate}%)</span></td>
           ` : ''}
           <td style="border: 1px solid #333333; padding: 9px; text-align: right; font-weight: bold;">${currency}${lineTotal.toFixed(2)}</td>
         </tr>
       `;
     }).join('');
 
-    const showMakingChargeColumn = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
-    const showItemTaxableCol = bill.type === 'sales-bill' && !isEstimateView;
-    const showItemGstCols = bill.type === 'sales-bill' && !isEstimateView;
-    const showHsnColInPdf = bill.type === 'sales-bill' && !isEstimateView;
+    const showMakingChargeColumnInPdf = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
+    const showItemTaxableColInPdf = bill.type === 'sales-bill' && !isEstimateView;
+    const showItemGstColsInPdf = bill.type === 'sales-bill' && !isEstimateView;
+    const showHsnColInPdfForHeader = bill.type === 'sales-bill' && !isEstimateView;
 
 
     let tableHeaders = `
       <th style="border: 1px solid #333333; padding: 10px; text-align: center; font-weight: bold; background-color: #e0e0e0;">#</th>
       <th style="border: 1px solid #333333; padding: 10px; text-align: left; font-weight: bold; background-color: #e0e0e0;">Item Description</th>
     `;
-    if (showHsnColInPdf) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: center; font-weight: bold; background-color: #e0e0e0;">HSN</th>`;
+    if (showHsnColInPdfForHeader) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: center; font-weight: bold; background-color: #e0e0e0;">HSN</th>`;
     tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Qty/Wt</th>`;
-    tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Rate / ${bill.items[0]?.unit || 'unit'}</th>`;
-    if (showMakingChargeColumn) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Making</th>`;
-    if (showItemTaxableCol) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Taxable Amt</th>`;
-    if (showItemGstCols) {
+    tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Rate / ${(bill.items[0]?.unit || 'unit')}</th>`;
+    if (showMakingChargeColumnInPdf) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Making</th>`;
+    if (showItemTaxableColInPdf) tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">Taxable Amt</th>`;
+    if (showItemGstColsInPdf) {
       tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">CGST</th>`;
       tableHeaders += `<th style="border: 1px solid #333333; padding: 10px; text-align: right; font-weight: bold; background-color: #e0e0e0;">SGST</th>`;
     }
@@ -141,13 +152,13 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         
         <div class="bill-company-header" style="text-align: center; margin-bottom: 35px;">
           ${logoHtml}
-          <h1 style="font-family: 'Playfair Display', serif; font-size: 36pt; margin: 0 0 10px 0; color: #000000;">${company.companyName}</h1>
+          <h1 style="font-family: 'Playfair Display', serif; font-size: 38pt; margin: 0 0 10px 0; color: #000000;">${company.companyName}</h1>
           ${company.slogan ? `<p style="font-size: 18pt; margin: 0 0 10px 0; color: #000000;">${company.slogan}</p>` : ''}
           <p style="font-size: 16pt; margin: 0 0 6px 0; color: #000000;">${company.address}</p>
           <p style="font-size: 16pt; margin: 0; color: #000000;">Phone: ${company.phoneNumber}</p>
         </div>
 
-        <h2 class="bill-type-heading" style="font-family: 'Playfair Display', serif; font-size: 28pt; text-align: center; margin: 35px 0; font-weight: bold; text-transform: uppercase; border-top: 2.5px solid #000000; border-bottom: 2.5px solid #000000; padding: 12px 0;">${effectiveBillType}</h2>
+        <h2 class="bill-type-heading" style="font-family: 'Playfair Display', serif; font-size: 30pt; text-align: center; margin: 35px 0; font-weight: bold; text-transform: uppercase; border-top: 2.5px solid #000000; border-bottom: 2.5px solid #000000; padding: 12px 0;">${effectiveBillType}</h2>
         
         <table class="bill-meta-grid" style="width: 100%; margin-bottom: 35px; font-size: 16pt;">
           <tr>
@@ -165,16 +176,16 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </tr>
         </table>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 35px; font-size: 14pt;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 35px; font-size: 16pt;">
           <thead>
-            <tr style="font-size: 15pt;">${tableHeaders}</tr>
+            <tr style="font-size: 16pt;">${tableHeaders}</tr>
           </thead>
           <tbody>${itemsHtml}</tbody>
         </table>
         
         <hr style="border: 0; border-top: 2px solid #555555; margin: 35px 0;" />
 
-        <table class="bill-summary-grid" style="width: 100%; margin-top: 35px; font-size: 16pt;">
+        <table class="bill-summary-grid" style="width: 100%; margin-top: 35px; font-size: 18pt;">
           <tr>
             <td style="width: 60%; vertical-align: top; white-space: pre-line;">
               ${bill.notes ? `<h4 style="font-weight: bold; margin-bottom: 8px; font-size: 18pt;">Notes:</h4><p style="font-size:16pt;">${bill.notes}</p>` : ''}
@@ -183,9 +194,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
               <p style="margin: 8px 0;">Subtotal ${(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span style="font-weight: bold;">${currency}${bill.subTotal.toFixed(2)}</span></p>
               ${!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 ? `<p style="margin: 8px 0;">Total CGST (${settings.cgstRate}%): <span style="font-weight: bold;">${currency}${(bill.cgstAmount || 0).toFixed(2)}</span></p>` : ''}
               ${!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 ? `<p style="margin: 8px 0;">Total SGST (${settings.sgstRate}%): <span style="font-weight: bold;">${currency}${(bill.sgstAmount || 0).toFixed(2)}</span></p>` : ''}
-              ${isEstimateView ? `<p style="font-size: 14pt; color: #333; margin: 8px 0;">(GST not applicable for estimates)</p>` : ''}
+              ${isEstimateView && bill.type === 'sales-bill' ? `<p style="font-size: 14pt; color: #333; margin: 8px 0;">(GST not applicable for estimates)</p>` : ''}
               <hr style="border: 0; border-top: 1.5px solid #555555; margin: 14px 0;" />
-              <p style="font-size: 20pt; font-weight: bold; margin-top: 14px;">Total: <span style="font-weight: bold; font-size: 22pt;">${currency}${bill.totalAmount.toFixed(2)}</span></p>
+              <p style="font-size: 22pt; font-weight: bold; margin-top: 14px;">Total: <span style="font-weight: bold; font-size: 24pt;">${currency}${bill.totalAmount.toFixed(2)}</span></p>
             </td>
           </tr>
         </table>
@@ -210,9 +221,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     captureWrapper.id = 'pdf-capture-wrapper';
     Object.assign(captureWrapper.style, {
         position: 'fixed',
-        left: '-9999px',
-        top: '-9999px',
-        width: '794px', 
+        left: '-9999px', // Position off-screen
+        top: '-9999px',  // Position off-screen
+        width: '794px',  // A4-like width for consistent capture base
         backgroundColor: 'white',
         padding: '0',
         margin: '0',
@@ -221,44 +232,45 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     });
 
     const contentHost = document.createElement('div');
-    contentHost.innerHTML = generatePdfHtml(); // Use the generated HTML string
-    
+    contentHost.id = 'pdf-content-host'; // Give it an ID for potential styling/debugging
     captureWrapper.appendChild(contentHost);
     document.body.appendChild(captureWrapper);
     document.body.classList.add('print-capture-active');
-
-    // Target the actual content element that was created by innerHTML
-    const billContentElementForCapture = contentHost.firstChild as HTMLElement;
-
-    if (!billContentElementForCapture || billContentElementForCapture.offsetWidth === 0 || billContentElementForCapture.offsetHeight === 0) {
-        alert(`Error: PDF capture target has no dimensions (W: ${billContentElementForCapture?.offsetWidth}, H: ${billContentElementForCapture?.offsetHeight}). PDF generation aborted. This can happen if the HTML content for the PDF is empty or not rendering correctly off-screen.`);
-        if (captureWrapper.parentNode === document.body) {
-            document.body.removeChild(captureWrapper);
-        }
-        document.body.classList.remove('print-capture-active');
-        setIsGeneratingPdf(false);
-        return;
-    }
     
     try {
-        await new Promise(resolve => setTimeout(resolve, 300)); 
+        contentHost.innerHTML = generatePdfHtml();
+        
+        const billContentElementForCapture = contentHost.querySelector<HTMLElement>('#bill-content-for-pdf');
 
+        if (!billContentElementForCapture) {
+            alert("Critical Error: #bill-content-for-pdf element not found after injecting HTML for PDF. PDF generation aborted.");
+            if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
+            document.body.classList.remove('print-capture-active');
+            setIsGeneratingPdf(false);
+            return;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+
+        if (billContentElementForCapture.offsetWidth === 0 || billContentElementForCapture.offsetHeight === 0) {
+            alert(`Error: PDF capture target (#bill-content-for-pdf) has no dimensions (W: ${billContentElementForCapture.offsetWidth}, H: ${billContentElementForCapture.offsetHeight}) after HTML injection. PDF generation aborted.`);
+            if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
+            document.body.classList.remove('print-capture-active');
+            setIsGeneratingPdf(false);
+            return;
+        }
+        
         const canvas = await html2canvas(billContentElementForCapture, {
             scale: 2.5, 
             useCORS: true,
-            logging: false, 
+            logging: true, // Enable html2canvas logging
             backgroundColor: "#ffffff",
-            width: billContentElementForCapture.offsetWidth, 
-            height: billContentElementForCapture.offsetHeight,
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: billContentElementForCapture.scrollWidth,
-            windowHeight: billContentElementForCapture.scrollHeight,
+            // Remove explicit width/height to let html2canvas derive from the element
         });
 
         const imgData = canvas.toDataURL('image/png');
         if (imgData.length < 250 || imgData === 'data:,') { 
-             alert("Error: Failed to capture bill content. Generated image was empty or too small. Please check the console for errors or try again.");
+             alert("Error: Failed to capture bill content into an image. Generated image was empty or too small. Please check the console for html2canvas errors.");
              if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
              document.body.classList.remove('print-capture-active');
              setIsGeneratingPdf(false);
@@ -280,7 +292,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         const canvasImgHeight = imgProps.height;
         
         if (canvasImgWidth === 0 || canvasImgHeight === 0) {
-            alert("Error: Captured image has no dimensions. Ensure the content being captured is visible and has size.");
+            alert("Error: Captured image for PDF has no dimensions. Please check console for html2canvas errors.");
             if (captureWrapper.parentNode === document.body) { document.body.removeChild(captureWrapper); }
             document.body.classList.remove('print-capture-active');
             setIsGeneratingPdf(false);
@@ -288,10 +300,10 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         }
         
         const availableWidth = pdfWidth - 2 * margin;
-        let finalPdfImgHeight = (canvasImgHeight * availableWidth) / canvasImgWidth; // Maintain aspect ratio based on available width
+        let finalPdfImgHeight = (canvasImgHeight * availableWidth) / canvasImgWidth; 
         let finalPdfImgWidth = availableWidth;
 
-        if (finalPdfImgHeight > (pdfHeight - 2 * margin)) { // If height exceeds page with new width, scale by height instead
+        if (finalPdfImgHeight > (pdfHeight - 2 * margin)) { 
             finalPdfImgHeight = pdfHeight - 2 * margin;
             finalPdfImgWidth = (canvasImgWidth * finalPdfImgHeight) / canvasImgHeight;
         }
@@ -305,16 +317,16 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         }
         
         const x = margin + (availableWidth - finalPdfImgWidth) / 2; 
-        const y = margin; // Start from top margin
+        const y = margin; 
         
         pdf.addImage(imgData, 'PNG', x, y, finalPdfImgWidth, finalPdfImgHeight);
         
         const dateStr = format(new Date(), 'yyyyMMdd_HHmmss');
-        const fileNameBase = effectiveBillType.replace(/\s+/g, '_');
+        const fileNameBase = effectiveBillType.replace(/[\s/]+/g, '_');
         const billNumPart = bill.billNumber ? `_${bill.billNumber.replace(/[\s/]+/g, '_')}` : (isEstimateView ? '_Estimate' : '_Bill');
         const fileName = `${fileNameBase}${billNumPart}_${dateStr}.pdf`;
 
-        pdf.save(fileName); // Triggers download
+        pdf.save(fileName);
 
     } catch (error) {
         console.error("Error generating PDF:", error);
@@ -324,6 +336,13 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
            document.body.removeChild(captureWrapper);
         }
         document.body.classList.remove('print-capture-active');
+        
+        // Restore original modal content if it was moved (though current strategy uses innerHTML)
+        if (billContentRef.current && billPlaceholderRef.current && billOriginalParentRef.current) {
+          if (!billOriginalParentRef.current.contains(billContentRef.current) && billPlaceholderRef.current.parentNode === billOriginalParentRef.current) {
+             billOriginalParentRef.current.replaceChild(billContentRef.current, billPlaceholderRef.current);
+          }
+        }
         setIsGeneratingPdf(false);
     }
 };
@@ -336,7 +355,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     </div>
   );
 
-  // HSN is only for non-estimate Sales bills
   const showHsnColumnInModal = bill.type === 'sales-bill' && !isEstimateView;
   const showItemLevelGstColumns = bill.type === 'sales-bill' && !isEstimateView;
   const showMakingChargeColumn = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
@@ -344,7 +362,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[95vh] flex flex-col print-dialog-content text-xl w-full max-w-screen-lg xl:max-w-screen-xl"> 
+      <DialogContent className="max-h-[95vh] flex flex-col print-dialog-content text-xl w-full max-w-screen-lg"> 
         <DialogHeader className="print-hidden pb-5 border-b">
           <DialogTitle className="font-headline text-3xl lg:text-4xl text-primary">
             {effectiveBillType}
@@ -481,7 +499,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     {!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 && <p>Total CGST ({settings.cgstRate}%): <span className="font-semibold text-2xl">{currency}{(bill.cgstAmount || 0).toFixed(2)}</span></p>}
                     {!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 && <p>Total SGST ({settings.sgstRate}%): <span className="font-semibold text-2xl">{currency}{(bill.sgstAmount || 0).toFixed(2)}</span></p>}
                     
-                    {isEstimateView && <p className="text-lg text-muted-foreground">(GST not applicable for estimates)</p>}
+                    {isEstimateView && bill.type === 'sales-bill' && <p className="text-lg text-muted-foreground">(GST not applicable for estimates)</p>}
 
                     <hr className="my-3 !mt-4 !mb-4 border-border"/>
                     <p className="text-3xl font-bold">Total: <span className="text-4xl">{currency}{bill.totalAmount.toFixed(2)}</span></p>
@@ -511,5 +529,3 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
-
-    
