@@ -1,74 +1,78 @@
 
 import { useState, useEffect } from 'react';
 
-type SetValue<T> = (value: T | ((val: T) => T)) => void;
+// Define a dispatch type for SetStateAction for clarity
+type SetValue<T> = React.Dispatch<React.SetStateAction<T>>;
 
 function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
-  const [storedValue, setStoredValue] = useState<T>(() => {
+  // Step 1: Initialize state with initialValue.
+  // This ensures server and initial client render match.
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
+
+  // State to track if we have initialized from localStorage
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Step 2: useEffect to read from localStorage and update state.
+  // This runs only on the client, after the initial render (hydration).
+  useEffect(() => {
     if (typeof window === 'undefined') {
-      return initialValue;
+      return;
     }
     try {
       const item = window.localStorage.getItem(key);
       if (item) {
         const parsedItem = JSON.parse(item);
 
-        // Handle array type specifically
+        // Apply merging logic similar to previous versions
         if (Array.isArray(initialValue)) {
           if (Array.isArray(parsedItem)) {
-            return parsedItem as T;
+            setStoredValue(parsedItem as T);
+          } else {
+            console.warn(`LocalStorage key "${key}" was expected to be an array but was not. Using initial value.`);
+            // storedValue remains initialValue from useState
           }
-          // If initialValue is array but parsedItem isn't, fall back to initialValue
-          console.warn(`LocalStorage key "${key}" was expected to be an array but was not. Falling back to initial value.`);
-          return initialValue;
-        }
-        
-        // Handle object type (and not array) for merging
-        if (
+        } else if (
           typeof initialValue === 'object' &&
-          initialValue !== null && // initialValue is a non-null object
-          !Array.isArray(initialValue) && // Ensure initialValue is not an array here
+          initialValue !== null &&
+          !Array.isArray(initialValue) &&
           typeof parsedItem === 'object' &&
-          parsedItem !== null && // parsedItem is a non-null object
-          !Array.isArray(parsedItem) // Ensure parsedItem is not an array here
+          parsedItem !== null &&
+          !Array.isArray(parsedItem)
         ) {
-          // This merge ensures new properties in initialValue are populated
-          // if they are missing from the stored parsedItem.
-          return { ...initialValue, ...(parsedItem as Partial<T>) } as T;
+          setStoredValue({ ...initialValue, ...(parsedItem as Partial<T>) } as T);
+        } else {
+          // For primitive types or if no special handling is needed.
+          if (typeof parsedItem === typeof initialValue || (parsedItem === null && initialValue === null)) {
+            setStoredValue(parsedItem as T);
+          } else {
+            console.warn(`LocalStorage key "${key}" type mismatch. Parsed: ${typeof parsedItem}, Expected: ${typeof initialValue}. Using initial value.`);
+            // storedValue remains initialValue
+          }
         }
-        
-        // For primitive types or if no special handling is needed.
-        // This also covers cases where initialValue and parsedItem are both non-array objects
-        // but don't need the specific deep merge logic above (though the above object merge is generally preferred for settings).
-        // A basic type check can be useful.
-        if (typeof parsedItem === typeof initialValue || (parsedItem === null && initialValue === null)) {
-            return parsedItem as T;
-        }
-
-        // If types don't match for primitives or unhandled complex types, fall back.
-        console.warn(`LocalStorage key "${key}" type mismatch or structure incompatible. Parsed: ${typeof parsedItem}, Expected: ${typeof initialValue}. Falling back to initial value.`);
-        return initialValue;
       }
-      return initialValue; // No item in localStorage
+      // If item is null (not found), storedValue remains initialValue.
     } catch (error) {
       console.error(`Error reading localStorage key "${key}":`, error);
-      return initialValue; // Error reading or parsing
+      // storedValue remains initialValue in case of error.
     }
-  });
+    // Mark as initialized after attempting to load from localStorage
+    setIsInitialized(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]); // Only depends on key, effectively runs once on mount unless key changes.
 
+  // Step 3: useEffect to save back to localStorage when storedValue changes *and* we've initialized.
+  // This also runs only on the client.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const valueToStore =
-          typeof storedValue === 'function'
-            ? (storedValue as (val: T) => T)(storedValue)
-            : storedValue;
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      } catch (error) {
-        console.error(`Error setting localStorage key "${key}":`, error);
-      }
+    // Don't save to localStorage until we've attempted to load from it first
+    if (typeof window === 'undefined' || !isInitialized) {
+      return;
     }
-  }, [key, storedValue]);
+    try {
+      window.localStorage.setItem(key, JSON.stringify(storedValue));
+    } catch (error) {
+      console.error(`Error setting localStorage key "${key}":`, error);
+    }
+  }, [key, storedValue, isInitialized]);
 
   return [storedValue, setStoredValue];
 }
