@@ -1,7 +1,7 @@
 
 "use client";
 import { useAppContext } from "@/contexts/AppContext";
-import type { Valuable } from "@/types";
+import type { Valuable, Settings, MakingChargeSetting } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,14 +25,25 @@ import ValuableIcon from "./ValuableIcon";
 
 const SettingsPanel: React.FC = () => {
   const { settings, updateSettings, toggleValuableInHeader } = useAppContext();
-  const [localSettings, setLocalSettings] = useState(settings);
+  const [localSettings, setLocalSettings] = useState<Settings>(settings);
 
   useEffect(() => {
     setLocalSettings(settings);
   }, [settings]);
 
-  const handleChange = (field: keyof typeof settings, value: any) => {
+  const handleChange = (field: keyof Settings, value: any) => {
     setLocalSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNestedChange = (parentField: keyof Settings, nestedField: string, value: any) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      [parentField]: {
+        // @ts-ignore
+        ...prev[parentField],
+        [nestedField]: value,
+      },
+    }));
   };
 
   const handleValuableChange = (valuableId: string, field: keyof Valuable, value: any) => {
@@ -46,6 +57,7 @@ const SettingsPanel: React.FC = () => {
 
   const handleSave = () => {
     updateSettings(localSettings);
+    // Consider closing the sheet by controlling its open state via context or props if needed
   };
 
   return (
@@ -57,7 +69,7 @@ const SettingsPanel: React.FC = () => {
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg">
-        <ScrollArea className="h-full pr-6">
+        <ScrollArea className="h-[calc(100%-120px)] pr-6"> {/* Adjust height for footer */}
           <SheetHeader>
             <SheetTitle className="font-headline">Application Settings</SheetTitle>
             <SheetDescription>
@@ -131,11 +143,42 @@ const SettingsPanel: React.FC = () => {
                   </div>
                 </div>
               ))}
-              {/* Add new valuable functionality could be added here */}
             </div>
 
             <Separator />
             
+            <div>
+              <h3 className="text-lg font-medium font-headline mb-2 text-primary">Default Making Charge (for Sales)</h3>
+              <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <Label htmlFor="defaultMakingChargeType">Type</Label>
+                    <Select
+                        value={localSettings.defaultMakingCharge.type}
+                        onValueChange={(value: 'percentage' | 'fixed') => handleNestedChange('defaultMakingCharge', 'type', value)}
+                    >
+                        <SelectTrigger id="defaultMakingChargeType">
+                            <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="percentage">Percentage</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div>
+                  <Label htmlFor="defaultMakingChargeValue">Value</Label>
+                  <Input 
+                    id="defaultMakingChargeValue" 
+                    type="number" 
+                    value={localSettings.defaultMakingCharge.value} 
+                    onChange={(e) => handleNestedChange('defaultMakingCharge', 'value', parseFloat(e.target.value))} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
             <div>
               <h3 className="text-lg font-medium font-headline mb-2 text-primary">Tax Rates</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -196,13 +239,15 @@ const SettingsPanel: React.FC = () => {
             </div>
           </div>
         </ScrollArea>
-        <SheetFooter className="mt-auto p-6 border-t">
+        <SheetFooter className="p-6 border-t"> {/* Ensure footer is visible */}
           <SheetClose asChild>
             <Button variant="outline">Cancel</Button>
           </SheetClose>
-          <Button onClick={handleSave} className="bg-primary hover:bg-primary/90">
-            <Save className="mr-2 h-4 w-4" /> Save Settings
-          </Button>
+          <SheetClose asChild>
+            <Button onClick={handleSave} className="bg-primary hover:bg-primary/90">
+              <Save className="mr-2 h-4 w-4" /> Save Settings
+            </Button>
+          </SheetClose>
         </SheetFooter>
       </SheetContent>
     </Sheet>

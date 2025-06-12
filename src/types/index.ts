@@ -1,3 +1,4 @@
+
 export interface Valuable {
   id: string;
   name: string;
@@ -8,12 +9,18 @@ export interface Valuable {
   unit: string; // e.g., 'gram', 'carat', 'piece'
 }
 
+export interface MakingChargeSetting {
+  type: 'percentage' | 'fixed';
+  value: number;
+}
+
 export interface Settings {
   companyName: string;
   slogan: string;
   address: string;
   phoneNumber: string;
   valuables: Valuable[];
+  defaultMakingCharge: MakingChargeSetting;
   netPurchaseMode: 'percentage' | 'fixed_price';
   netPurchasePercentage: number; // Default net percentage for purchases
   netPurchaseFixedPrice: number; // Default net fixed price for purchases
@@ -33,7 +40,7 @@ export interface BillItem {
   amount: number; // (weightOrQuantity * rate) + makingCharge
 }
 
-export type BillType = 'purchase' | 'sales-estimate' | 'sales-bill';
+export type BillType = 'purchase' | 'sales-bill'; // Removed 'sales-estimate'
 
 export interface Bill {
   id: string;
@@ -70,6 +77,7 @@ export const DEFAULT_SETTINGS: Settings = {
   address: '123 Main St, City, Country',
   phoneNumber: '+1234567890',
   valuables: DEFAULT_VALUABLES,
+  defaultMakingCharge: { type: 'percentage', value: 10 },
   netPurchaseMode: 'percentage',
   netPurchasePercentage: 10,
   netPurchaseFixedPrice: 0,

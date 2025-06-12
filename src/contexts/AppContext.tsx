@@ -3,9 +3,9 @@
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { Settings, Valuable, Bill, BillType } from '@/types';
-import { DEFAULT_SETTINGS, DEFAULT_VALUABLES } from '@/types';
+import { DEFAULT_SETTINGS } from '@/types'; // DEFAULT_VALUABLES is part of DEFAULT_SETTINGS
 import useLocalStorage from '@/hooks/useLocalStorage';
-import { v4 as uuidv4 } from 'uuid'; // Ensure uuid is installed: npm install uuid @types/uuid
+import { v4 as uuidv4 } from 'uuid';
 
 interface AppContextType {
   settings: Settings;
@@ -56,16 +56,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ...billData,
       id: uuidv4(),
       date: new Date().toISOString(),
-      billNumber: `${billData.type.substring(0,1).toUpperCase()}-${String(bills.filter(b => b.type === billData.type).length + 1).padStart(4, '0')}`,
+      // Ensure billNumber generation is robust for remaining types
+      billNumber: `${billData.type === 'sales-bill' ? 'S' : 'P'}-${String(bills.filter(b => b.type === billData.type).length + 1).padStart(4, '0')}`,
     };
-    if (billData.type !== 'sales-estimate') { // Only save real bills and purchases to history
-        setBills(prev => [newBill, ...prev]);
-    }
-    return newBill; // Return the new bill, estimate or otherwise
+    setBills(prev => [newBill, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())); // Sort by date descending
+    return newBill;
   }, [bills, setBills]);
 
   const updateBill = useCallback((updatedBill: Bill) => {
-    setBills(prev => prev.map(b => b.id === updatedBill.id ? updatedBill : b));
+    setBills(prev => prev.map(b => b.id === updatedBill.id ? updatedBill : b).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }, [setBills]);
 
   const deleteBill = useCallback((billId: string) => {

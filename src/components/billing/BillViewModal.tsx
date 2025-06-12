@@ -15,138 +15,201 @@ import { Button } from "@/components/ui/button";
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import ValuableIcon from '../ValuableIcon';
+import { Printer } from 'lucide-react';
 
 interface BillViewModalProps {
   bill: Bill | null;
   isOpen: boolean;
   onClose: () => void;
+  isEstimateView?: boolean;
 }
 
-const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose }) => {
+const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, isEstimateView = false }) => {
   const { settings, getValuableById } = useAppContext();
 
   if (!bill) return null;
 
   const company = settings;
+  const effectiveBillType = isEstimateView ? 'Sales Estimate' : 
+                            bill.type === 'purchase' ? 'Purchase Invoice' : 'Sales Invoice';
+
+  const handlePrint = () => {
+    // Simple browser print. More sophisticated printing might require a dedicated library or CSS.
+    setTimeout(() => { // Allow modal content to fully render if just opened
+        window.print();
+    }, 100);
+  };
+  
+  // Recalculate totals for estimate view if necessary
+  const displayCgstAmount = isEstimateView ? 0 : bill.cgstAmount;
+  const displaySgstAmount = isEstimateView ? 0 : bill.sgstAmount;
+  const displayTotalAmount = isEstimateView ? bill.subTotal : bill.totalAmount;
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[90vh] flex flex-col print:shadow-none print:border-none print:max-h-full print:w-full print:m-0 print:p-0">
+        <DialogHeader className="print:hidden">
           <DialogTitle className="font-headline text-2xl text-primary">
-            {bill.type === 'purchase' ? 'Purchase Invoice' : bill.type === 'sales-estimate' ? 'Sales Estimate' : 'Sales Invoice'}
+            {effectiveBillType}
           </DialogTitle>
           <DialogDescription>
-            Bill No: {bill.billNumber || 'N/A'} | Date: {format(new Date(bill.date), 'PPP')}
+            {isEstimateView ? "Estimate Preview" : `Bill No: ${bill.billNumber || 'N/A'}`} | Date: {format(new Date(bill.date), 'PPP')}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-grow overflow-y-auto p-1">
-          <div className="p-6 border rounded-lg bg-card shadow-sm">
+        <div className="flex-grow overflow-y-auto p-1" id="bill-to-print"> {/* Added ID for potential targeted print styles */}
+          <div className="p-6 border rounded-lg bg-card shadow-sm print:border-none print:shadow-none print:rounded-none">
             {/* Company Details */}
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold font-headline">{company.companyName}</h2>
-              <p className="text-sm text-muted-foreground">{company.slogan}</p>
-              <p className="text-xs">{company.address}</p>
-              <p className="text-xs">Phone: {company.phoneNumber}</p>
+              <h1 className="text-3xl font-bold font-headline text-primary print:text-black">{company.companyName}</h1>
+              <p className="text-sm text-muted-foreground print:text-gray-600">{company.slogan}</p>
+              <p className="text-xs print:text-gray-500">{company.address}</p>
+              <p className="text-xs print:text-gray-500">Phone: {company.phoneNumber}</p>
+              {isEstimateView && <p className="text-lg font-semibold mt-2 text-accent print:text-black">ESTIMATE</p>}
             </div>
 
-            <Separator className="my-4"/>
+            <Separator className="my-4 print:border-gray-400"/>
 
-            {/* Customer Details */}
-            {bill.customerName && (
-              <div className="mb-4">
-                <h3 className="font-semibold mb-1">Billed To:</h3>
-                <p className="text-sm">{bill.customerName}</p>
-                {bill.customerAddress && <p className="text-xs">{bill.customerAddress}</p>}
-                {bill.customerPhone && <p className="text-xs">Phone: {bill.customerPhone}</p>}
-              </div>
-            )}
+            {/* Bill To / From Details */}
+             <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                <div>
+                    <h3 className="font-semibold mb-1">
+                        {bill.type === 'purchase' ? 'From (Supplier):' : 'To (Customer):'}
+                    </h3>
+                    <p>{bill.customerName || 'N/A'}</p>
+                    {bill.customerAddress && <p className="text-xs">{bill.customerAddress}</p>}
+                    {bill.customerPhone && <p className="text-xs">Phone: {bill.customerPhone}</p>}
+                </div>
+                <div className="text-right">
+                    <h3 className="font-semibold mb-1">
+                        {isEstimateView ? 'Estimate Details:' : bill.type === 'purchase' ? 'Purchase Details:' : 'Invoice Details:'}
+                    </h3>
+                    <p>
+                        {isEstimateView ? 'Estimate No:' : bill.type === 'purchase' ? 'P.O. No:' : 'Invoice No:'}
+                        <span className="font-medium"> {bill.billNumber || (isEstimateView ? 'N/A (Estimate)' : 'N/A')}</span>
+                    </p>
+                    <p>Date: <span className="font-medium">{format(new Date(bill.date), 'dd MMM, yyyy')}</span></p>
+                </div>
+            </div>
+
 
             {/* Items Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b">
-                    <th className="py-2 px-1 text-left">#</th>
-                    <th className="py-2 px-1 text-left">Item</th>
-                    <th className="py-2 px-1 text-right">Qty/Wt</th>
-                    <th className="py-2 px-1 text-right">Rate</th>
-                    {bill.type !== 'purchase' && <th className="py-2 px-1 text-right">Making</th>}
-                    <th className="py-2 px-1 text-right">Amount</th>
+                  <tr className="border-b print:border-gray-400">
+                    <th className="py-2 px-1 text-left font-semibold">#</th>
+                    <th className="py-2 px-1 text-left font-semibold">Item Description</th>
+                    <th className="py-2 px-1 text-right font-semibold">Qty/Wt</th>
+                    <th className="py-2 px-1 text-right font-semibold">Rate</th>
+                    {(bill.type !== 'purchase' || isEstimateView && bill.items.some(i => i.makingCharge)) && <th className="py-2 px-1 text-right font-semibold">Making</th>}
+                    <th className="py-2 px-1 text-right font-semibold">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bill.items.map((item, index) => {
                     const valuableDetails = getValuableById(item.valuableId);
                     return (
-                    <tr key={item.id} className="border-b last:border-b-0">
+                    <tr key={item.id} className="border-b last:border-b-0 print:border-gray-300">
                       <td className="py-2 px-1">{index + 1}</td>
                       <td className="py-2 px-1 flex items-center">
-                        {valuableDetails && <ValuableIcon valuableType={valuableDetails.icon} color={valuableDetails.iconColor} className="w-4 h-4 mr-2"/>}
+                        {valuableDetails && <ValuableIcon valuableType={valuableDetails.icon} color={valuableDetails.iconColor} className="w-4 h-4 mr-2 print:hidden"/>}
                         {item.name}
                       </td>
-                      <td className="py-2 px-1 text-right">{item.weightOrQuantity.toFixed(2)} {item.unit}</td>
+                      <td className="py-2 px-1 text-right">{item.weightOrQuantity.toFixed(item.unit === 'carat' ? 3 : 2)} {item.unit}</td>
                       <td className="py-2 px-1 text-right">{item.rate.toFixed(2)}</td>
-                      {bill.type !== 'purchase' && (
+                      {(bill.type !== 'purchase' || isEstimateView && item.makingCharge) && (
                         <td className="py-2 px-1 text-right">
-                          {item.makingCharge ? 
+                          {item.makingCharge && item.makingCharge > 0 ? 
                            (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : item.makingCharge.toFixed(2)) 
                            : '-'}
                         </td>
                       )}
-                      <td className="py-2 px-1 text-right">{item.amount.toFixed(2)}</td>
+                      <td className="py-2 px-1 text-right font-medium">{item.amount.toFixed(2)}</td>
                     </tr>
                   )})}
                 </tbody>
               </table>
             </div>
 
-            <Separator className="my-4"/>
+            <Separator className="my-4 print:border-gray-400"/>
 
             {/* Totals Section */}
-            <div className="grid grid-cols-2 gap-x-4 mt-4">
-              <div className="col-span-1">
+            <div className="grid grid-cols-5 gap-x-4 mt-4">
+              <div className="col-span-3">
                 {bill.notes && (
                   <>
                     <h4 className="font-semibold text-xs mb-1">Notes:</h4>
-                    <p className="text-xs text-muted-foreground whitespace-pre-line">{bill.notes}</p>
+                    <p className="text-xs text-muted-foreground whitespace-pre-line print:text-gray-600">{bill.notes}</p>
                   </>
                 )}
               </div>
-              <div className="col-span-1 text-sm space-y-1 text-right">
+              <div className="col-span-2 text-sm space-y-1 text-right">
                 <p>Subtotal: <span className="font-semibold">{bill.subTotal.toFixed(2)}</span></p>
-                {bill.type === 'purchase' && bill.purchaseNetApplied && (
+                {bill.type === 'purchase' && bill.purchaseNetApplied && !isEstimateView && (
                   <p>
-                    Net {bill.purchaseNetApplied === 'percentage' ? `(${bill.purchaseNetValueApplied}%)` : `(Fixed)`}:
+                    Net Discount {bill.purchaseNetApplied === 'percentage' ? `(${bill.purchaseNetValueApplied}%)` : `(Fixed Off)`}:
                     <span className="font-semibold">
-                      {bill.purchaseNetApplied === 'percentage' ? (bill.subTotal * (bill.purchaseNetValueApplied || 0) / 100).toFixed(2) : bill.purchaseNetValueApplied?.toFixed(2) }
+                      {bill.purchaseNetApplied === 'percentage' ? 
+                        (bill.subTotal * (bill.purchaseNetValueApplied || 0) / 100).toFixed(2) : 
+                        (bill.subTotal - (bill.purchaseNetValueApplied || bill.subTotal)).toFixed(2) // If fixed price, discount is Subtotal - FixedPrice
+                      }
                     </span>
                   </p>
                 )}
-                {bill.cgstAmount !== undefined && bill.sgstAmount !== undefined && bill.type !== 'sales-estimate' && (
+                {(displayCgstAmount !== undefined && displaySgstAmount !== undefined && !isEstimateView) && (
                   <>
-                    <p>CGST ({settings.cgstRate}%): <span className="font-semibold">{bill.cgstAmount.toFixed(2)}</span></p>
-                    <p>SGST ({settings.sgstRate}%): <span className="font-semibold">{bill.sgstAmount.toFixed(2)}</span></p>
+                    <p>CGST ({settings.cgstRate}%): <span className="font-semibold">{displayCgstAmount.toFixed(2)}</span></p>
+                    <p>SGST ({settings.sgstRate}%): <span className="font-semibold">{displaySgstAmount.toFixed(2)}</span></p>
                   </>
                 )}
-                <Separator className="my-1"/>
-                <p className="text-lg font-bold">Total: <span className="text-primary">{bill.totalAmount.toFixed(2)}</span></p>
+                <Separator className="my-1 print:border-gray-400"/>
+                <p className="text-lg font-bold">Total: <span className="text-primary print:text-black">{displayTotalAmount.toFixed(2)}</span></p>
               </div>
             </div>
             
-            {/* Footer area for print or other actions if needed */}
-            {/* <div className="mt-8 text-center text-xs text-muted-foreground">
+            <div className="mt-8 text-center text-xs text-muted-foreground print:text-gray-500">
               Thank you for your business!
-            </div> */}
+            </div>
           </div>
         </div>
-        <DialogFooter className="p-4 border-t mt-auto">
+        <DialogFooter className="p-4 border-t mt-auto print:hidden">
+          <Button variant="outline" onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4"/> Print
+          </Button>
           <Button variant="outline" onClick={onClose}>Close</Button>
-          {/* Add Print button functionality if required */}
-          {/* <Button>Print</Button> */}
         </DialogFooter>
       </DialogContent>
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #bill-to-print, #bill-to-print * {
+            visibility: visible;
+          }
+          #bill-to-print {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: auto;
+            margin: 0;
+            padding: 10px; /* Adjust print padding as needed */
+            font-size: 10pt; /* Adjust print font size */
+          }
+          .print\\:text-black { color: black !important; }
+          .print\\:text-gray-600 { color: #4B5563 !important; }
+          .print\\:text-gray-500 { color: #6B7280 !important; }
+          .print\\:border-gray-400 { border-color: #9CA3AF !important; }
+          .print\\:border-gray-300 { border-color: #D1D5DB !important; }
+          .print\\:border-none { border: none !important; }
+          .print\\:shadow-none { box-shadow: none !important; }
+          .print\\:rounded-none { border-radius: 0 !important; }
+          .print\\:hidden { display: none !important; }
+        }
+      `}</style>
     </Dialog>
   );
 };
