@@ -57,8 +57,27 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave }) =
   }, [isPurchase]);
   
   useEffect(() => {
-    setItems(prevItems => prevItems.map(item => ({ ...item, amount: calculateItemAmount(item) })));
-  }, [items.map(i => i.valuableId && i.weightOrQuantity && i.rate && i.makingCharge), calculateItemAmount]);
+    // This effect ensures that all item amounts are correctly calculated
+    // based on their properties and the current calculation logic.
+    // It runs when 'items' themselves change (e.g. add/remove/edit item properties not amount)
+    // or when 'calculateItemAmount' function changes (e.g. 'isPurchase' changes).
+
+    let hasAnyAmountChanged = false;
+    const reCalculatedItems = items.map(currentItem => {
+      if (!currentItem) return currentItem; 
+
+      const newAmount = calculateItemAmount(currentItem);
+      if (currentItem.amount !== newAmount) {
+        hasAnyAmountChanged = true;
+        return { ...currentItem, amount: newAmount };
+      }
+      return currentItem;
+    });
+
+    if (hasAnyAmountChanged) {
+      setItems(reCalculatedItems);
+    }
+  }, [items, calculateItemAmount]);
 
 
   const subTotal = items.reduce((acc, item) => acc + (item.amount || 0), 0);
@@ -87,7 +106,9 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave }) =
   };
 
   const addItem = () => {
-    setItems([...items, { id: uuidv4() }]);
+    const newItemShell = { id: uuidv4() };
+    const newItemWithAmount = { ...newItemShell, amount: calculateItemAmount(newItemShell) };
+    setItems([...items, newItemWithAmount]);
   };
 
   const removeItem = (index: number) => {
@@ -134,7 +155,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave }) =
     setCustomerName('');
     setCustomerAddress('');
     setCustomerPhone('');
-    setItems([{ id: uuidv4() }]);
+    setItems([{ id: uuidv4(), amount: 0 }]); // Initialize with amount
     setNotes('');
     if (isPurchase) {
       setPurchaseNetMode(settings.netPurchaseMode);
@@ -257,3 +278,4 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave }) =
 };
 
 export default BillForm;
+
