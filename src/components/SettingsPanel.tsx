@@ -27,12 +27,15 @@ import ValuableIcon from "./ValuableIcon";
 import Image from "next/image";
 import { cn } from "@/lib/utils"; 
 import { v4 as uuidv4 } from 'uuid';
+import { useToast } from "@/hooks/use-toast";
+
 
 const SettingsPanel: React.FC = () => {
   const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol, addValuable, updateValuableData, removeValuable: removeValuableFromContext } = useAppContext();
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
   const [newProductName, setNewProductName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   // State for managing custom material form
   const [isEditingMaterial, setIsEditingMaterial] = useState<Valuable | null>(null);
@@ -41,7 +44,7 @@ const SettingsPanel: React.FC = () => {
   });
 
   useEffect(() => {
-    setLocalSettings(settings);
+    setLocalSettings(JSON.parse(JSON.stringify(settings))); // Deep copy to avoid direct mutation issues
   }, [settings]);
 
   const handleChange = (field: keyof Settings, value: any) => {
@@ -77,11 +80,15 @@ const SettingsPanel: React.FC = () => {
     if (newProductName.trim() !== '') {
       addProductName(newProductName.trim()); 
       setNewProductName('');
+      toast({ title: "Success", description: "Product name suggestion added." });
+    } else {
+      toast({ title: "Error", description: "Product name cannot be empty.", variant: "destructive" });
     }
   };
   
   const handleRemoveProductNameFromList = (productNameToRemove: string) => {
     removeProductName(productNameToRemove); 
+    toast({ title: "Success", description: `"${productNameToRemove}" removed from suggestions.` });
   };
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,10 +97,11 @@ const SettingsPanel: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setCompanyLogo(reader.result as string);
+        toast({ title: "Success", description: "Company logo uploaded." });
       };
       reader.readAsDataURL(file);
     } else {
-      alert("Please upload a valid image file (e.g., PNG, JPG, GIF).");
+      toast({ title: "Error", description: "Please upload a valid image file.", variant: "destructive" });
     }
   };
 
@@ -102,6 +110,7 @@ const SettingsPanel: React.FC = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = ""; 
     }
+    toast({ title: "Success", description: "Company logo removed." });
   };
 
   const handleCustomMaterialFormChange = (field: keyof typeof customMaterialForm, value: any) => {
@@ -110,13 +119,33 @@ const SettingsPanel: React.FC = () => {
 
   const handleSaveCustomMaterial = () => {
     if (!customMaterialForm.name.trim() || !customMaterialForm.unit.trim()) {
-      alert("Material name and unit cannot be empty.");
+      toast({ title: "Error", description: "Material name and unit cannot be empty.", variant: "destructive" });
       return;
     }
+    if (customMaterialForm.price < 0) {
+      toast({ title: "Error", description: "Material price cannot be negative.", variant: "destructive" });
+      return;
+    }
+
+    const materialToSave = { ...customMaterialForm };
+    if (materialToSave.icon === 'custom-gem' && !materialToSave.iconColor) {
+      materialToSave.iconColor = '#808080'; // Default if somehow empty
+    }
+    // If icon is not custom-gem, iconColor should not be relevant for storage.
+    // Consider clearing it or letting AppContext handle this logic.
+    // For now, we pass it as is. AppContext/ValuableIcon will decide to use it.
+
     if (isEditingMaterial) {
-      updateValuableData(isEditingMaterial.id, customMaterialForm);
+      updateValuableData(isEditingMaterial.id, materialToSave);
+      toast({ title: "Success", description: `Material "${materialToSave.name}" updated.` });
     } else {
-      addValuable(customMaterialForm);
+      // Check for duplicate names before adding
+      if (settings.valuables.some(v => v.name.toLowerCase() === materialToSave.name.trim().toLowerCase())) {
+        toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" });
+        return;
+      }
+      addValuable(materialToSave);
+      toast({ title: "Success", description: `Material "${materialToSave.name}" added.` });
     }
     resetCustomMaterialForm();
   };
@@ -127,54 +156,73 @@ const SettingsPanel: React.FC = () => {
   };
 
   const handleEditValuable = (valuable: Valuable) => {
-    // For default items, we only allow editing price, unit, and header selection locally.
-    // For custom items, we can set them up for full edit using the custom material form.
     if (valuable.isDefault) {
-      // Allow direct editing of price/unit/header for default items via `handleLocalValuableChange`
-      // For other properties of default items, they are fixed.
-    } else {
-      // Load custom material into the form for editing
-      setIsEditingMaterial(valuable);
-      setCustomMaterialForm({
-        name: valuable.name,
-        price: valuable.price,
-        unit: valuable.unit,
-        icon: valuable.icon,
-        iconColor: valuable.iconColor,
-      });
+      // Default items are edited inline for price/unit/header selection.
+      // To avoid confusion, we don't load them into the "Add/Edit New Material" form.
+      // The UI for editing default items is directly on their list entries.
+      toast({ title: "Info", description: "Default materials (like Gold, Silver) can have their price, unit, and header visibility edited directly in the list below. Other properties are fixed." });
+      return;
     }
+    // Load custom material into the form for editing
+    setIsEditingMaterial(valuable);
+    setCustomMaterialForm({
+      name: valuable.name,
+      price: valuable.price,
+      unit: valuable.unit,
+      icon: valuable.icon,
+      iconColor: valuable.iconColor || '#808080', // Ensure a default if undefined
+    });
+    // Scroll to the material form
+    const formElement = document.getElementById('custom-material-form-section');
+    formElement?.scrollIntoView({ behavior: 'smooth' });
   };
   
   const handleDeleteValuable = (valuableId: string) => {
+    const valuableToRemove = settings.valuables.find(v => v.id === valuableId);
+    if (valuableToRemove?.isDefault) {
+        toast({ title: "Error", description: "Default materials cannot be deleted.", variant: "destructive" });
+        return;
+    }
     removeValuableFromContext(valuableId);
+    toast({ title: "Success", description: `Material "${valuableToRemove?.name}" deleted.` });
+    if (isEditingMaterial && isEditingMaterial.id === valuableId) {
+        resetCustomMaterialForm(); // Reset form if the edited item was deleted
+    }
   };
 
-
-  const handleSave = () => {
-    // When saving all settings, ensure that changes made to localSettings.valuables (like price/unit of default items)
-    // are also propagated to the context if necessary, or that context.updateValuableData handles these.
-    // For simplicity, we assume that direct context updates were made for structural changes (add/remove/full edit custom)
-    // and localSettings reflects transient changes like price edits.
-    // A more robust solution might involve a deep comparison or explicit update calls for each valuable.
-    
-    // Update general settings
+  const handleSaveAllSettings = () => {
     updateSettings(localSettings); 
-    // Update currency specifically (as it's a direct property)
     updateCurrencySymbol(localSettings.currencySymbol);
     
-    // Persist changes to individual valuables (prices, units, header selection for default; all for custom)
+    // Persist changes to individual valuables made in localSettings (e.g. price/unit of default items)
     localSettings.valuables.forEach(val => {
-      const originalVal = settings.valuables.find(v => v.id === val.id);
-      if (originalVal && JSON.stringify(val) !== JSON.stringify(originalVal)) {
-        const { id, isDefault, ...updatableData } = val;
-        updateValuableData(id, updatableData);
+      const originalValInContext = settings.valuables.find(v => v.id === val.id);
+      if (originalValInContext && JSON.stringify(val) !== JSON.stringify(originalValInContext)) {
+        // Only update fields that are editable for this item type
+        // For default items, this is price, unit, selectedInHeader
+        // For custom items, it's all fields (name, price, unit, icon, iconColor, selectedInHeader)
+        const { id, isDefault, ...updatableDataFromLocal } = val;
+        
+        let dataToUpdateInContext: Partial<Omit<Valuable, 'id' | 'isDefault'>> = {
+            price: updatableDataFromLocal.price,
+            unit: updatableDataFromLocal.unit,
+            selectedInHeader: updatableDataFromLocal.selectedInHeader,
+        };
+
+        if (!isDefault) { // Custom items can have more fields updated
+            dataToUpdateInContext.name = updatableDataFromLocal.name;
+            dataToUpdateInContext.icon = updatableDataFromLocal.icon;
+            dataToUpdateInContext.iconColor = updatableDataFromLocal.iconColor;
+        }
+        updateValuableData(id, dataToUpdateInContext);
       }
     });
+    toast({ title: "Success", description: "All settings saved!" });
   };
 
 
-  const SectionHeader: React.FC<{ title: string; icon: React.ElementType; className?: string }> = ({ title, icon: Icon, className }) => (
-    <h3 className={cn("text-xl lg:text-2xl font-headline mb-6 text-primary flex items-center", className)}>
+  const SectionHeader: React.FC<{ title: string; icon: React.ElementType; className?: string; id?:string }> = ({ title, icon: Icon, className, id }) => (
+    <h3 id={id} className={cn("text-xl lg:text-2xl font-headline mb-6 text-primary flex items-center scroll-mt-20", className)}>
       <Icon className="mr-3 h-7 w-7 text-primary/80" />
       {title}
     </h3>
@@ -188,7 +236,7 @@ const SettingsPanel: React.FC = () => {
           <span className="sr-only">Open Settings</span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-xl flex flex-col">
+      <SheetContent className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex flex-col">
         <SheetHeader className="pb-6 border-b">
           <SheetTitle className="font-headline text-3xl lg:text-4xl">Application Settings</SheetTitle>
           <SheetDescription className="text-lg">
@@ -254,15 +302,18 @@ const SettingsPanel: React.FC = () => {
                     <div className="flex items-center space-x-3.5 p-3.5 bg-muted/30 rounded-md">
                         <Checkbox
                             id="showCompanyLogo"
-                            checked={settings.showCompanyLogo}
-                            onCheckedChange={(checked) => toggleShowCompanyLogo(!!checked)}
+                            checked={settings.showCompanyLogo} // Reflects context state for immediate UI feedback
+                            onCheckedChange={(checked) => {
+                                toggleShowCompanyLogo(!!checked); // Updates context immediately
+                                handleChange('showCompanyLogo', !!checked); // Updates localSettings for save
+                            }}
                             className="w-5 h-5"
                         />
                         <Label htmlFor="showCompanyLogo" className="text-lg font-medium leading-none cursor-pointer">
                             Show company logo on bills & estimates
                         </Label>
                     </div>
-                    {settings.showCompanyLogo && (
+                    {settings.showCompanyLogo && ( // Use settings.showCompanyLogo for conditional rendering
                         <div className="mt-3.5 space-y-3.5 p-4 border rounded-md">
                             <Input
                                 id="logoUpload"
@@ -272,7 +323,7 @@ const SettingsPanel: React.FC = () => {
                                 ref={fileInputRef}
                                 className="text-lg file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-base file:bg-primary/10 file:text-primary hover:file:bg-primary/20 h-12"
                             />
-                            {settings.companyLogo && (
+                            {settings.companyLogo && ( // Use settings.companyLogo for preview
                                 <div className="mt-2.5 p-3.5 border rounded-md bg-muted/50 inline-flex flex-col items-center shadow-sm">
                                     <Image src={settings.companyLogo} alt="Company Logo Preview" width={160} height={160} className="object-contain rounded" />
                                     <Button variant="link" size="sm" onClick={handleRemoveLogo} className="text-destructive hover:text-destructive-foreground hover:bg-destructive mt-2.5 text-base px-3 py-1.5 h-auto">
@@ -289,10 +340,10 @@ const SettingsPanel: React.FC = () => {
             </section>
             <Separator />
 
-            <section>
+            <section id="custom-material-form-section">
                 <SectionHeader title="Manage All Materials" icon={Banknote} />
                 <div className="mb-8 p-5 border rounded-lg bg-background shadow-md space-y-5">
-                    <h4 className="text-lg font-semibold text-accent">{isEditingMaterial ? 'Edit Material' : 'Add New Material'}</h4>
+                    <h4 className="text-xl font-semibold text-accent">{isEditingMaterial ? 'Edit Material' : 'Add New Material'}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <Label htmlFor="customMaterialName" className="text-lg">Name</Label>
@@ -300,7 +351,7 @@ const SettingsPanel: React.FC = () => {
                         </div>
                         <div>
                             <Label htmlFor="customMaterialPrice" className="text-lg">Price ({settings.currencySymbol})</Label>
-                            <Input id="customMaterialPrice" type="number" value={customMaterialForm.price} onChange={e => handleCustomMaterialFormChange('price', parseFloat(e.target.value) || 0)} className="mt-1.5 h-12 text-lg" />
+                            <Input id="customMaterialPrice" type="number" value={customMaterialForm.price} onChange={e => handleCustomMaterialFormChange('price', parseFloat(e.target.value) || 0)} className="mt-1.5 h-12 text-lg" min="0" />
                         </div>
                         <div>
                             <Label htmlFor="customMaterialUnit" className="text-lg">Unit</Label>
@@ -339,27 +390,31 @@ const SettingsPanel: React.FC = () => {
                     {localSettings.valuables.sort((a,b) => a.name.localeCompare(b.name)).map((valuable) => (
                     <div key={valuable.id} className="p-5 border rounded-lg space-y-5 bg-card shadow-md hover:shadow-lg transition-shadow">
                         <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-8 h-8 mr-4 text-primary" />
-                            {valuable.isDefault ? 
-                                <span className="text-xl font-semibold mr-2">{valuable.name}</span> :
-                                <Input
-                                value={valuable.name}
-                                onChange={(e) => handleLocalValuableChange(valuable.id, 'name', e.target.value)}
-                                className="text-xl font-semibold mr-2 w-auto inline-flex h-11 bg-transparent border-0 focus:ring-1 focus:ring-primary"
-                                disabled={valuable.isDefault}
+                            <div className="flex items-center">
+                                <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-8 h-8 mr-4 text-primary" />
+                                {valuable.isDefault ? 
+                                    <span className="text-xl font-semibold mr-2">{valuable.name}</span> :
+                                    // Custom item name: editable inline via localSettings
+                                    <Input
+                                    value={valuable.name}
+                                    onChange={(e) => handleLocalValuableChange(valuable.id, 'name', e.target.value)}
+                                    className="text-xl font-semibold mr-2 w-auto inline-flex h-11 bg-transparent border-0 focus:ring-1 focus:ring-primary"
+                                    // disabled={valuable.isDefault} // This check is implicit as we are in !isDefault case
+                                    />
+                                }
+                            </div>
+                            <div className="flex items-center space-x-3">
+                                <Checkbox
+                                id={`select-${valuable.id}`}
+                                checked={valuable.selectedInHeader}
+                                onCheckedChange={() => {
+                                    toggleValuableInHeader(valuable.id); // Updates context immediately for header display
+                                    handleLocalValuableChange(valuable.id, 'selectedInHeader', !valuable.selectedInHeader); // Updates localSettings for save
+                                }}
+                                className="w-5 h-5"
                                 />
-                            }
-                        </div>
-                        <div className="flex items-center space-x-3">
-                            <Checkbox
-                            id={`select-${valuable.id}`}
-                            checked={valuable.selectedInHeader}
-                            onCheckedChange={() => toggleValuableInHeader(valuable.id)}
-                            className="w-5 h-5"
-                            />
-                            <Label htmlFor={`select-${valuable.id}`} className="text-base cursor-pointer">Show in Header</Label>
-                        </div>
+                                <Label htmlFor={`select-${valuable.id}`} className="text-base cursor-pointer">Show in Header</Label>
+                            </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
@@ -370,6 +425,7 @@ const SettingsPanel: React.FC = () => {
                                 value={valuable.price}
                                 onChange={(e) => handleLocalValuableChange(valuable.id, 'price', parseFloat(e.target.value))}
                                 className="mt-1.5 h-12 text-lg"
+                                min="0"
                                 />
                             </div>
                             <div>
@@ -379,14 +435,14 @@ const SettingsPanel: React.FC = () => {
                                 value={valuable.unit}
                                 onChange={(e) => handleLocalValuableChange(valuable.id, 'unit', e.target.value)}
                                 className="mt-1.5 h-12 text-lg"
-                                disabled={valuable.isDefault && ['gold', 'silver', 'diamond', 'platinum'].includes(valuable.icon)} // Example: Lock unit for some defaults
+                                disabled={valuable.isDefault && ['gold', 'silver', 'diamond', 'platinum'].includes(valuable.icon)}
                                 />
                             </div>
                         </div>
                         {!valuable.isDefault && (
                             <div className="flex justify-end space-x-2.5 pt-2">
                                 <Button variant="outline" size="sm" onClick={() => handleEditValuable(valuable)} className="text-base px-3 py-1.5 h-auto">
-                                    <Edit3 className="mr-2 h-4 w-4"/> Edit
+                                    <Edit3 className="mr-2 h-4 w-4"/> Edit Details
                                 </Button>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -483,6 +539,7 @@ const SettingsPanel: React.FC = () => {
                     value={localSettings.defaultMakingCharge?.value || 0}
                     onChange={(e) => handleNestedChange('defaultMakingCharge', 'value', parseFloat(e.target.value))}
                     className="mt-1.5 h-12 text-lg"
+                    min="0"
                   />
                 </div>
               </div>
@@ -495,11 +552,11 @@ const SettingsPanel: React.FC = () => {
               <div className="grid grid-cols-2 gap-5 p-5 border rounded-lg bg-card shadow-sm">
                 <div>
                   <Label htmlFor="cgstRate" className="text-lg">CGST Rate (%)</Label>
-                  <Input id="cgstRate" type="number" value={localSettings.cgstRate} onChange={(e) => handleChange('cgstRate', parseFloat(e.target.value))} className="mt-1.5 h-12 text-lg"/>
+                  <Input id="cgstRate" type="number" value={localSettings.cgstRate} onChange={(e) => handleChange('cgstRate', parseFloat(e.target.value))} className="mt-1.5 h-12 text-lg" min="0"/>
                 </div>
                 <div>
                   <Label htmlFor="sgstRate" className="text-lg">SGST Rate (%)</Label>
-                  <Input id="sgstRate" type="number" value={localSettings.sgstRate} onChange={(e) => handleChange('sgstRate', parseFloat(e.target.value))} className="mt-1.5 h-12 text-lg"/>
+                  <Input id="sgstRate" type="number" value={localSettings.sgstRate} onChange={(e) => handleChange('sgstRate', parseFloat(e.target.value))} className="mt-1.5 h-12 text-lg" min="0"/>
                 </div>
               </div>
             </section>
@@ -518,6 +575,7 @@ const SettingsPanel: React.FC = () => {
                     onChange={(e) => handleChange('defaultPurchaseItemNetPercentage', parseFloat(e.target.value))}
                     placeholder="e.g., 10 for 10% deduction"
                     className="mt-1.5 h-12 text-lg"
+                     min="0"
                   />
                    <p className="text-base text-muted-foreground mt-2 italic">
                     Applied if 'Net % Off Market' is chosen for a new purchase item.
@@ -532,6 +590,7 @@ const SettingsPanel: React.FC = () => {
                     onChange={(e) => handleChange('defaultPurchaseItemNetFixedValue', parseFloat(e.target.value))}
                     placeholder="e.g., 4500"
                     className="mt-1.5 h-12 text-lg"
+                     min="0"
                   />
                    <p className="text-base text-muted-foreground mt-2 italic">
                     Applied if 'Fixed Net Rate' is chosen for a new purchase item.
@@ -547,7 +606,7 @@ const SettingsPanel: React.FC = () => {
             <Button variant="outline" className="shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto">Cancel</Button>
           </SheetClose>
           <SheetClose asChild>
-            <Button onClick={handleSave} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
+            <Button onClick={handleSaveAllSettings} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
               <Save className="mr-2.5 h-5 w-5" /> Save All Settings
             </Button>
           </SheetClose>

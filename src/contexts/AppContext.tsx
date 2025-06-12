@@ -13,7 +13,7 @@ interface AppContextType {
   updateValuablePrice: (valuableId: string, newPrice: number) => void;
   toggleValuableInHeader: (valuableId: string) => void;
   
-  addValuable: (newValuable: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>) => void;
+  addValuable: (newValuableData: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>) => Valuable | null;
   updateValuableData: (valuableId: string, updatedData: Partial<Omit<Valuable, 'id' | 'isDefault'>>) => void;
   removeValuable: (valuableId: string) => void;
 
@@ -46,7 +46,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => ({
       ...prev,
       valuables: prev.valuables.map(v =>
-        v.id === valuableId ? { ...v, price: newPrice } : v
+        v.id === valuableId ? { ...v, price: Math.max(0, newPrice) } : v // Ensure price is not negative
       ),
     }));
   }, [setSettings]);
@@ -60,37 +60,57 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }));
   }, [setSettings]);
 
-  const addValuable = useCallback((newValuableData: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>) => {
-    setSettings(prev => {
-      const newFullValuable: Valuable = {
-        ...newValuableData,
-        id: uuidv4(),
-        selectedInHeader: false, // Custom valuables not in header by default
-        isDefault: false,
-      };
-      return {
-        ...prev,
-        valuables: [...prev.valuables, newFullValuable].sort((a, b) => a.name.localeCompare(b.name)),
-      };
-    });
-  }, [setSettings]);
+  const addValuable = useCallback((newValuableData: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>): Valuable | null => {
+    if (settings.valuables.some(v => v.name.toLowerCase() === newValuableData.name.trim().toLowerCase())) {
+      // console.error("Valuable with this name already exists."); // Or throw error/toast
+      return null; // Indicate failure
+    }
+    const newFullValuable: Valuable = {
+      ...newValuableData,
+      id: uuidv4(),
+      selectedInHeader: false, // Custom valuables not in header by default
+      isDefault: false,
+      iconColor: newValuableData.icon === 'custom-gem' ? (newValuableData.iconColor || '#808080') : undefined,
+      price: Math.max(0, newValuableData.price) // Ensure price is not negative
+    };
+    setSettings(prev => ({
+      ...prev,
+      valuables: [...prev.valuables, newFullValuable].sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+    return newFullValuable;
+  }, [setSettings, settings.valuables]);
 
   const updateValuableData = useCallback((valuableId: string, updatedData: Partial<Omit<Valuable, 'id' | 'isDefault'>>) => {
     setSettings(prev => ({
       ...prev,
-      valuables: prev.valuables.map(v =>
-        v.id === valuableId ? { ...v, ...updatedData } : v
-      ).sort((a, b) => a.name.localeCompare(b.name)),
+      valuables: prev.valuables.map(v => {
+        if (v.id === valuableId) {
+          const mergedData = { ...v, ...updatedData };
+          // Ensure price is not negative
+          if (typeof mergedData.price === 'number') {
+            mergedData.price = Math.max(0, mergedData.price);
+          }
+          // Ensure iconColor is set if icon is custom-gem, otherwise undefined
+          mergedData.iconColor = mergedData.icon === 'custom-gem' ? (mergedData.iconColor || '#808080') : undefined;
+          return mergedData;
+        }
+        return v;
+      }).sort((a, b) => a.name.localeCompare(b.name)),
     }));
   }, [setSettings]);
 
   const removeValuable = useCallback((valuableId: string) => {
-    setSettings(prev => ({
-      ...prev,
-      valuables: prev.valuables.filter(v => v.id !== valuableId),
-    }));
-    // Optionally, could remove this valuable from any existing bill items if strict data integrity is needed,
-    // but that might be too destructive or complex for this app.
+    setSettings(prev => {
+      const valuableToRemove = prev.valuables.find(v => v.id === valuableId);
+      if (valuableToRemove?.isDefault) {
+        // console.error("Cannot delete default valuables."); // Or throw error/toast
+        return prev; // Prevent deletion of default valuables
+      }
+      return {
+        ...prev,
+        valuables: prev.valuables.filter(v => v.id !== valuableId),
+      };
+    });
   }, [setSettings]);
 
 
@@ -99,7 +119,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => {
       const lowerCaseName = name.trim().toLowerCase();
       if (prev.productNames.some(n => n.toLowerCase() === lowerCaseName)) {
-        return prev;
+        return prev; // Already exists, do nothing
       }
       return {
         ...prev,
