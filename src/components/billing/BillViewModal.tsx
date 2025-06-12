@@ -30,20 +30,41 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   if (!bill) return null;
 
   const company = settings;
-  const effectiveBillType = isEstimateView ? 'Sales Estimate' : 
-                            bill.type === 'purchase' ? 'Purchase Invoice' : 'Sales Invoice';
+  
+  let effectiveBillType = '';
+  if (isEstimateView) {
+    effectiveBillType = bill.type === 'purchase' ? 'Purchase Estimate' : 'Sales Estimate';
+  } else {
+    effectiveBillType = bill.type === 'purchase' ? 'Purchase Invoice' : 'Sales Invoice';
+  }
 
   const handlePrint = () => {
-    // Simple browser print. More sophisticated printing might require a dedicated library or CSS.
-    setTimeout(() => { // Allow modal content to fully render if just opened
+    setTimeout(() => {
         window.print();
     }, 100);
   };
   
-  // Recalculate totals for estimate view if necessary
-  const displayCgstAmount = isEstimateView ? 0 : bill.cgstAmount;
-  const displaySgstAmount = isEstimateView ? 0 : bill.sgstAmount;
-  const displayTotalAmount = isEstimateView ? bill.subTotal : bill.totalAmount;
+  // Determine displayed totals based on whether it's an estimate or a final bill
+  const displaySubTotal = bill.subTotal;
+  let displayCgstAmount = bill.cgstAmount || 0;
+  let displaySgstAmount = bill.sgstAmount || 0;
+  let displayTotalAmount = bill.totalAmount;
+  let purchaseDiscountAmount = 0;
+
+  if (isEstimateView) {
+    displayCgstAmount = 0; // No GST on estimates
+    displaySgstAmount = 0;
+    displayTotalAmount = displaySubTotal; // For estimates, total is subtotal (includes MC for sales, raw for purchase)
+  } else if (bill.type === 'purchase' && bill.purchaseNetApplied && bill.purchaseNetValueApplied !== undefined) {
+    // For final purchase invoices, calculate the discount shown
+    if (bill.purchaseNetApplied === 'percentage') {
+      purchaseDiscountAmount = bill.subTotal * (bill.purchaseNetValueApplied / 100);
+    } else { // fixed_price
+      // If fixed price, the "discount" is the difference from subtotal to reach that fixed price
+      // but totalAmount already reflects the fixed price.
+      // The line item in totals will just show "Net (Fixed Price)"
+    }
+  }
 
 
   return (
@@ -58,9 +79,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-grow overflow-y-auto p-1" id="bill-to-print"> {/* Added ID for potential targeted print styles */}
+        <div className="flex-grow overflow-y-auto p-1" id="bill-to-print">
           <div className="p-6 border rounded-lg bg-card shadow-sm print:border-none print:shadow-none print:rounded-none">
-            {/* Company Details */}
             <div className="text-center mb-6">
               <h1 className="text-3xl font-bold font-headline text-primary print:text-black">{company.companyName}</h1>
               <p className="text-sm text-muted-foreground print:text-gray-600">{company.slogan}</p>
@@ -71,7 +91,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
             <Separator className="my-4 print:border-gray-400"/>
 
-            {/* Bill To / From Details */}
              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                 <div>
                     <h3 className="font-semibold mb-1">
@@ -83,18 +102,16 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 </div>
                 <div className="text-right">
                     <h3 className="font-semibold mb-1">
-                        {isEstimateView ? 'Estimate Details:' : bill.type === 'purchase' ? 'Purchase Details:' : 'Invoice Details:'}
+                        {isEstimateView ? (bill.type === 'purchase' ? 'Purchase Estimate Details:' : 'Sales Estimate Details:') : (bill.type === 'purchase' ? 'Purchase Details:' : 'Invoice Details:')}
                     </h3>
                     <p>
-                        {isEstimateView ? 'Estimate No:' : bill.type === 'purchase' ? 'P.O. No:' : 'Invoice No:'}
+                        {isEstimateView ? 'Estimate Ref:' : bill.type === 'purchase' ? 'P.O. No:' : 'Invoice No:'}
                         <span className="font-medium"> {bill.billNumber || (isEstimateView ? 'N/A (Estimate)' : 'N/A')}</span>
                     </p>
                     <p>Date: <span className="font-medium">{format(new Date(bill.date), 'dd MMM, yyyy')}</span></p>
                 </div>
             </div>
 
-
-            {/* Items Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -103,7 +120,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     <th className="py-2 px-1 text-left font-semibold">Item Description</th>
                     <th className="py-2 px-1 text-right font-semibold">Qty/Wt</th>
                     <th className="py-2 px-1 text-right font-semibold">Rate</th>
-                    {(bill.type !== 'purchase' || isEstimateView && bill.items.some(i => i.makingCharge)) && <th className="py-2 px-1 text-right font-semibold">Making</th>}
+                    {(bill.type !== 'purchase' || (isEstimateView && bill.items.some(i => i.makingCharge))) && !isEstimateView && <th className="py-2 px-1 text-right font-semibold">Making</th>}
+                     {bill.type === 'sales-bill' && isEstimateView && bill.items.some(i => i.makingCharge) && <th className="py-2 px-1 text-right font-semibold">Making</th>}
                     <th className="py-2 px-1 text-right font-semibold">Amount</th>
                   </tr>
                 </thead>
@@ -115,12 +133,19 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                       <td className="py-2 px-1">{index + 1}</td>
                       <td className="py-2 px-1 flex items-center">
                         {valuableDetails && <ValuableIcon valuableType={valuableDetails.icon} color={valuableDetails.iconColor} className="w-4 h-4 mr-2 print:hidden"/>}
-                        {item.name}
+                        {item.name} ({valuableDetails?.name || 'Custom Item'})
                       </td>
                       <td className="py-2 px-1 text-right">{item.weightOrQuantity.toFixed(item.unit === 'carat' ? 3 : 2)} {item.unit}</td>
                       <td className="py-2 px-1 text-right">{item.rate.toFixed(2)}</td>
-                      {(bill.type !== 'purchase' || isEstimateView && item.makingCharge) && (
+                      {(bill.type !== 'purchase' || (isEstimateView && item.makingCharge)) && !isEstimateView && (
                         <td className="py-2 px-1 text-right">
+                          {item.makingCharge && item.makingCharge > 0 ? 
+                           (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : item.makingCharge.toFixed(2)) 
+                           : '-'}
+                        </td>
+                      )}
+                      {bill.type === 'sales-bill' && isEstimateView && item.makingCharge && (
+                         <td className="py-2 px-1 text-right">
                           {item.makingCharge && item.makingCharge > 0 ? 
                            (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : item.makingCharge.toFixed(2)) 
                            : '-'}
@@ -135,7 +160,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
             <Separator className="my-4 print:border-gray-400"/>
 
-            {/* Totals Section */}
             <div className="grid grid-cols-5 gap-x-4 mt-4">
               <div className="col-span-3">
                 {bill.notes && (
@@ -146,24 +170,24 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 )}
               </div>
               <div className="col-span-2 text-sm space-y-1 text-right">
-                <p>Subtotal: <span className="font-semibold">{bill.subTotal.toFixed(2)}</span></p>
-                {bill.type === 'purchase' && bill.purchaseNetApplied && !isEstimateView && (
+                <p>Subtotal: <span className="font-semibold">{displaySubTotal.toFixed(2)}</span></p>
+                
+                {!isEstimateView && bill.type === 'purchase' && bill.purchaseNetApplied && bill.purchaseNetValueApplied !== undefined && (
                   <p>
-                    Net Discount {bill.purchaseNetApplied === 'percentage' ? `(${bill.purchaseNetValueApplied}%)` : `(Fixed Off)`}:
+                    {bill.purchaseNetApplied === 'percentage' 
+                      ? `Net Discount (${bill.purchaseNetValueApplied}%)` 
+                      : `Net (Fixed Price Bill)`}: 
                     <span className="font-semibold">
-                      {bill.purchaseNetApplied === 'percentage' ? 
-                        (bill.subTotal * (bill.purchaseNetValueApplied || 0) / 100).toFixed(2) : 
-                        (bill.subTotal - (bill.purchaseNetValueApplied || bill.subTotal)).toFixed(2) // If fixed price, discount is Subtotal - FixedPrice
-                      }
+                      {bill.purchaseNetApplied === 'percentage' 
+                        ? `-${purchaseDiscountAmount.toFixed(2)}`
+                        : `${bill.totalAmount.toFixed(2)} (Final)`}
                     </span>
                   </p>
                 )}
-                {(displayCgstAmount !== undefined && displaySgstAmount !== undefined && !isEstimateView) && (
-                  <>
-                    <p>CGST ({settings.cgstRate}%): <span className="font-semibold">{displayCgstAmount.toFixed(2)}</span></p>
-                    <p>SGST ({settings.sgstRate}%): <span className="font-semibold">{displaySgstAmount.toFixed(2)}</span></p>
-                  </>
-                )}
+
+                {displayCgstAmount > 0 && <p>CGST ({settings.cgstRate}%): <span className="font-semibold">{displayCgstAmount.toFixed(2)}</span></p>}
+                {displaySgstAmount > 0 && <p>SGST ({settings.sgstRate}%): <span className="font-semibold">{displaySgstAmount.toFixed(2)}</span></p>}
+                
                 <Separator className="my-1 print:border-gray-400"/>
                 <p className="text-lg font-bold">Total: <span className="text-primary print:text-black">{displayTotalAmount.toFixed(2)}</span></p>
               </div>
@@ -176,7 +200,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         </div>
         <DialogFooter className="p-4 border-t mt-auto print:hidden">
           <Button variant="outline" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4"/> Print
+            <Printer className="mr-2 h-4 w-4"/> Print {isEstimateView ? "Estimate" : "Bill"}
           </Button>
           <Button variant="outline" onClick={onClose}>Close</Button>
         </DialogFooter>
@@ -196,8 +220,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             width: 100%;
             height: auto;
             margin: 0;
-            padding: 10px; /* Adjust print padding as needed */
-            font-size: 10pt; /* Adjust print font size */
+            padding: 10px; 
+            font-size: 10pt; 
           }
           .print\\:text-black { color: black !important; }
           .print\\:text-gray-600 { color: #4B5563 !important; }

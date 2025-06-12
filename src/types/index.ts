@@ -26,12 +26,13 @@ export interface Settings {
   netPurchaseFixedPrice: number; // Default net fixed price for purchases
   cgstRate: number; // Percentage
   sgstRate: number; // Percentage
+  customItemNames: string[]; // For storing unique item names for suggestions
 }
 
 export interface BillItem {
   id: string;
   valuableId: string; // links to Valuable.id
-  name: string; // copied from Valuable.name for history
+  name: string; // editable, defaults from Valuable.name, stored for history
   weightOrQuantity: number;
   unit: string; // copied from Valuable.unit
   rate: number; // price per unit at the time of billing
@@ -40,7 +41,7 @@ export interface BillItem {
   amount: number; // (weightOrQuantity * rate) + makingCharge
 }
 
-export type BillType = 'purchase' | 'sales-bill'; // Removed 'sales-estimate'
+export type BillType = 'purchase' | 'sales-bill';
 
 export interface Bill {
   id: string;
@@ -83,4 +84,5 @@ export const DEFAULT_SETTINGS: Settings = {
   netPurchaseFixedPrice: 0,
   cgstRate: 9,
   sgstRate: 9,
+  customItemNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle"], // Initial suggestions
 };

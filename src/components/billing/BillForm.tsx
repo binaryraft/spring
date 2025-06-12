@@ -17,13 +17,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface BillFormProps {
   billType: BillType;
   existingBill?: Bill;
-  onSave: (bill: Bill) => void;
+  onSaveAndPrint: (bill: Bill) => void; // Changed from onSave
   onCancel: () => void;
-  onShowEstimate?: (estimateData: Bill) => void; // Optional: only for sales bill
+  onShowEstimate?: (estimateData: Bill) => void;
 }
 
-const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onCancel, onShowEstimate }) => {
-  const { settings, addBill, updateBill } = useAppContext();
+const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPrint, onCancel, onShowEstimate }) => {
+  const { settings, addBill, updateBill, addCustomItemName } = useAppContext();
   const { toast } = useToast();
 
   const [customerName, setCustomerName] = useState('');
@@ -54,9 +54,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
     }
   }, [existingBill, settings, billType]);
 
-
   const calculateItemAmount = useCallback((item: Partial<BillItem>): number => {
-    if (!item.valuableId || typeof item.weightOrQuantity !== 'number' || typeof item.rate !== 'number') return 0;
+    if (typeof item.weightOrQuantity !== 'number' || typeof item.rate !== 'number') return 0;
     let baseAmount = item.weightOrQuantity * item.rate;
     if (item.makingCharge && !isPurchase) { 
       if (item.makingChargeType === 'percentage') {
@@ -71,7 +70,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
   useEffect(() => {
     let hasAnyAmountChanged = false;
     const reCalculatedItems = items.map(currentItem => {
-      if (!currentItem.id) return { ...currentItem, id: uuidv4() }; // Ensure ID for new items
+      if (!currentItem.id) return { ...currentItem, id: uuidv4() };
       const newAmount = calculateItemAmount(currentItem);
       if (currentItem.amount !== newAmount) {
         hasAnyAmountChanged = true;
@@ -85,7 +84,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
     }
   }, [items, calculateItemAmount]);
 
-
   const subTotal = parseFloat(items.reduce((acc, item) => acc + (item.amount || 0), 0).toFixed(2));
   
   let totalAmount = subTotal;
@@ -98,7 +96,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
     } else { 
       totalAmount = purchaseNetValue; 
     }
-  } else if (isSalesBill) { // GST only for sales bills, not estimates
+  } else if (isSalesBill) {
     cgstAmount = totalAmount * (settings.cgstRate / 100);
     sgstAmount = totalAmount * (settings.sgstRate / 100);
     totalAmount += cgstAmount + sgstAmount;
@@ -107,11 +105,16 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
   cgstAmount = parseFloat(cgstAmount.toFixed(2));
   sgstAmount = parseFloat(sgstAmount.toFixed(2));
 
-
   const handleItemChange = (index: number, updatedItem: Partial<BillItem>) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], ...updatedItem, amount: calculateItemAmount(updatedItem) };
     setItems(newItems);
+  };
+  
+  const handleItemNameBlur = (name: string) => {
+    if (name && name.trim() !== '') {
+      addCustomItemName(name.trim());
+    }
   };
 
   const addItem = () => {
@@ -119,6 +122,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
       id: uuidv4(), 
       makingChargeType: settings.defaultMakingCharge.type,
       makingCharge: settings.defaultMakingCharge.value,
+      name: '', // Initialize name for new items
     };
     const newItemWithAmount = { ...newItemShell, amount: calculateItemAmount(newItemShell) };
     setItems([...items, newItemWithAmount]);
@@ -130,10 +134,33 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
   };
 
   const getCurrentBillData = (isEstimate: boolean = false): Omit<Bill, 'id'|'date'|'billNumber'> => {
-    const finalItems = items.filter(item => item.valuableId && typeof item.weightOrQuantity === 'number' && typeof item.rate === 'number').map(item => item as BillItem);
+    const finalItems = items.filter(item => item.name && item.name.trim() !== '' && typeof item.weightOrQuantity === 'number' && typeof item.rate === 'number').map(item => item as BillItem);
     
-    let estimateSubTotal = parseFloat(finalItems.reduce((acc, item) => acc + (item.amount || 0), 0).toFixed(2));
-    let estimateTotalAmount = estimateSubTotal; // For estimates, total is subtotal (includes MC)
+    const currentSubTotal = parseFloat(finalItems.reduce((acc, item) => acc + (item.amount || 0), 0).toFixed(2));
+    let currentTotalAmount = currentSubTotal;
+    let currentCgst = 0;
+    let currentSgst = 0;
+
+    if (isEstimate) {
+      if (isPurchase) {
+        // For purchase estimate, total is just subtotal (before net adjustments)
+        currentTotalAmount = currentSubTotal;
+      } else { // Sales Estimate
+        currentTotalAmount = currentSubTotal; // No GST for sales estimate
+      }
+    } else { // Actual Bill
+      if (isPurchase && purchaseNetMode && purchaseNetValue !== undefined) {
+        if (purchaseNetMode === 'percentage') {
+          currentTotalAmount = currentSubTotal * (1 - (purchaseNetValue / 100));
+        } else {
+          currentTotalAmount = purchaseNetValue;
+        }
+      } else if (isSalesBill) {
+        currentCgst = currentSubTotal * (settings.cgstRate / 100);
+        currentSgst = currentSubTotal * (settings.sgstRate / 100);
+        currentTotalAmount = currentSubTotal + currentCgst + currentSgst;
+      }
+    }
     
     return {
       type: billType,
@@ -141,20 +168,20 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
       customerAddress,
       customerPhone,
       items: finalItems,
-      subTotal: isEstimate ? estimateSubTotal : subTotal,
-      cgstAmount: (isSalesBill && !isEstimate) ? cgstAmount : 0,
-      sgstAmount: (isSalesBill && !isEstimate) ? sgstAmount : 0,
-      totalAmount: isEstimate ? estimateTotalAmount : totalAmount,
+      subTotal: currentSubTotal,
+      cgstAmount: parseFloat(currentCgst.toFixed(2)),
+      sgstAmount: parseFloat(currentSgst.toFixed(2)),
+      totalAmount: parseFloat(currentTotalAmount.toFixed(2)),
       notes,
-      purchaseNetApplied: isPurchase ? purchaseNetMode : undefined,
-      purchaseNetValueApplied: isPurchase ? purchaseNetValue : undefined,
+      purchaseNetApplied: (isPurchase && !isEstimate) ? purchaseNetMode : undefined,
+      purchaseNetValueApplied: (isPurchase && !isEstimate) ? purchaseNetValue : undefined,
     };
   };
 
   const handleSubmit = () => {
     const billDetails = getCurrentBillData(false);
     if (billDetails.items.length === 0) {
-      toast({ title: "Error", description: "Please add at least one valid item.", variant: "destructive" });
+      toast({ title: "Error", description: "Please add at least one valid item with a name.", variant: "destructive" });
       return;
     }
     
@@ -167,22 +194,18 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
       savedBill = addBill(billDetails);
       toast({ title: "Success", description: `${billTypeLabel()} created.` });
     }
-    onSave(savedBill);
-    resetForm(); // Reset form only after successful save and callback
+    onSaveAndPrint(savedBill); // Changed from onSave
+    resetForm();
   };
 
   const handleShowEstimate = () => {
-    if (onShowEstimate && isSalesBill) {
+    if (onShowEstimate) {
       const estimateDetails = getCurrentBillData(true);
-       // Construct a temporary Bill object for the estimate
-      const estimateBillForView: Bill = {
+       const estimateBillForView: Bill = {
         ...estimateDetails,
-        id: 'estimate-preview', // Temporary ID
-        date: new Date().toISOString(), // Current date for preview
-        billNumber: 'ESTIMATE', // Indicate it's an estimate
-        cgstAmount: 0, // Explicitly zero for estimate
-        sgstAmount: 0, // Explicitly zero for estimate
-        totalAmount: estimateDetails.subTotal, // Total is just subtotal for estimate
+        id: `estimate-preview-${uuidv4()}`, 
+        date: new Date().toISOString(), 
+        billNumber: 'ESTIMATE', 
       };
       onShowEstimate(estimateBillForView);
     }
@@ -194,6 +217,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
     setCustomerPhone('');
     setItems([{ 
       id: uuidv4(), 
+      name: '',
       amount: 0, 
       makingChargeType: settings.defaultMakingCharge.type, 
       makingCharge: settings.defaultMakingCharge.value 
@@ -207,7 +231,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
       setPurchaseNetValue(undefined);
     }
   }, [settings, isPurchase]);
-
 
   const billTypeLabel = () => {
     switch(billType) {
@@ -225,7 +248,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {(isSalesBill || isPurchase && customerName) && ( // Show customer fields for sales, or for purchase if editing and name exists
+        {(isSalesBill || (isPurchase && (customerName || existingBill))) && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="customerName">{isPurchase ? "Supplier" : "Customer"} Name</Label>
@@ -241,25 +264,70 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
             </div>
           </div>
         )}
+        
+        {isPurchase && (
+          <div className="p-4 border rounded-md bg-muted/50 my-4">
+            <h4 className="text-md font-semibold mb-2 text-primary">Purchase Net Calculation</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="purchaseNetMode">Net Calculation Type</Label>
+                <Select
+                    value={purchaseNetMode}
+                    onValueChange={(value: 'percentage' | 'fixed_price') => {
+                      setPurchaseNetMode(value);
+                      if (value === 'percentage') setPurchaseNetValue(settings.netPurchasePercentage);
+                      else if (value === 'fixed_price') setPurchaseNetValue(settings.netPurchaseFixedPrice);
+                    }}
+                >
+                    <SelectTrigger id="purchaseNetMode">
+                        <SelectValue placeholder="Select net mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="percentage">Net Percentage Off Subtotal</SelectItem>
+                        <SelectItem value="fixed_price">Net Fixed Bill Price</SelectItem>
+                    </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="purchaseNetValue">{purchaseNetMode === 'percentage' ? 'Net Percentage Value (%)' : 'Net Fixed Bill Value'}</Label>
+                <Input 
+                  id="purchaseNetValue" 
+                  type="number" 
+                  value={purchaseNetValue ?? ''}
+                  onChange={(e) => setPurchaseNetValue(parseFloat(e.target.value))}
+                  placeholder={purchaseNetMode === 'percentage' ? String(settings.netPurchasePercentage) : String(settings.netPurchaseFixedPrice)}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {purchaseNetMode === 'percentage' 
+                ? "The entered percentage will be deducted from the item subtotal to calculate the final bill amount."
+                : "The final bill amount will be this fixed value, regardless of item subtotal."}
+            </p>
+          </div>
+        )}
 
         <div>
           <Label className="text-lg font-medium">Items</Label>
-           <div className="py-1 grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            <div className="col-span-3">Item</div>
-            <div className="col-span-2 text-center">Qty/Wt</div>
-            <div className="col-span-2 text-center">Rate</div>
+           <div className="py-1 grid grid-cols-12 gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2">
+            <div className="col-span-3">Type</div>
+            <div className="col-span-3">Name/Desc</div>
+            <div className="col-span-1 text-center">Qty/Wt</div>
+            <div className="col-span-1 text-center">Rate</div>
             {!isPurchase && <div className="col-span-1 text-center">MC Type</div>}
             {!isPurchase && <div className="col-span-1 text-center">Making</div>}
-            <div className={`col-span-2 ${isPurchase ? 'col-start-8' : ''} text-right`}>Amount</div>
+            <div className={`col-span-1 ${isPurchase ? 'col-start-10' : ''} text-right`}>Amount</div>
             <div className="col-span-1 text-center">Action</div>
           </div>
           {items.map((item, index) => (
             <BillItemRow
-              key={item.id || index} // ensure key is stable
+              key={item.id || index}
               item={item}
               onItemChange={(updatedItem) => handleItemChange(index, updatedItem)}
+              onItemNameBlur={handleItemNameBlur}
               onRemoveItem={() => removeItem(index)}
               availableValuables={settings.valuables}
+              customItemNames={settings.customItemNames}
               isPurchase={isPurchase}
               defaultMakingCharge={settings.defaultMakingCharge}
             />
@@ -269,40 +337,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
           </Button>
         </div>
         
-        {isPurchase && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="purchaseNetMode">Net Calculation</Label>
-              <Select
-                  value={purchaseNetMode}
-                  onValueChange={(value: 'percentage' | 'fixed_price') => {
-                    setPurchaseNetMode(value);
-                    if (value === 'percentage') setPurchaseNetValue(settings.netPurchasePercentage);
-                    else if (value === 'fixed_price') setPurchaseNetValue(settings.netPurchaseFixedPrice);
-                  }}
-              >
-                  <SelectTrigger id="purchaseNetMode">
-                      <SelectValue placeholder="Select net mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="percentage">Net Percentage</SelectItem>
-                      <SelectItem value="fixed_price">Net Fixed Price</SelectItem>
-                  </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="purchaseNetValue">{purchaseNetMode === 'percentage' ? 'Net Value (%)' : 'Net Value (Fixed)'}</Label>
-              <Input 
-                id="purchaseNetValue" 
-                type="number" 
-                value={purchaseNetValue ?? ''}
-                onChange={(e) => setPurchaseNetValue(parseFloat(e.target.value))}
-                placeholder={purchaseNetMode === 'percentage' ? String(settings.netPurchasePercentage) : String(settings.netPurchaseFixedPrice)}
-              />
-            </div>
-          </div>
-        )}
-
         <div>
           <Label htmlFor="notes">Notes</Label>
           <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -316,6 +350,11 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
               <div>SGST ({settings.sgstRate}%): <span className="text-lg">{sgstAmount.toFixed(2)}</span></div>
             </>
           )}
+           {isPurchase && purchaseNetMode && purchaseNetValue !== undefined && (
+            <div className="text-sm text-muted-foreground">
+              (Net Calculation Applied)
+            </div>
+          )}
           <div className="text-xl font-bold text-primary">Total: <span className="text-2xl">{totalAmount.toFixed(2)}</span></div>
         </div>
       </CardContent>
@@ -324,13 +363,13 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSave, onC
           <XCircle className="mr-2 h-4 w-4" /> Cancel
         </Button>
         <div className="flex space-x-2">
-          {isSalesBill && onShowEstimate && (
+          {onShowEstimate && (
             <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent">
               <FileText className="mr-2 h-4 w-4" /> Create Estimate
             </Button>
           )}
           <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/80">
-            <Save className="mr-2 h-4 w-4" /> {existingBill ? 'Update' : 'Save'} {billTypeLabel()}
+            <Save className="mr-2 h-4 w-4" /> {existingBill ? 'Update' : 'Save'} & Print {billTypeLabel()}
           </Button>
         </div>
       </CardFooter>

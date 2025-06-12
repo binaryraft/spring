@@ -12,27 +12,27 @@ import ValuableIcon from '../ValuableIcon';
 interface BillItemRowProps {
   item: Partial<BillItem>;
   onItemChange: (updatedItem: Partial<BillItem>) => void;
+  onItemNameBlur: (name: string) => void; // To add to custom names list
   onRemoveItem: () => void;
   availableValuables: Valuable[];
+  customItemNames: string[]; // For datalist suggestions
   isPurchase: boolean;
   defaultMakingCharge: MakingChargeSetting;
 }
 
-const BillItemRow: React.FC<BillItemRowProps> = ({ item, onItemChange, onRemoveItem, availableValuables, isPurchase, defaultMakingCharge }) => {
+const BillItemRow: React.FC<BillItemRowProps> = ({ item, onItemChange, onItemNameBlur, onRemoveItem, availableValuables, customItemNames, isPurchase, defaultMakingCharge }) => {
   const { getValuableById } = useAppContext();
 
   const handleValuableSelect = (valuableId: string) => {
     const selectedValuable = getValuableById(valuableId);
     if (selectedValuable) {
-      // If it's a new item (no pre-existing rate, or rate matches market price), apply default MC.
-      // Otherwise, if editing an existing item, preserve its MC.
       const isNewOrMarketRateItem = !item.rate || item.rate === selectedValuable.price;
       
       onItemChange({
         ...item,
         valuableId,
-        name: selectedValuable.name,
-        rate: selectedValuable.price, // Always update rate to current market price for selected valuable
+        name: item.name && item.valuableId === valuableId ? item.name : selectedValuable.name, // Preserve custom name if valuable type hasn't changed, else default
+        rate: selectedValuable.price,
         unit: selectedValuable.unit,
         weightOrQuantity: item.weightOrQuantity || 1,
         makingChargeType: isPurchase ? undefined : (item.makingChargeType && !isNewOrMarketRateItem ? item.makingChargeType : defaultMakingCharge.type),
@@ -45,19 +45,23 @@ const BillItemRow: React.FC<BillItemRowProps> = ({ item, onItemChange, onRemoveI
     let numericValue = value;
     if (field === 'weightOrQuantity' || field === 'rate' || field === 'makingCharge') {
       numericValue = parseFloat(value);
-      if (isNaN(numericValue)) numericValue = 0; // Default to 0 if parsing fails
+      if (isNaN(numericValue)) numericValue = 0;
     }
     onItemChange({ ...item, [field]: numericValue });
   };
   
   const selectedValuableDetails = item.valuableId ? getValuableById(item.valuableId) : null;
+  const datalistId = `item-names-datalist-${item.id || 'new'}`;
 
   return (
     <div className="grid grid-cols-12 gap-2 items-center py-2 border-b last:border-b-0">
+      <datalist id={datalistId}>
+        {customItemNames.map(name => <option key={name} value={name} />)}
+      </datalist>
       <div className="col-span-3">
         <Select value={item.valuableId || ''} onValueChange={handleValuableSelect}>
           <SelectTrigger className="h-9 text-sm">
-            <SelectValue placeholder="Select Item" />
+            <SelectValue placeholder="Select Type" />
           </SelectTrigger>
           <SelectContent>
             {availableValuables.map(v => (
@@ -71,7 +75,17 @@ const BillItemRow: React.FC<BillItemRowProps> = ({ item, onItemChange, onRemoveI
           </SelectContent>
         </Select>
       </div>
-      <div className="col-span-2">
+       <div className="col-span-3"> {/* Increased span for name input */}
+        <Input
+          placeholder="Item Name / Description"
+          value={item.name || ''}
+          onChange={(e) => handleFieldChange('name', e.target.value)}
+          onBlur={(e) => onItemNameBlur(e.target.value)}
+          list={datalistId}
+          className="h-9 text-sm"
+        />
+      </div>
+      <div className="col-span-1 text-center"> {/* Adjusted span */}
         <Input 
           type="number" 
           placeholder={`Qty/${selectedValuableDetails?.unit || 'unit'}`}
@@ -82,7 +96,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({ item, onItemChange, onRemoveI
           className="h-9 text-sm text-center"
         />
       </div>
-      <div className="col-span-2">
+      <div className="col-span-1 text-center"> {/* Adjusted span */}
         <Input 
           type="number" 
           placeholder="Rate"
@@ -95,7 +109,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({ item, onItemChange, onRemoveI
       </div>
       {!isPurchase && (
         <>
-          <div className="col-span-1">
+          <div className="col-span-1 text-center"> {/* Adjusted span */}
             <Select 
               value={item.makingChargeType || defaultMakingCharge.type} 
               onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}
@@ -109,7 +123,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({ item, onItemChange, onRemoveI
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-1">
+          <div className="col-span-1 text-center"> {/* Adjusted span */}
             <Input 
               type="number" 
               placeholder="Making"
@@ -122,10 +136,10 @@ const BillItemRow: React.FC<BillItemRowProps> = ({ item, onItemChange, onRemoveI
           </div>
         </>
       )}
-      <div className={`col-span-2 ${isPurchase ? 'col-start-8' : ''} text-right`}>
+      <div className={`col-span-1 ${isPurchase ? 'col-start-10' : ''} text-right`}> {/* Adjusted span and start */}
         <span className="font-medium text-sm">{item.amount?.toFixed(2) || '0.00'}</span>
       </div>
-      <div className="col-span-1 text-center">
+      <div className="col-span-1 text-center"> {/* Adjusted span */}
         <Button variant="ghost" size="icon" onClick={onRemoveItem} className="text-destructive hover:text-destructive/80 h-9 w-9">
           <Trash2 className="w-4 h-4" />
         </Button>

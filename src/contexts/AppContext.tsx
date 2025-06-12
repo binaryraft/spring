@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { Settings, Valuable, Bill, BillType } from '@/types';
-import { DEFAULT_SETTINGS } from '@/types'; // DEFAULT_VALUABLES is part of DEFAULT_SETTINGS
+import { DEFAULT_SETTINGS } from '@/types';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -12,6 +12,7 @@ interface AppContextType {
   updateSettings: (newSettings: Partial<Settings>) => void;
   updateValuablePrice: (valuableId: string, newPrice: number) => void;
   toggleValuableInHeader: (valuableId: string) => void;
+  addCustomItemName: (name: string) => void;
   bills: Bill[];
   addBill: (bill: Omit<Bill, 'id' | 'date' | 'billNumber'>) => Bill;
   updateBill: (updatedBill: Bill) => void;
@@ -47,6 +48,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }));
   }, [setSettings]);
   
+  const addCustomItemName = useCallback((name: string) => {
+    setSettings(prev => {
+      const lowerCaseName = name.toLowerCase();
+      if (prev.customItemNames.some(n => n.toLowerCase() === lowerCaseName)) {
+        return prev; // Name already exists (case-insensitive)
+      }
+      return {
+        ...prev,
+        customItemNames: [...prev.customItemNames, name].sort(), // Keep sorted
+      };
+    });
+  }, [setSettings]);
+
   const getValuableById = useCallback((id: string) => {
     return settings.valuables.find(v => v.id === id);
   }, [settings.valuables]);
@@ -56,10 +70,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ...billData,
       id: uuidv4(),
       date: new Date().toISOString(),
-      // Ensure billNumber generation is robust for remaining types
       billNumber: `${billData.type === 'sales-bill' ? 'S' : 'P'}-${String(bills.filter(b => b.type === billData.type).length + 1).padStart(4, '0')}`,
     };
-    setBills(prev => [newBill, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())); // Sort by date descending
+    setBills(prev => [newBill, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     return newBill;
   }, [bills, setBills]);
 
@@ -77,6 +90,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       updateSettings, 
       updateValuablePrice,
       toggleValuableInHeader,
+      addCustomItemName,
       bills, 
       addBill,
       updateBill,

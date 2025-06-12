@@ -19,13 +19,15 @@ const BillingTabs: React.FC = () => {
   const [showSalesForm, setShowSalesForm] = useState(false);
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
 
-  const handleSaveBill = (savedBill: Bill) => {
+  const handleSaveAndPrintBill = (savedBill: Bill) => {
     setEditingBill(undefined);
     if (savedBill.type === 'sales-bill') {
       setShowSalesForm(false);
     } else if (savedBill.type === 'purchase') {
       setShowPurchaseForm(false);
     }
+    // Automatically open the bill view modal for printing the saved bill
+    handleViewBill(savedBill, false); 
   };
 
   const handleEditBill = (bill: Bill) => {
@@ -45,12 +47,12 @@ const BillingTabs: React.FC = () => {
     setIsViewingEstimate(isEstimate);
   };
 
-  const handleShowEstimate = (estimateData: Bill) => {
+  const handleShowEstimatePreview = (estimateData: Bill) => {
     handleViewBill(estimateData, true);
   }
 
   const commonFormProps = {
-    onSave: handleSaveBill,
+    onSaveAndPrint: handleSaveAndPrintBill, // Changed from onSave
   };
 
   return (
@@ -69,9 +71,9 @@ const BillingTabs: React.FC = () => {
                   key={editingBill && editingBill.type === 'sales-bill' ? editingBill.id : 'new-sales-bill'}
                   billType="sales-bill"
                   existingBill={editingBill && editingBill.type === 'sales-bill' ? editingBill : undefined}
-                  onSave={handleSaveBill}
+                  {...commonFormProps}
                   onCancel={() => { setEditingBill(undefined); setShowSalesForm(false); }}
-                  onShowEstimate={handleShowEstimate}
+                  onShowEstimate={handleShowEstimatePreview}
                 />
               ) : (
                 <>
@@ -95,8 +97,9 @@ const BillingTabs: React.FC = () => {
                   key={editingBill && editingBill.type === 'purchase' ? editingBill.id : 'new-purchase'}
                   billType="purchase"
                   existingBill={editingBill && editingBill.type === 'purchase' ? editingBill : undefined}
-                  onSave={handleSaveBill}
+                  {...commonFormProps}
                   onCancel={() => { setEditingBill(undefined); setShowPurchaseForm(false); }}
+                  onShowEstimate={handleShowEstimatePreview} // Added for purchase estimates
                 />
               ) : (
                 <>
