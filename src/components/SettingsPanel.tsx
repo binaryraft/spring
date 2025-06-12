@@ -2,7 +2,7 @@
 "use client";
 import { useAppContext } from "@/contexts/AppContext";
 import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition } from "@/types";
-import { AVAILABLE_ICONS } from "@/types";
+import { AVAILABLE_ICONS, AVAILABLE_CURRENCIES } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,19 +32,18 @@ import { useToast } from "@/hooks/use-toast";
 
 const SettingsPanel: React.FC = () => {
   const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol, addValuable, updateValuableData, removeValuable: removeValuableFromContext } = useAppContext();
-  const [localSettings, setLocalSettings] = useState<Settings>(settings);
+  const [localSettings, setLocalSettings] = useState<Settings>(() => JSON.parse(JSON.stringify(settings))); // Deep copy
   const [newProductName, setNewProductName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // State for managing custom material form
   const [isEditingMaterial, setIsEditingMaterial] = useState<Valuable | null>(null);
   const [customMaterialForm, setCustomMaterialForm] = useState<Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>>({
     name: '', price: 0, unit: 'gram', icon: 'other', iconColor: '#808080'
   });
 
   useEffect(() => {
-    setLocalSettings(JSON.parse(JSON.stringify(settings))); // Deep copy to avoid direct mutation issues
+    setLocalSettings(JSON.parse(JSON.stringify(settings))); 
   }, [settings]);
 
   const handleChange = (field: keyof Settings, value: any) => {
@@ -52,7 +51,10 @@ const SettingsPanel: React.FC = () => {
   };
   
   const handleCurrencyChange = (symbol: string) => {
-    setLocalSettings(prev => ({ ...prev, currencySymbol: symbol }));
+    const selectedCurrency = AVAILABLE_CURRENCIES.find(c => c.symbol === symbol);
+    if (selectedCurrency) {
+      setLocalSettings(prev => ({ ...prev, currencySymbol: selectedCurrency.symbol }));
+    }
   };
 
   const handleNestedChange = (parentField: keyof Settings, nestedField: string, value: any) => {
@@ -66,7 +68,6 @@ const SettingsPanel: React.FC = () => {
     }));
   };
 
-  // This updates valuables in localSettings, not directly in context
   const handleLocalValuableChange = (valuableId: string, field: keyof Valuable, value: any) => {
     setLocalSettings(prev => ({
       ...prev,
@@ -118,28 +119,33 @@ const SettingsPanel: React.FC = () => {
   };
 
   const handleSaveCustomMaterial = () => {
-    if (!customMaterialForm.name.trim() || !customMaterialForm.unit.trim()) {
-      toast({ title: "Error", description: "Material name and unit cannot be empty.", variant: "destructive" });
+    if (!customMaterialForm.name.trim()) {
+      toast({ title: "Error", description: "Material name cannot be empty.", variant: "destructive" });
       return;
+    }
+    if (!customMaterialForm.unit.trim()) {
+        toast({ title: "Error", description: "Material unit cannot be empty.", variant: "destructive" });
+        return;
     }
     if (customMaterialForm.price < 0) {
       toast({ title: "Error", description: "Material price cannot be negative.", variant: "destructive" });
       return;
     }
 
-    const materialToSave = { ...customMaterialForm };
-    if (materialToSave.icon === 'custom-gem' && !materialToSave.iconColor) {
-      materialToSave.iconColor = '#808080'; // Default if somehow empty
-    }
-    // If icon is not custom-gem, iconColor should not be relevant for storage.
-    // Consider clearing it or letting AppContext handle this logic.
-    // For now, we pass it as is. AppContext/ValuableIcon will decide to use it.
-
+    const materialToSave: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'> = {
+      ...customMaterialForm,
+      iconColor: customMaterialForm.icon === 'custom-gem' ? (customMaterialForm.iconColor || '#808080') : undefined,
+    };
+    
     if (isEditingMaterial) {
+      // Check if name is changed to an existing name (excluding itself)
+      if (settings.valuables.some(v => v.id !== isEditingMaterial.id && v.name.toLowerCase() === materialToSave.name.trim().toLowerCase())) {
+        toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" });
+        return;
+      }
       updateValuableData(isEditingMaterial.id, materialToSave);
       toast({ title: "Success", description: `Material "${materialToSave.name}" updated.` });
     } else {
-      // Check for duplicate names before adding
       if (settings.valuables.some(v => v.name.toLowerCase() === materialToSave.name.trim().toLowerCase())) {
         toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" });
         return;
@@ -156,25 +162,16 @@ const SettingsPanel: React.FC = () => {
   };
 
   const handleEditValuable = (valuable: Valuable) => {
-    if (valuable.isDefault) {
-      // Default items are edited inline for price/unit/header selection.
-      // To avoid confusion, we don't load them into the "Add/Edit New Material" form.
-      // The UI for editing default items is directly on their list entries.
-      toast({ title: "Info", description: "Default materials (like Gold, Silver) can have their price, unit, and header visibility edited directly in the list below. Other properties are fixed." });
-      return;
-    }
-    // Load custom material into the form for editing
     setIsEditingMaterial(valuable);
     setCustomMaterialForm({
       name: valuable.name,
       price: valuable.price,
       unit: valuable.unit,
       icon: valuable.icon,
-      iconColor: valuable.iconColor || '#808080', // Ensure a default if undefined
+      iconColor: valuable.iconColor || '#808080',
     });
-    // Scroll to the material form
     const formElement = document.getElementById('custom-material-form-section');
-    formElement?.scrollIntoView({ behavior: 'smooth' });
+    formElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
   
   const handleDeleteValuable = (valuableId: string) => {
@@ -186,7 +183,7 @@ const SettingsPanel: React.FC = () => {
     removeValuableFromContext(valuableId);
     toast({ title: "Success", description: `Material "${valuableToRemove?.name}" deleted.` });
     if (isEditingMaterial && isEditingMaterial.id === valuableId) {
-        resetCustomMaterialForm(); // Reset form if the edited item was deleted
+        resetCustomMaterialForm();
     }
   };
 
@@ -194,13 +191,9 @@ const SettingsPanel: React.FC = () => {
     updateSettings(localSettings); 
     updateCurrencySymbol(localSettings.currencySymbol);
     
-    // Persist changes to individual valuables made in localSettings (e.g. price/unit of default items)
     localSettings.valuables.forEach(val => {
       const originalValInContext = settings.valuables.find(v => v.id === val.id);
       if (originalValInContext && JSON.stringify(val) !== JSON.stringify(originalValInContext)) {
-        // Only update fields that are editable for this item type
-        // For default items, this is price, unit, selectedInHeader
-        // For custom items, it's all fields (name, price, unit, icon, iconColor, selectedInHeader)
         const { id, isDefault, ...updatableDataFromLocal } = val;
         
         let dataToUpdateInContext: Partial<Omit<Valuable, 'id' | 'isDefault'>> = {
@@ -209,7 +202,7 @@ const SettingsPanel: React.FC = () => {
             selectedInHeader: updatableDataFromLocal.selectedInHeader,
         };
 
-        if (!isDefault) { // Custom items can have more fields updated
+        if (!isDefault) { 
             dataToUpdateInContext.name = updatableDataFromLocal.name;
             dataToUpdateInContext.icon = updatableDataFromLocal.icon;
             dataToUpdateInContext.iconColor = updatableDataFromLocal.iconColor;
@@ -219,7 +212,6 @@ const SettingsPanel: React.FC = () => {
     });
     toast({ title: "Success", description: "All settings saved!" });
   };
-
 
   const SectionHeader: React.FC<{ title: string; icon: React.ElementType; className?: string; id?:string }> = ({ title, icon: Icon, className, id }) => (
     <h3 id={id} className={cn("text-xl lg:text-2xl font-headline mb-6 text-primary flex items-center scroll-mt-20", className)}>
@@ -231,7 +223,7 @@ const SettingsPanel: React.FC = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="fixed top-4 right-4 z-50 shadow-lg hover:shadow-xl transition-shadow bg-card hover:bg-muted">
+        <Button variant="outline" size="icon" className="shadow-lg hover:shadow-xl transition-shadow bg-card hover:bg-muted">
           <SettingsIcon className="h-6 w-6" />
           <span className="sr-only">Open Settings</span>
         </Button>
@@ -282,7 +274,7 @@ const SettingsPanel: React.FC = () => {
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
                     <SelectContent>
-                      {localSettings.availableCurrencies.map((currency) => (
+                      {AVAILABLE_CURRENCIES.map((currency) => (
                         <SelectItem key={currency.code} value={currency.symbol} className="text-lg py-2.5">
                           {currency.symbol} - {currency.name} ({currency.code})
                         </SelectItem>
@@ -302,10 +294,10 @@ const SettingsPanel: React.FC = () => {
                     <div className="flex items-center space-x-3.5 p-3.5 bg-muted/30 rounded-md">
                         <Checkbox
                             id="showCompanyLogo"
-                            checked={settings.showCompanyLogo} // Reflects context state for immediate UI feedback
+                            checked={settings.showCompanyLogo} 
                             onCheckedChange={(checked) => {
-                                toggleShowCompanyLogo(!!checked); // Updates context immediately
-                                handleChange('showCompanyLogo', !!checked); // Updates localSettings for save
+                                toggleShowCompanyLogo(!!checked); 
+                                handleChange('showCompanyLogo', !!checked); 
                             }}
                             className="w-5 h-5"
                         />
@@ -313,7 +305,7 @@ const SettingsPanel: React.FC = () => {
                             Show company logo on bills & estimates
                         </Label>
                     </div>
-                    {settings.showCompanyLogo && ( // Use settings.showCompanyLogo for conditional rendering
+                    {settings.showCompanyLogo && (
                         <div className="mt-3.5 space-y-3.5 p-4 border rounded-md">
                             <Input
                                 id="logoUpload"
@@ -323,7 +315,7 @@ const SettingsPanel: React.FC = () => {
                                 ref={fileInputRef}
                                 className="text-lg file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-base file:bg-primary/10 file:text-primary hover:file:bg-primary/20 h-12"
                             />
-                            {settings.companyLogo && ( // Use settings.companyLogo for preview
+                            {settings.companyLogo && (
                                 <div className="mt-2.5 p-3.5 border rounded-md bg-muted/50 inline-flex flex-col items-center shadow-sm">
                                     <Image src={settings.companyLogo} alt="Company Logo Preview" width={160} height={160} className="object-contain rounded" />
                                     <Button variant="link" size="sm" onClick={handleRemoveLogo} className="text-destructive hover:text-destructive-foreground hover:bg-destructive mt-2.5 text-base px-3 py-1.5 h-auto">
@@ -394,12 +386,10 @@ const SettingsPanel: React.FC = () => {
                                 <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-8 h-8 mr-4 text-primary" />
                                 {valuable.isDefault ? 
                                     <span className="text-xl font-semibold mr-2">{valuable.name}</span> :
-                                    // Custom item name: editable inline via localSettings
                                     <Input
                                     value={valuable.name}
                                     onChange={(e) => handleLocalValuableChange(valuable.id, 'name', e.target.value)}
                                     className="text-xl font-semibold mr-2 w-auto inline-flex h-11 bg-transparent border-0 focus:ring-1 focus:ring-primary"
-                                    // disabled={valuable.isDefault} // This check is implicit as we are in !isDefault case
                                     />
                                 }
                             </div>
@@ -408,8 +398,8 @@ const SettingsPanel: React.FC = () => {
                                 id={`select-${valuable.id}`}
                                 checked={valuable.selectedInHeader}
                                 onCheckedChange={() => {
-                                    toggleValuableInHeader(valuable.id); // Updates context immediately for header display
-                                    handleLocalValuableChange(valuable.id, 'selectedInHeader', !valuable.selectedInHeader); // Updates localSettings for save
+                                    toggleValuableInHeader(valuable.id); 
+                                    handleLocalValuableChange(valuable.id, 'selectedInHeader', !valuable.selectedInHeader);
                                 }}
                                 className="w-5 h-5"
                                 />
@@ -438,11 +428,45 @@ const SettingsPanel: React.FC = () => {
                                 disabled={valuable.isDefault && ['gold', 'silver', 'diamond', 'platinum'].includes(valuable.icon)}
                                 />
                             </div>
+                             {!valuable.isDefault && (
+                                <>
+                                <div>
+                                    <Label htmlFor={`icon-select-${valuable.id}`} className="text-lg">Icon</Label>
+                                    <Select 
+                                        value={valuable.icon} 
+                                        onValueChange={(newIcon) => handleLocalValuableChange(valuable.id, 'icon', newIcon)}
+                                    >
+                                        <SelectTrigger id={`icon-select-${valuable.id}`} className="mt-1.5 h-12 text-lg">
+                                            <SelectValue placeholder="Select icon" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {AVAILABLE_ICONS.map(iconOpt => (
+                                                <SelectItem key={iconOpt.value} value={iconOpt.value} className="text-lg py-2.5 flex items-center">
+                                                    <ValuableIcon valuableType={iconOpt.value} className="w-5 h-5 mr-3" color={iconOpt.value === 'custom-gem' ? valuable.iconColor : undefined} /> {iconOpt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                {valuable.icon === 'custom-gem' && (
+                                    <div>
+                                        <Label htmlFor={`icon-color-${valuable.id}`} className="text-lg flex items-center"><Palette className="w-5 h-5 mr-2"/>Icon Color</Label>
+                                        <Input 
+                                            id={`icon-color-${valuable.id}`} 
+                                            type="color" 
+                                            value={valuable.iconColor || '#808080'} 
+                                            onChange={(e) => handleLocalValuableChange(valuable.id, 'iconColor', e.target.value)} 
+                                            className="mt-1.5 h-12 text-lg w-full"
+                                        />
+                                    </div>
+                                )}
+                                </>
+                            )}
                         </div>
                         {!valuable.isDefault && (
                             <div className="flex justify-end space-x-2.5 pt-2">
                                 <Button variant="outline" size="sm" onClick={() => handleEditValuable(valuable)} className="text-base px-3 py-1.5 h-auto">
-                                    <Edit3 className="mr-2 h-4 w-4"/> Edit Details
+                                    <Edit3 className="mr-2 h-4 w-4"/> Edit in Form
                                 </Button>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -617,3 +641,5 @@ const SettingsPanel: React.FC = () => {
 };
 
 export default SettingsPanel;
+
+    
