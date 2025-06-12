@@ -14,8 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
-import { Printer, Building } from 'lucide-react'; // Added Building
-import Image from 'next/image'; // For company logo
+import { Printer, Building } from 'lucide-react';
+import Image from 'next/image';
 
 interface BillViewModalProps {
   bill: Bill | null;
@@ -41,7 +41,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   const handlePrint = () => {
     setTimeout(() => {
         window.print();
-    }, 100);
+    }, 100); 
   };
 
   const displaySubTotal = bill.subTotal;
@@ -52,7 +52,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   if (isEstimateView) {
     displayCgstAmount = 0;
     displaySgstAmount = 0;
-    displayTotalAmount = displaySubTotal; // For any estimate, total is subtotal
+    displayTotalAmount = displaySubTotal; 
   }
 
 
@@ -65,16 +65,16 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 return marketPrice * (1 - ((item.purchaseNetPercentValue || 0) / 100));
             case 'fixed_net_price':
                 return item.purchaseNetFixedValue || 0;
-            default: // Should not be reachable due to type constraints
-                return item.rate;
+            default: 
+                return item.rate; 
         }
     }
-    return item.rate; // For sales bills, item.rate is the display rate
+    return item.rate; 
   };
 
   const PlaceholderLogo = () => (
-    <div className="w-16 h-16 bg-muted/50 flex items-center justify-center rounded print:bg-gray-200 print:border print:border-gray-400">
-      <Building className="w-8 h-8 text-muted-foreground print:text-gray-500" />
+    <div className="w-16 h-16 bg-muted/50 flex items-center justify-center rounded print:bg-transparent print-placeholder-logo">
+      <Building className="w-8 h-8 text-muted-foreground print:fill-gray-600" />
     </div>
   );
 
@@ -90,20 +90,20 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto p-1 print:p-0" id="bill-to-print">
+        <div className="flex-grow overflow-y-auto p-1 print:overflow-visible print:p-0" id="bill-to-print">
           <div className="p-6 border rounded-lg bg-card shadow-sm print:border-gray-300 print:shadow-none print:rounded-none print:bg-white print:text-black">
             <header className="mb-6 print:mb-4">
               <div className="flex justify-between items-start">
                   <div className="text-left">
                       <h1 className="text-3xl font-bold font-headline text-primary print:text-2xl print:text-black print:font-bold">{company.companyName}</h1>
-                      {company.slogan && <p className="text-sm text-muted-foreground print:text-xs print:text-gray-600">{company.slogan}</p>}
-                      <p className="text-xs print:text-xxs print:text-gray-500">{company.address}</p>
-                      <p className="text-xs print:text-xxs print:text-gray-500">Phone: {company.phoneNumber}</p>
+                      {company.slogan && <p className="text-sm text-muted-foreground print:text-xs print:text-gray-700">{company.slogan}</p>}
+                      <p className="text-xs print:text-xxs print:text-gray-600">{company.address}</p>
+                      <p className="text-xs print:text-xxs print:text-gray-600">Phone: {company.phoneNumber}</p>
                   </div>
                   {company.showCompanyLogo && (
-                    <div className="w-20 h-20 flex-shrink-0 print:w-16 print:h-16">
+                    <div className="w-20 h-20 flex-shrink-0 print:w-auto print:h-auto print:max-w-[150px] print:max-h-[75px]">
                         {company.companyLogo ? (
-                            <Image src={company.companyLogo} alt={`${company.companyName} Logo`} width={80} height={80} className="object-contain" />
+                            <Image src={company.companyLogo} alt={`${company.companyName} Logo`} width={80} height={80} className="object-contain print-logo" />
                         ) : (
                             <PlaceholderLogo />
                         )}
@@ -120,26 +120,26 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     <h3 className="font-semibold mb-1 print:font-bold">
                         {bill.type === 'purchase' ? 'From (Supplier):' : 'To (Customer):'}
                     </h3>
-                    <p className="print:text-gray-700">{bill.customerName || 'N/A'}</p>
-                    {bill.customerAddress && <p className="text-xs print:text-xxs print:text-gray-600">{bill.customerAddress}</p>}
-                    {bill.customerPhone && <p className="text-xs print:text-xxs print:text-gray-600">Phone: {bill.customerPhone}</p>}
+                    <p className="print:text-gray-800">{bill.customerName || 'N/A'}</p>
+                    {bill.customerAddress && <p className="text-xs print:text-xxs print:text-gray-700">{bill.customerAddress}</p>}
+                    {bill.customerPhone && <p className="text-xs print:text-xxs print:text-gray-700">Phone: {bill.customerPhone}</p>}
                 </div>
                 <div className="text-right">
                     <h3 className="font-semibold mb-1 print:font-bold">
                         Details:
                     </h3>
-                    <p className="print:text-gray-700">
+                    <p className="print:text-gray-800">
                         {isEstimateView ? 'Estimate Ref:' : bill.type === 'purchase' ? 'P.O. No:' : 'Invoice No:'}
                         <span className="font-medium"> {bill.billNumber || (isEstimateView ? 'N/A (Estimate)' : 'N/A')}</span>
                     </p>
-                    <p className="print:text-gray-700">Date: <span className="font-medium">{format(new Date(bill.date), 'dd MMM, yyyy')}</span></p>
+                    <p className="print:text-gray-800">Date: <span className="font-medium">{format(new Date(bill.date), 'dd MMM, yyyy')}</span></p>
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto print:overflow-visible">
               <table className="w-full text-sm print:text-xs print:border-collapse">
                 <thead className="print:bg-gray-100">
-                  <tr className="border-b print:border-b-2 print:border-gray-500">
+                  <tr className="border-b print:border-b-2 print:border-gray-400">
                     <th className="py-2 px-1 text-left font-semibold print:px-2 print:py-1.5 print:font-bold print:text-black">#</th>
                     <th className="py-2 px-1 text-left font-semibold print:px-2 print:py-1.5 print:font-bold print:text-black">Item (Material)</th>
                     <th className="py-2 px-1 text-right font-semibold print:px-2 print:py-1.5 print:font-bold print:text-black">Qty/Wt</th>
@@ -181,7 +181,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 {bill.notes && (
                   <>
                     <h4 className="font-semibold text-xs mb-1 print:font-bold print:text-black">Notes:</h4>
-                    <p className="text-xs text-muted-foreground whitespace-pre-line print:text-gray-600 print:text-xxs">{bill.notes}</p>
+                    <p className="text-xs text-muted-foreground whitespace-pre-line print:text-gray-700 print:text-xxs">{bill.notes}</p>
                   </>
                 )}
               </div>
@@ -191,14 +191,14 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 {!isEstimateView && bill.type === 'sales-bill' && displayCgstAmount > 0 && <p className="print:text-black">CGST ({settings.cgstRate}%): <span className="font-semibold print:text-black">{displayCgstAmount.toFixed(2)}</span></p>}
                 {!isEstimateView && bill.type === 'sales-bill' && displaySgstAmount > 0 && <p className="print:text-black">SGST ({settings.sgstRate}%): <span className="font-semibold print:text-black">{displaySgstAmount.toFixed(2)}</span></p>}
 
-                <Separator className="my-1 print:border-gray-400"/>
+                <Separator className="my-1 print:border-gray-300"/>
                 <p className="text-lg font-bold print:text-base print:font-extrabold print:text-black">Total: <span className="text-primary print:text-black">{displayTotalAmount.toFixed(2)}</span></p>
               </div>
             </div>
 
-            <div className="mt-8 text-center text-xs text-muted-foreground print:text-gray-500 print:text-xxs print:mt-6">
+            <div className="mt-8 text-center text-xs text-muted-foreground print:text-gray-600 print:text-xxs print:mt-6">
               Thank you for your business!
-              <p className="print:mt-4 print:text-gray-400">--- {company.companyName} ---</p>
+              <p className="print:mt-4 print:text-gray-500">--- {company.companyName} ---</p>
             </div>
           </div>
         </div>
@@ -212,18 +212,17 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       <style jsx global>{`
         @media print {
           body {
-            -webkit-print-color-adjust: exact !important;
-            color-adjust: exact !important;
             font-family: 'PT Sans', sans-serif;
-            font-size: 10pt; /* Base print font size */
-            color: #000000 !important; /* Ensure base text color is black */
-            background-color: #ffffff !important; /* Ensure base background is white */
+            font-size: 10pt;
+            color: #000000 !important; 
+            background-color: #ffffff !important; 
           }
           body * {
             visibility: hidden;
-            color: #000000 !important; /* Ensure all text is black for print */
-            background-color: #ffffff !important; /* Ensure background is white */
-            border-color: #cccccc !important; /* Light grey for borders */
+            color: #000000 !important; 
+            background-color: transparent !important; /* Make backgrounds transparent */
+            border-color: #cccccc !important; 
+            box-shadow: none !important; 
           }
           #bill-to-print, #bill-to-print * {
             visibility: visible;
@@ -235,62 +234,31 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             width: 100%;
             height: auto;
             margin: 0;
-            padding: 0;
+            padding: 0; /* Remove padding from the main container, @page margin will handle it */
             background-color: #ffffff !important;
+            border: none !important;
           }
           .print\\:hidden { display: none !important; }
-          .print\\:text-black { color: #000000 !important; }
-          .print\\:text-gray-700 { color: #333333 !important; }
-          .print\\:text-gray-600 { color: #555555 !important; }
-          .print\\:text-gray-500 { color: #777777 !important; }
-          .print\\:text-gray-400 { color: #999999 !important; }
+          
+          /* Specific text color overrides for print if Tailwind classes are too strong */
+          #bill-to-print .text-primary,
+          #bill-to-print .text-accent {
+             color: #000000 !important;
+          }
+          #bill-to-print .text-muted-foreground {
+             color: #333333 !important;
+          }
+          #bill-to-print .text-destructive {
+             color: #000000 !important; /* Or a dark gray if distinction needed */
+          }
+          #bill-to-print .font-headline {
+            font-family: 'Playfair Display', serif; /* Keep headline font if desired, or standardize */
+          }
+          #bill-to-print .font-body {
+            font-family: 'PT Sans', sans-serif;
+          }
 
-          .print\\:border-gray-500 { border-color: #555555 !important; }
-          .print\\:border-gray-400 { border-color: #777777 !important; }
-          .print\\:border-gray-300 { border-color: #aaaaaa !important; }
-          .print\\:border-collapse { border-collapse: collapse !important; }
-          
-          .print\\:bg-gray-100 { background-color: #f0f0f0 !important; }
-          .print\\:bg-gray-200 { background-color: #e5e5e5 !important; }
-          .print\\:bg-white { background-color: #ffffff !important; }
-
-          .print\\:border { border: 1px solid #cccccc !important; }
-          .print\\:border-b { border-bottom: 1px solid #cccccc !important; }
-          .print\\:border-b-2 { border-bottom: 2px solid #777777 !important; }
-
-          .print\\:border-none { border: none !important; }
-          .print\\:shadow-none { box-shadow: none !important; }
-          .print\\:rounded-none { border-radius: 0 !important; }
-          
-          .print\\:text-xs { font-size: 9pt !important; }
-          .print\\:text-xxs { font-size: 7.5pt !important; }
-          .print\\:text-lg { font-size: 14pt !important; }
-          .print\\:text-xl { font-size: 16pt !important; }
-          .print\\:text-2xl { font-size: 18pt !important; }
-          
-          .print\\:font-bold { font-weight: bold !important; }
-          .print\\:font-semibold { font-weight: 600 !important; }
-          .print\\:font-extrabold { font-weight: 800 !important; }
-          
-          .print\\:mb-1 { margin-bottom: 0.25rem !important; }
-          .print\\:mb-2 { margin-bottom: 0.5rem !important; }
-          .print\\:mb-3 { margin-bottom: 0.75rem !important; }
-          .print\\:mb-4 { margin-bottom: 1rem !important; }
-          .print\\:mt-1 { margin-top: 0.25rem !important; }
-          .print\\:mt-2 { margin-top: 0.5rem !important; }
-          .print\\:mt-3 { margin-top: 0.75rem !important; }
-          .print\\:mt-4 { margin-top: 1rem !important; }
-          .print\\:mt-6 { margin-top: 1.5rem !important; }
-          .print\\:my-1 { margin-top: 0.25rem !important; margin-bottom: 0.25rem !important; }
-          .print\\:my-3 { margin-top: 0.75rem !important; margin-bottom: 0.75rem !important; }
-          
-          .print\\:p-0 { padding: 0 !important; }
-          .print\\:px-1 { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
-          .print\\:py-0\\.5 { padding-top: 0.125rem !important; padding-bottom: 0.125rem !important; }
-          .print\\:px-2 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
-          .print\\:py-1 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
-          .print\\:py-1\\.5 { padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; }
-
+          /* Table styling */
           table {
             width: 100% !important;
             border-collapse: collapse !important;
@@ -302,34 +270,55 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           }
           thead {
             display: table-header-group !important;
-            background-color: #f0f0f0 !important; /* Light grey for header */
+            background-color: #f0f0f0 !important;
           }
           th, td {
-             border: 1px solid #cccccc !important; /* Light borders for table cells */
-             padding: 4px 6px !important; /* Consistent padding */
+             border: 1px solid #cccccc !important;
+             padding: 4px 6px !important;
+             color: #000000 !important; /* Ensure all table text is black */
           }
           th {
             font-weight: bold !important;
             text-align: left !important;
-            color: #000000 !important;
             background-color: #f0f0f0 !important;
           }
-          td {
-            color: #000000 !important;
-          }
-          tfoot {
-            display: table-footer-group !important;
-          }
-          .whitespace-pre-line {
-             white-space: pre-wrap !important;
-          }
-          img { /* Ensure images are B&W if possible, though this is hard with CSS only */
+          
+          /* Logo Styling */
+          .print-logo {
             filter: grayscale(100%);
+            max-width: 150px !important;
+            max-height: 70px !important;
+            object-fit: contain !important;
+            display: block; /* Ensure it behaves predictably */
+          }
+          .print-placeholder-logo {
+            background-color: transparent !important; /* No background for placeholder container */
+            border: 1px solid #cccccc !important; /* Optional: light border for placeholder */
+            width: 70px !important; /* Fixed size for placeholder */
+            height: 70px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .print-placeholder-logo svg {
+             width: 40px !important;
+             height: 40px !important;
+             fill: #555555 !important;
+          }
+
+          /* Ensure separators are light gray */
+          hr, .print\\:border-gray-400, .print\\:border-gray-300 {
+            border-color: #cccccc !important;
+            background-color: #cccccc !important;
+          }
+           .whitespace-pre-line {
+             white-space: pre-wrap !important;
+             word-break: break-word;
           }
         }
         @page {
           size: A4;
-          margin: 20mm 15mm;
+          margin: 15mm; /* Consistent margin */
         }
       `}</style>
     </Dialog>
@@ -337,3 +326,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
+
+        
+    
