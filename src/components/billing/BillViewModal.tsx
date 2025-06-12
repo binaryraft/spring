@@ -36,76 +36,91 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   let effectiveBillType = '';
   if (isEstimateView) {
-    effectiveBillType = 'Estimate'; // Explicitly "Estimate"
+    effectiveBillType = 'Estimate';
   } else {
     effectiveBillType = bill.type === 'purchase' ? 'Purchase Invoice' : 'Sales Invoice';
   }
 
-  const handleGeneratePdf = async () => {
+const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true);
     const billContentElement = document.getElementById('bill-to-print');
-    
+
     if (!billContentElement) {
         console.error('Bill content element not found for PDF generation.');
         setIsGeneratingPdf(false);
+        alert("Error: Bill content element not found. PDF generation aborted.");
         return;
     }
 
     if (billContentElement.scrollWidth === 0 || billContentElement.scrollHeight === 0) {
-        console.error('Bill content element has no dimensions (scrollWidth or scrollHeight is 0). PDF generation aborted.');
+        console.error('Bill content element has no dimensions. PDF generation aborted.');
         setIsGeneratingPdf(false);
-        // Potentially show a user-facing error here
-        alert("Error: Could not determine content size for PDF generation. Please ensure the bill content is visible.");
+        alert("Error: Could not determine content size for PDF generation. Please ensure the bill content is visible and has dimensions.");
         return;
     }
     
-    // Ensure content is fully rendered before capture
     await new Promise(resolve => requestAnimationFrame(resolve));
-    await new Promise(resolve => setTimeout(resolve, 100)); // Increased delay slightly
+    await new Promise(resolve => setTimeout(resolve, 250)); 
 
     try {
-        console.log(`Capturing element with scrollWidth: ${billContentElement.scrollWidth}, scrollHeight: ${billContentElement.scrollHeight}`);
+        console.log(`Attempting to capture element with scrollWidth: ${billContentElement.scrollWidth}, scrollHeight: ${billContentElement.scrollHeight}`);
+        
         const canvas = await html2canvas(billContentElement, {
-            scale: 2, 
-            useCORS: true, // Important if any images are from external sources (not relevant here)
-            logging: true, 
-            backgroundColor: "#ffffff", // Canvas background
+            scale: 2,
+            useCORS: true,
+            logging: true,
+            backgroundColor: "#ffffff",
             width: billContentElement.scrollWidth,
             height: billContentElement.scrollHeight,
-            windowWidth: billContentElement.scrollWidth, // Ensure full content width is considered
-            windowHeight: billContentElement.scrollHeight, // Ensure full content height is considered
+            scrollX: 0, 
+            scrollY: 0, 
+            windowWidth: billContentElement.scrollWidth,
+            windowHeight: billContentElement.scrollHeight,
             onclone: (documentClone) => {
-                // This onclone is for minimal document preparation for html2canvas.
-                // The component's own styles (including Tailwind and print-specific overrides)
-                // should ideally dictate the content's appearance.
                 const clonedContent = documentClone.getElementById('bill-to-print');
                 if (clonedContent) {
-                    // Ensure the root printable element in the clone has a defined background
+                    clonedContent.style.position = 'relative'; 
+                    clonedContent.style.left = '0px';
+                    clonedContent.style.top = '0px';
+                    clonedContent.style.transform = 'none';
+                    clonedContent.style.width = `${billContentElement.scrollWidth}px`; 
+                    clonedContent.style.height = `${billContentElement.scrollHeight}px`; 
+                    clonedContent.style.overflow = 'visible'; 
+                    clonedContent.style.display = 'block'; 
                     clonedContent.style.backgroundColor = '#ffffff';
-                    clonedContent.style.display = 'block'; // Or 'flex' if it's a flex container
-                    clonedContent.style.color = '#000000'; // Default text color
+                    clonedContent.style.color = '#000000';
+                    clonedContent.style.zIndex = '9999'; 
                     
-                    // Ensure specific handling for logo/placeholder if needed for clone
+                    const allElements = clonedContent.querySelectorAll('*');
+                    allElements.forEach((el) => {
+                        const htmlEl = el as HTMLElement;
+                        htmlEl.style.color = '#000000';
+                        htmlEl.style.backgroundColor = 'transparent';
+                        htmlEl.style.boxShadow = 'none';
+                        htmlEl.style.borderColor = '#cccccc'; 
+                         htmlEl.style.printColorAdjust = 'exact';
+                    });
+
                     const logo = clonedContent.querySelector('.print-logo') as HTMLImageElement;
                     if (logo) {
                         logo.style.filter = 'grayscale(100%) contrast(120%)';
                     }
                     const placeholderLogoSvg = clonedContent.querySelector('.print-placeholder-logo svg') as HTMLElement;
-                    if (placeholderLogoSvg) {
-                         if(placeholderLogoSvg.style) {
-                            placeholderLogoSvg.style.fill = '#000000';
-                            placeholderLogoSvg.style.stroke = '#000000';
-                         }
+                    if (placeholderLogoSvg && placeholderLogoSvg.style) {
+                        placeholderLogoSvg.style.fill = '#000000';
+                        placeholderLogoSvg.style.stroke = '#000000';
                     }
+                } else {
+                    console.error("Cloned content #bill-to-print not found in onclone");
                 }
             }
         });
 
         const imgData = canvas.toDataURL('image/png');
-        if (imgData.length < 200 || imgData === 'data:,') { // Check for empty image data
+        if (imgData.length < 200 || imgData === 'data:,') {
              console.error("Generated canvas image is too small or empty. Length:", imgData.length);
+             alert("Error: Failed to capture bill content for PDF. The generated image was empty. This might be due to content visibility issues.");
              setIsGeneratingPdf(false);
-             alert("Error: Failed to capture bill content for PDF. The generated image was empty.");
              return;
         }
 
@@ -117,7 +132,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10; 
+        const margin = 10;
 
         const imgProps = pdf.getImageProperties(imgData);
         const canvasImgWidth = imgProps.width;
@@ -125,8 +140,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         
         if (canvasImgWidth === 0 || canvasImgHeight === 0) {
             console.error("Canvas image properties report zero width or height.");
-            setIsGeneratingPdf(false);
             alert("Error: Captured image for PDF has no dimensions.");
+            setIsGeneratingPdf(false);
             return;
         }
 
@@ -138,13 +153,13 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         const finalPdfImgWidth = canvasImgWidth * ratio;
         const finalPdfImgHeight = canvasImgHeight * ratio;
 
-        const x = margin + (availableWidth - finalPdfImgWidth) / 2; // Centered
-        const y = margin + (availableHeight - finalPdfImgHeight) / 2; // Centered
+        const x = margin + (availableWidth - finalPdfImgWidth) / 2;
+        const y = margin + (availableHeight - finalPdfImgHeight) / 2;
         
         if (finalPdfImgWidth <= 0 || finalPdfImgHeight <= 0) {
             console.error("Calculated PDF image dimensions are invalid (<=0). Width:", finalPdfImgWidth, "Height:", finalPdfImgHeight);
-            setIsGeneratingPdf(false);
             alert("Error: Calculated PDF dimensions are invalid.");
+            setIsGeneratingPdf(false);
             return;
         }
 
@@ -173,7 +188,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 return item.rate || 0;
         }
     }
-    return item.rate || 0; // For sales, rate is direct
+    return item.rate || 0; 
   };
 
   const PlaceholderLogo = () => (
@@ -182,7 +197,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     </div>
   );
 
-  // Determine if item-level GST columns should be shown
   const showItemLevelGstColumns = bill.type === 'sales-bill' && !isEstimateView;
   const showMakingChargeColumn = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
 
@@ -190,7 +204,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="print-hidden">
           <DialogTitle className="font-headline text-2xl text-primary">
             {effectiveBillType}
           </DialogTitle>
@@ -200,10 +214,12 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         </DialogHeader>
 
         <div className="flex-grow overflow-y-auto p-1"> 
-          {/* Base styles for screen view are applied here. Print-specific overrides below are for html2canvas. */}
-          <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm text-foreground print:shadow-none print:border-none print:bg-white">
-            {/* Apply print-specific styling using a style tag for html2canvas if necessary, or rely on Tailwind print variants */}
+          <div id="bill-to-print" className="p-6 border rounded-lg bg-card shadow-sm text-foreground">
             <style jsx global>{`
+                body.print-capture-active #bill-to-print {
+                    // Styles to ensure #bill-to-print is fully visible and sized correctly for capture
+                    // This might not be needed if onclone handles it well
+                }
                 @media print {
                     body, html {
                         background-color: #ffffff !important;
@@ -212,27 +228,64 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
+                    body > *:not(#bill-to-print-wrapper):not(#bill-to-print-wrapper *) {
+                         display: none !important; 
+                    }
+                    #bill-to-print-wrapper, #bill-to-print {
+                        display: block !important;
+                    }
+
                     #bill-to-print {
                         margin: 0 !important;
-                        padding: 10mm !important; /* Printable area padding */
+                        padding: 15mm !important; 
                         border: none !important;
                         box-shadow: none !important;
-                        width: 100% !important; /* Or specific like 190mm */
-                        min-height: 270mm; /* Approximate A4 height minus margins */
+                        width: 100% !important; 
+                        min-height: auto !important; 
                         box-sizing: border-box !important;
                         color: #000000 !important;
                         background-color: #ffffff !important;
+                        position: static !important;
+                        transform: none !important;
+                        left: auto !important;
+                        top: auto !important;
+
                     }
                     #bill-to-print * {
                         color: #000000 !important;
                         background-color: transparent !important;
-                        border-color: #cccccc !important; /* Light gray for borders */
+                        border-color: #cccccc !important; 
                         box-shadow: none !important;
                         text-shadow: none !important;
+                        print-color-adjust: exact !important;
                     }
+                    #bill-to-print .flex { display: flex !important; }
+                    #bill-to-print .grid { display: grid !important; }
+                    #bill-to-print .justify-between { justify-content: space-between !important; }
+                    #bill-to-print .items-start { align-items: flex-start !important; }
+                    #bill-to-print .text-left { text-align: left !important; }
+                    #bill-to-print .text-right { text-align: right !important; }
+                    #bill-to-print .text-center { text-align: center !important; }
+                    #bill-to-print .font-headline { font-family: 'Playfair Display', serif !important; }
+
+                    #bill-to-print header, 
+                    #bill-to-print .grid.grid-cols-2,
+                    #bill-to-print .grid.grid-cols-5 {
+                         width: 100% !important; 
+                    }
+                    #bill-to-print .grid.grid-cols-2 > div:first-child,
+                    #bill-to-print .grid.grid-cols-5 > .col-span-3 {
+                        width: 60% !important; /* Adjust as needed */
+                        padding-right: 10px !important;
+                    }
+                     #bill-to-print .grid.grid-cols-2 > div:last-child,
+                    #bill-to-print .grid.grid-cols-5 > .col-span-2 {
+                        width: 38% !important; /* Adjust as needed */
+                    }
+
+
                     #bill-to-print a {
                         text-decoration: none !important;
-                        color: #000000 !important;
                     }
                     #bill-to-print table {
                         width: 100% !important;
@@ -246,30 +299,36 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                         font-size: 9pt !important;
                     }
                     #bill-to-print th {
-                        background-color: #f0f0f0 !important; /* Light gray for table headers */
+                        background-color: #f0f0f0 !important; 
                         font-weight: bold !important;
                     }
                     #bill-to-print .print-logo {
-                        max-width: 80px !important;
-                        max-height: 40px !important;
+                        max-width: 60px !important; 
+                        max-height: 30px !important;
                         object-fit: contain !important;
-                        filter: grayscale(100%) contrast(120%) !important;
+                        filter: grayscale(100%) contrast(150%) !important;
                     }
                     #bill-to-print .print-placeholder-logo svg {
                         fill: #000000 !important;
                         stroke: #000000 !important;
-                        width: 40px !important;
-                        height: 40px !important;
+                        width: 30px !important;
+                        height: 30px !important;
                     }
                     #bill-to-print .print-placeholder-logo {
                          border: 1px solid #000000 !important;
+                         width: auto !important; height: auto !important; padding: 5px !important;
                     }
                     #bill-to-print hr, #bill-to-print [role="separator"] {
                         border-top: 1px solid #cccccc !important;
                         background-color: #cccccc !important;
                         height: 1px !important;
+                        margin: 0.5rem 0 !important;
                     }
-                    .print-hidden { display: none !important; } /* Utility to hide elements from print */
+                    .print-hidden { display: none !important; }
+                    @page {
+                        size: A4 portrait;
+                        margin: 10mm;
+                    }
                 }
             `}</style>
             <header className="mb-6">
@@ -323,9 +382,10 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     <th className="py-2 px-1 text-left font-semibold border border-border">#</th>
                     <th className="py-2 px-1 text-left font-semibold border border-border">Item (Material)</th>
                     <th className="py-2 px-1 text-right font-semibold border border-border">Qty/Wt</th>
-                    <th className="py-2 px-1 text-right font-semibold border border-border">Rate / {isEstimateView ? bill.items[0]?.unit || 'unit' : 'unit'}</th>
-                    {showMakingChargeColumn && !isEstimateView &&
-                        <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
+                    <th className="py-2 px-1 text-right font-semibold border border-border">
+                        Rate / {isEstimateView && bill.items.length > 0 ? bill.items[0].unit : isEstimateView ? 'unit' : 'unit'}
+                    </th>
+                    {showMakingChargeColumn && <th className="py-2 px-1 text-right font-semibold border border-border">Making</th>}
                     {!isEstimateView && <th className="py-2 px-1 text-right font-semibold border border-border">Taxable Amt</th>}
                     {showItemLevelGstColumns && (
                         <>
@@ -344,9 +404,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     
                     let itemCgst = 0;
                     let itemSgst = 0;
-                    let lineTotal = taxableAmount; // For estimates, line total is just taxable amount
+                    let lineTotal = taxableAmount;
 
-                    if (showItemLevelGstColumns) { // Only for non-estimate sales bills
+                    if (showItemLevelGstColumns) { 
                         itemCgst = item.itemCgstAmount || 0;
                         itemSgst = item.itemSgstAmount || 0;
                         lineTotal = taxableAmount + itemCgst + itemSgst;
@@ -361,7 +421,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                       </td>
                       <td className="py-2 px-1 text-right border border-border">{item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} {item.unit}</td>
                       <td className="py-2 px-1 text-right border border-border">{effectiveRate.toFixed(2)}</td>
-                      {showMakingChargeColumn && !isEstimateView && (
+                      {showMakingChargeColumn && (
                         <td className="py-2 px-1 text-right border border-border">
                           {item.makingCharge && item.makingCharge > 0 ?
                            (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : item.makingCharge.toFixed(2))
@@ -429,6 +489,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
-
+    
 
     
