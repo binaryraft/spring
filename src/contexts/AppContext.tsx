@@ -2,7 +2,7 @@
 "use client";
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { Settings, Valuable, Bill, BillType } from '@/types';
+import type { Settings, Valuable, Bill, BillItem, BillType } from '@/types'; // Added BillItem
 import { DEFAULT_SETTINGS } from '@/types';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { v4 as uuidv4 } from 'uuid';
@@ -52,16 +52,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => {
       const lowerCaseName = name.toLowerCase();
       if (prev.customItemNames.some(n => n.toLowerCase() === lowerCaseName)) {
-        return prev; // Name already exists (case-insensitive)
+        return prev; 
       }
       return {
         ...prev,
-        customItemNames: [...prev.customItemNames, name].sort(), // Keep sorted
+        customItemNames: [...prev.customItemNames, name].sort(), 
       };
     });
   }, [setSettings]);
 
-  const getValuableById = useCallback((id: string) => {
+  const getValuableById = useCallback((id: string): Valuable | undefined => {
     return settings.valuables.find(v => v.id === id);
   }, [settings.valuables]);
 

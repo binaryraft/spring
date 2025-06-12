@@ -2,13 +2,12 @@
 "use client";
 import React from 'react';
 import type { BillItem, Valuable, MakingChargeSetting } from '@/types';
-import { useAppContext } from '@/contexts/AppContext';
+import { useAppContext } from '@/contexts/AppContext'; // Not directly used, but good for context
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Edit2 } from 'lucide-react'; // Using Edit2 for a pencil-like icon
+import { Trash2 } from 'lucide-react'; 
 import ValuableIcon from '../ValuableIcon';
-import { Label } from '@/components/ui/label';
 
 interface BillItemRowProps {
   item: Partial<BillItem>;
@@ -20,6 +19,7 @@ interface BillItemRowProps {
   isPurchase: boolean;
   defaultMakingCharge: MakingChargeSetting;
   defaultPurchaseNetPercentage: number;
+  defaultPurchaseNetFixedValue: number; // New prop
   getValuablePrice: (valuableId: string) => number;
 }
 
@@ -33,6 +33,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   isPurchase,
   defaultMakingCharge,
   defaultPurchaseNetPercentage,
+  defaultPurchaseNetFixedValue, // Destructure new prop
   getValuablePrice,
 }) => {
 
@@ -41,16 +42,19 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
     if (selectedValuable) {
       const updates: Partial<BillItem> = {
         valuableId,
-        name: item.name && item.valuableId === valuableId ? item.name : selectedValuable.name,
+        name: item.name && item.valuableId === valuableId && item.name !== availableValuables.find(v => v.id === item.valuableId)?.name ? item.name : selectedValuable.name,
         unit: selectedValuable.unit,
-        rate: selectedValuable.price, // For sales, this is the base rate. For purchases, it's the market rate.
+        rate: selectedValuable.price, 
       };
       if (isPurchase) {
-        updates.purchaseNetType = item.purchaseNetType || 'market_rate'; // Default to market_rate
+        updates.purchaseNetType = item.purchaseNetType || 'market_rate'; 
         if (updates.purchaseNetType === 'net_percentage' && item.purchaseNetPercentValue === undefined) {
           updates.purchaseNetPercentValue = defaultPurchaseNetPercentage;
         }
-      } else { // Sales
+        if (updates.purchaseNetType === 'fixed_net_price' && item.purchaseNetFixedValue === undefined) {
+          updates.purchaseNetFixedValue = defaultPurchaseNetFixedValue;
+        }
+      } else { 
         updates.makingChargeType = item.makingChargeType || defaultMakingCharge.type;
         updates.makingCharge = item.makingCharge === undefined ? defaultMakingCharge.value : item.makingCharge;
       }
@@ -61,18 +65,21 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   const handleFieldChange = (field: keyof BillItem, value: any) => {
     let numericValue = value;
     const numericFields: (keyof BillItem)[] = ['weightOrQuantity', 'rate', 'makingCharge', 'purchaseNetPercentValue', 'purchaseNetFixedValue'];
+    
     if (numericFields.includes(field)) {
       numericValue = parseFloat(value);
-      if (isNaN(numericValue)) numericValue = field === 'weightOrQuantity' ? 0 : (item[field] || 0) ; // Keep existing or 0 if invalid
+      if (isNaN(numericValue)) {
+         // For weight/qty, default to 0 if invalid, otherwise keep existing or 0 for other numeric fields.
+        numericValue = field === 'weightOrQuantity' ? 0 : (item[field] as number || 0);
+      }
     }
     
     const updates: Partial<BillItem> = { [field]: numericValue };
 
-    // If purchaseNetType changes, reset related values or set defaults
     if (field === 'purchaseNetType' && isPurchase) {
         updates.purchaseNetPercentValue = value === 'net_percentage' ? (item.purchaseNetPercentValue ?? defaultPurchaseNetPercentage) : undefined;
-        updates.purchaseNetFixedValue = value === 'fixed_net_price' ? (item.purchaseNetFixedValue ?? 0) : undefined;
-        updates.rate = value === 'market_rate' ? (item.rate ?? getValuablePrice(item.valuableId || '')) : 0; // Reset rate if not market_rate unless already set
+        updates.purchaseNetFixedValue = value === 'fixed_net_price' ? (item.purchaseNetFixedValue ?? defaultPurchaseNetFixedValue) : undefined; // Use default
+        updates.rate = value === 'market_rate' ? (item.rate ?? getValuablePrice(item.valuableId || '')) : (item.rate || 0); // Keep rate if switching away from market_rate unless it was not set
     }
     onItemChange(updates);
   };
@@ -92,8 +99,8 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
 
   const gridColsClass = isPurchase 
-    ? "grid-cols-12" // Type(2), Name(3), Qty(1), NetType(2), Value(1), Amount(1), Action(1) (+ MarketPrice/EffectiveRate display)
-    : "grid-cols-12"; // Type(2), Name(3), Qty(1), Rate(1), MCType(1), MC(1), Amount(1), Action(1)
+    ? "grid-cols-12" 
+    : "grid-cols-12"; 
 
   return (
     <div className={`grid ${gridColsClass} gap-2 items-start py-2 border-b last:border-b-0`}>
@@ -101,7 +108,6 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         {customItemNames.map(name => <option key={name} value={name} />)}
       </datalist>
 
-      {/* Column 1: Valuable Type Select */}
       <div className="col-span-2">
         <Select value={item.valuableId || ''} onValueChange={handleValuableSelect}>
           <SelectTrigger className="h-9 text-sm">
@@ -120,7 +126,6 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         </Select>
       </div>
 
-      {/* Column 2: Item Name/Description */}
       <div className="col-span-3">
         <Input
           placeholder="Item Name / Description"
@@ -132,7 +137,6 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         />
       </div>
 
-      {/* Column 3: Quantity/Weight */}
       <div className="col-span-1">
         <Input 
           type="number" 
@@ -140,15 +144,14 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           value={item.weightOrQuantity === undefined ? '' : item.weightOrQuantity}
           onChange={(e) => handleFieldChange('weightOrQuantity', e.target.value)}
           min="0"
-          step="0.001"
+          step={selectedValuableDetails?.unit === 'carat' || selectedValuableDetails?.unit === 'ct' ? '0.001' : '0.01'}
           className="h-9 text-sm text-center"
         />
       </div>
 
-      {/* Purchase Specific Columns */}
       {isPurchase && (
         <>
-          <div className="col-span-2 flex flex-col space-y-1"> {/* Net Type Select */}
+          <div className="col-span-2 flex flex-col space-y-1"> 
             <Select 
               value={item.purchaseNetType || 'market_rate'} 
               onValueChange={(val: 'market_rate' | 'net_percentage' | 'fixed_net_price') => handleFieldChange('purchaseNetType', val)}
@@ -167,15 +170,15 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
             )}
           </div>
           
-          <div className="col-span-1 flex flex-col space-y-1"> {/* Value Input (Rate, %, or Fixed) */}
+          <div className="col-span-1 flex flex-col space-y-1"> 
             {item.purchaseNetType === 'market_rate' && (
-              <Input type="number" placeholder="Rate" value={item.rate === undefined ? '' : item.rate} onChange={(e) => handleFieldChange('rate', e.target.value)} className="h-9 text-sm text-center" />
+              <Input type="number" placeholder="Rate" value={item.rate === undefined ? '' : item.rate} onChange={(e) => handleFieldChange('rate', e.target.value)} className="h-9 text-sm text-center" min="0" step="0.01"/>
             )}
             {item.purchaseNetType === 'net_percentage' && (
-              <Input type="number" placeholder="%" value={item.purchaseNetPercentValue === undefined ? '' : item.purchaseNetPercentValue} onChange={(e) => handleFieldChange('purchaseNetPercentValue', e.target.value)} className="h-9 text-sm text-center" />
+              <Input type="number" placeholder="%" value={item.purchaseNetPercentValue === undefined ? '' : item.purchaseNetPercentValue} onChange={(e) => handleFieldChange('purchaseNetPercentValue', e.target.value)} className="h-9 text-sm text-center" min="0" step="0.01"/>
             )}
             {item.purchaseNetType === 'fixed_net_price' && (
-              <Input type="number" placeholder="Net Rate" value={item.purchaseNetFixedValue === undefined ? '' : item.purchaseNetFixedValue} onChange={(e) => handleFieldChange('purchaseNetFixedValue', e.target.value)} className="h-9 text-sm text-center" />
+              <Input type="number" placeholder="Net Rate" value={item.purchaseNetFixedValue === undefined ? '' : item.purchaseNetFixedValue} onChange={(e) => handleFieldChange('purchaseNetFixedValue', e.target.value)} className="h-9 text-sm text-center" min="0" step="0.01"/>
             )}
             {item.purchaseNetType !== 'market_rate' && (
                  <p className="text-xs text-muted-foreground text-center">Eff: {effectiveRateForPurchaseDisplay.toFixed(2)}</p>
@@ -184,10 +187,9 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         </>
       )}
 
-      {/* Sales Specific Columns */}
       {!isPurchase && (
         <>
-          <div className="col-span-1"> {/* Rate for Sales */}
+          <div className="col-span-1"> 
             <Input 
               type="number" 
               placeholder="Rate"
@@ -198,10 +200,10 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               className="h-9 text-sm text-center"
             />
           </div>
-          <div className="col-span-1"> {/* Making Charge Type */}
+          <div className="col-span-1"> 
             <Select 
               value={item.makingChargeType || defaultMakingCharge.type} 
-              onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}
+              onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })} // No need to call handleFieldChange for this
             >
               <SelectTrigger className="text-xs px-1 h-9">
                 <SelectValue />
@@ -212,7 +214,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-1"> {/* Making Charge Value */}
+          <div className="col-span-1"> 
             <Input 
               type="number" 
               placeholder="Making"
@@ -226,12 +228,10 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         </>
       )}
       
-      {/* Amount Column (adjusted for purchase to take one less span if MC cols are not there) */}
       <div className={`col-span-1 text-right self-center`}>
         <span className="font-medium text-sm">{item.amount?.toFixed(2) || '0.00'}</span>
       </div>
 
-      {/* Action Column */}
       <div className="col-span-1 text-center self-center">
         <Button variant="ghost" size="icon" onClick={onRemoveItem} className="text-destructive hover:text-destructive/80 h-9 w-9">
           <Trash2 className="w-4 h-4" />

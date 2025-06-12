@@ -21,8 +21,8 @@ export interface Settings {
   phoneNumber: string;
   valuables: Valuable[];
   defaultMakingCharge: MakingChargeSetting;
-  // Removed: netPurchaseMode, netPurchasePercentage, netPurchaseFixedPrice
-  defaultPurchaseItemNetPercentage: number; // Default net percentage for purchase items if type is 'net_percentage'
+  defaultPurchaseItemNetPercentage: number; 
+  defaultPurchaseItemNetFixedValue: number; // New setting for default fixed net price
   cgstRate: number; // Percentage
   sgstRate: number; // Percentage
   customItemNames: string[]; // For storing unique item names for suggestions
@@ -64,7 +64,6 @@ export interface Bill {
   sgstAmount?: number;
   totalAmount: number;
   notes?: string;
-  // Removed: purchaseNetApplied, purchaseNetValueApplied
 }
 
 export const DEFAULT_VALUABLES: Valuable[] = [
@@ -81,8 +80,9 @@ export const DEFAULT_SETTINGS: Settings = {
   phoneNumber: '+1234567890',
   valuables: DEFAULT_VALUABLES,
   defaultMakingCharge: { type: 'percentage', value: 10 },
-  defaultPurchaseItemNetPercentage: 10, // Default for item-level purchase net %
+  defaultPurchaseItemNetPercentage: 10, 
+  defaultPurchaseItemNetFixedValue: 0, // Default for new setting
   cgstRate: 9,
   sgstRate: 9,
-  customItemNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle"], // Initial suggestions
+  customItemNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle"], 
 };

@@ -152,7 +152,7 @@ const SettingsPanel: React.FC = () => {
                  <div>
                     <Label htmlFor="defaultMakingChargeType">Type</Label>
                     <Select
-                        value={localSettings.defaultMakingCharge.type}
+                        value={localSettings.defaultMakingCharge?.type || 'percentage'}
                         onValueChange={(value: 'percentage' | 'fixed') => handleNestedChange('defaultMakingCharge', 'type', value)}
                     >
                         <SelectTrigger id="defaultMakingChargeType">
@@ -169,7 +169,7 @@ const SettingsPanel: React.FC = () => {
                   <Input 
                     id="defaultMakingChargeValue" 
                     type="number" 
-                    value={localSettings.defaultMakingCharge.value} 
+                    value={localSettings.defaultMakingCharge?.value || 0} 
                     onChange={(e) => handleNestedChange('defaultMakingCharge', 'value', parseFloat(e.target.value))} 
                   />
                 </div>
@@ -195,10 +195,10 @@ const SettingsPanel: React.FC = () => {
             <Separator />
 
             <div>
-              <h3 className="text-lg font-medium font-headline mb-2 text-primary">Purchase Configuration</h3>
-              <div className="space-y-3">
+              <h3 className="text-lg font-medium font-headline mb-2 text-primary">Default Purchase Item Configuration</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="defaultPurchaseItemNetPercentage">Default Purchase Item Net Percentage (%)</Label>
+                  <Label htmlFor="defaultPurchaseItemNetPercentage">Default Net Percentage (%)</Label>
                   <Input 
                     id="defaultPurchaseItemNetPercentage" 
                     type="number" 
@@ -207,7 +207,20 @@ const SettingsPanel: React.FC = () => {
                     placeholder="e.g., 10 for 10% off market price"
                   />
                    <p className="text-xs text-muted-foreground mt-1">
-                    This percentage is used as a default when 'Net % Off Market' is selected for a purchase item.
+                    Used when 'Net % Off Market' is selected for a new purchase item.
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="defaultPurchaseItemNetFixedValue">Default Fixed Net Rate</Label>
+                  <Input 
+                    id="defaultPurchaseItemNetFixedValue" 
+                    type="number" 
+                    value={localSettings.defaultPurchaseItemNetFixedValue} 
+                    onChange={(e) => handleChange('defaultPurchaseItemNetFixedValue', parseFloat(e.target.value))}
+                    placeholder="e.g., 4500"
+                  />
+                   <p className="text-xs text-muted-foreground mt-1">
+                    Used when 'Fixed Net Rate' is selected for a new purchase item.
                   </p>
                 </div>
               </div>
