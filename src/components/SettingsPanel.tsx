@@ -57,7 +57,6 @@ const SettingsPanel: React.FC = () => {
 
   const handleSave = () => {
     updateSettings(localSettings);
-    // Consider closing the sheet by controlling its open state via context or props if needed
   };
 
   return (
@@ -69,7 +68,7 @@ const SettingsPanel: React.FC = () => {
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg">
-        <ScrollArea className="h-[calc(100%-120px)] pr-6"> {/* Adjust height for footer */}
+        <ScrollArea className="h-[calc(100%-120px)] pr-6">
           <SheetHeader>
             <SheetTitle className="font-headline">Application Settings</SheetTitle>
             <SheetDescription>
@@ -125,7 +124,7 @@ const SettingsPanel: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor={`price-${valuable.id}`}>Price (per {valuable.unit})</Label>
+                    <Label htmlFor={`price-${valuable.id}`}>Market Price (per {valuable.unit})</Label>
                     <Input
                       id={`price-${valuable.id}`}
                       type="number"
@@ -180,7 +179,7 @@ const SettingsPanel: React.FC = () => {
             <Separator />
 
             <div>
-              <h3 className="text-lg font-medium font-headline mb-2 text-primary">Tax Rates</h3>
+              <h3 className="text-lg font-medium font-headline mb-2 text-primary">Tax Rates (for Sales)</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="cgstRate">CGST Rate (%)</Label>
@@ -192,54 +191,31 @@ const SettingsPanel: React.FC = () => {
                 </div>
               </div>
             </div>
-
+            
             <Separator />
 
             <div>
               <h3 className="text-lg font-medium font-headline mb-2 text-primary">Purchase Configuration</h3>
               <div className="space-y-3">
                 <div>
-                    <Label htmlFor="netPurchaseMode">Default Net Calculation for Purchases</Label>
-                    <Select
-                        value={localSettings.netPurchaseMode}
-                        onValueChange={(value: 'percentage' | 'fixed_price') => handleChange('netPurchaseMode', value)}
-                    >
-                        <SelectTrigger id="netPurchaseMode">
-                            <SelectValue placeholder="Select mode" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="percentage">Percentage Based</SelectItem>
-                            <SelectItem value="fixed_price">Fixed Net Price</SelectItem>
-                        </SelectContent>
-                    </Select>
+                  <Label htmlFor="defaultPurchaseItemNetPercentage">Default Purchase Item Net Percentage (%)</Label>
+                  <Input 
+                    id="defaultPurchaseItemNetPercentage" 
+                    type="number" 
+                    value={localSettings.defaultPurchaseItemNetPercentage} 
+                    onChange={(e) => handleChange('defaultPurchaseItemNetPercentage', parseFloat(e.target.value))}
+                    placeholder="e.g., 10 for 10% off market price"
+                  />
+                   <p className="text-xs text-muted-foreground mt-1">
+                    This percentage is used as a default when 'Net % Off Market' is selected for a purchase item.
+                  </p>
                 </div>
-                {localSettings.netPurchaseMode === 'percentage' && (
-                    <div>
-                        <Label htmlFor="netPurchasePercentage">Net Percentage (%)</Label>
-                        <Input 
-                            id="netPurchasePercentage" 
-                            type="number" 
-                            value={localSettings.netPurchasePercentage} 
-                            onChange={(e) => handleChange('netPurchasePercentage', parseFloat(e.target.value))} 
-                        />
-                    </div>
-                )}
-                {localSettings.netPurchaseMode === 'fixed_price' && (
-                    <div>
-                        <Label htmlFor="netPurchaseFixedPrice">Net Fixed Price</Label>
-                        <Input 
-                            id="netPurchaseFixedPrice" 
-                            type="number" 
-                            value={localSettings.netPurchaseFixedPrice} 
-                            onChange={(e) => handleChange('netPurchaseFixedPrice', parseFloat(e.target.value))} 
-                        />
-                    </div>
-                )}
               </div>
             </div>
+
           </div>
         </ScrollArea>
-        <SheetFooter className="p-6 border-t"> {/* Ensure footer is visible */}
+        <SheetFooter className="p-6 border-t">
           <SheetClose asChild>
             <Button variant="outline">Cancel</Button>
           </SheetClose>

@@ -1,7 +1,7 @@
 
 "use client";
 import React from 'react';
-import type { Bill } from '@/types';
+import type { Bill, BillItem } from '@/types'; // Ensure BillItem is imported if needed for types
 import { useAppContext } from '@/contexts/AppContext';
 import {
   Dialog,
@@ -44,27 +44,37 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     }, 100);
   };
   
-  // Determine displayed totals based on whether it's an estimate or a final bill
   const displaySubTotal = bill.subTotal;
   let displayCgstAmount = bill.cgstAmount || 0;
   let displaySgstAmount = bill.sgstAmount || 0;
   let displayTotalAmount = bill.totalAmount;
-  let purchaseDiscountAmount = 0;
 
   if (isEstimateView) {
-    displayCgstAmount = 0; // No GST on estimates
+    displayCgstAmount = 0; 
     displaySgstAmount = 0;
-    displayTotalAmount = displaySubTotal; // For estimates, total is subtotal (includes MC for sales, raw for purchase)
-  } else if (bill.type === 'purchase' && bill.purchaseNetApplied && bill.purchaseNetValueApplied !== undefined) {
-    // For final purchase invoices, calculate the discount shown
-    if (bill.purchaseNetApplied === 'percentage') {
-      purchaseDiscountAmount = bill.subTotal * (bill.purchaseNetValueApplied / 100);
-    } else { // fixed_price
-      // If fixed price, the "discount" is the difference from subtotal to reach that fixed price
-      // but totalAmount already reflects the fixed price.
-      // The line item in totals will just show "Net (Fixed Price)"
-    }
+    // For estimates, total is subtotal (MC included for sales, raw for purchase before any bill-level net)
+    // With item-level net for purchase, subtotal itself reflects the net prices for estimate too.
+    displayTotalAmount = displaySubTotal; 
   }
+  // For final purchase bills, the total amount already reflects item-level net calculations.
+  // No separate "Net Discount" line is needed at the bill summary level anymore.
+
+  const getEffectiveRateForItem = (item: BillItem): number => {
+    if (bill.type === 'purchase') {
+        const valuable = getValuableById(item.valuableId);
+        const marketPrice = valuable ? valuable.price : 0;
+        switch (item.purchaseNetType) {
+            case 'net_percentage':
+                return marketPrice * (1 - ((item.purchaseNetPercentValue || 0) / 100));
+            case 'fixed_net_price':
+                return item.purchaseNetFixedValue || 0;
+            case 'market_rate':
+            default:
+                return item.rate;
+        }
+    }
+    return item.rate; // For sales bills
+  };
 
 
   return (
@@ -102,7 +112,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 </div>
                 <div className="text-right">
                     <h3 className="font-semibold mb-1">
-                        {isEstimateView ? (bill.type === 'purchase' ? 'Purchase Estimate Details:' : 'Sales Estimate Details:') : (bill.type === 'purchase' ? 'Purchase Details:' : 'Invoice Details:')}
+                        {isEstimateView ? (bill.type === 'purchase' ? 'Purchase Estimate Details:' : 'Sales Estimate Details:') : (bill.type === 'purchase' ? 'Purchase Invoice Details:' : 'Invoice Details:')}
                     </h3>
                     <p>
                         {isEstimateView ? 'Estimate Ref:' : bill.type === 'purchase' ? 'P.O. No:' : 'Invoice No:'}
@@ -120,14 +130,15 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     <th className="py-2 px-1 text-left font-semibold">Item Description</th>
                     <th className="py-2 px-1 text-right font-semibold">Qty/Wt</th>
                     <th className="py-2 px-1 text-right font-semibold">Rate</th>
-                    {(bill.type !== 'purchase' || (isEstimateView && bill.items.some(i => i.makingCharge))) && !isEstimateView && <th className="py-2 px-1 text-right font-semibold">Making</th>}
-                     {bill.type === 'sales-bill' && isEstimateView && bill.items.some(i => i.makingCharge) && <th className="py-2 px-1 text-right font-semibold">Making</th>}
+                    {bill.type === 'sales-bill' && !isEstimateView && bill.items.some(i => i.makingCharge && i.makingCharge > 0) && <th className="py-2 px-1 text-right font-semibold">Making</th>}
+                    {bill.type === 'sales-bill' && isEstimateView && bill.items.some(i => i.makingCharge && i.makingCharge > 0) && <th className="py-2 px-1 text-right font-semibold">Making</th>}
                     <th className="py-2 px-1 text-right font-semibold">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bill.items.map((item, index) => {
                     const valuableDetails = getValuableById(item.valuableId);
+                    const effectiveRate = getEffectiveRateForItem(item);
                     return (
                     <tr key={item.id} className="border-b last:border-b-0 print:border-gray-300">
                       <td className="py-2 px-1">{index + 1}</td>
@@ -135,20 +146,14 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                         {valuableDetails && <ValuableIcon valuableType={valuableDetails.icon} color={valuableDetails.iconColor} className="w-4 h-4 mr-2 print:hidden"/>}
                         {item.name} ({valuableDetails?.name || 'Custom Item'})
                       </td>
-                      <td className="py-2 px-1 text-right">{item.weightOrQuantity.toFixed(item.unit === 'carat' ? 3 : 2)} {item.unit}</td>
-                      <td className="py-2 px-1 text-right">{item.rate.toFixed(2)}</td>
-                      {(bill.type !== 'purchase' || (isEstimateView && item.makingCharge)) && !isEstimateView && (
+                      <td className="py-2 px-1 text-right">{item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} {item.unit}</td>
+                      <td className="py-2 px-1 text-right">{effectiveRate.toFixed(2)}</td>
+                      {/* Making Charge Column for Sales (Final and Estimate) */}
+                      {bill.type === 'sales-bill' && (isEstimateView ? item.makingCharge && item.makingCharge > 0 : true) && ( 
                         <td className="py-2 px-1 text-right">
                           {item.makingCharge && item.makingCharge > 0 ? 
                            (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : item.makingCharge.toFixed(2)) 
-                           : '-'}
-                        </td>
-                      )}
-                      {bill.type === 'sales-bill' && isEstimateView && item.makingCharge && (
-                         <td className="py-2 px-1 text-right">
-                          {item.makingCharge && item.makingCharge > 0 ? 
-                           (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : item.makingCharge.toFixed(2)) 
-                           : '-'}
+                           : (isEstimateView ? '' : '-')}
                         </td>
                       )}
                       <td className="py-2 px-1 text-right font-medium">{item.amount.toFixed(2)}</td>
@@ -172,21 +177,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
               <div className="col-span-2 text-sm space-y-1 text-right">
                 <p>Subtotal: <span className="font-semibold">{displaySubTotal.toFixed(2)}</span></p>
                 
-                {!isEstimateView && bill.type === 'purchase' && bill.purchaseNetApplied && bill.purchaseNetValueApplied !== undefined && (
-                  <p>
-                    {bill.purchaseNetApplied === 'percentage' 
-                      ? `Net Discount (${bill.purchaseNetValueApplied}%)` 
-                      : `Net (Fixed Price Bill)`}: 
-                    <span className="font-semibold">
-                      {bill.purchaseNetApplied === 'percentage' 
-                        ? `-${purchaseDiscountAmount.toFixed(2)}`
-                        : `${bill.totalAmount.toFixed(2)} (Final)`}
-                    </span>
-                  </p>
-                )}
-
-                {displayCgstAmount > 0 && <p>CGST ({settings.cgstRate}%): <span className="font-semibold">{displayCgstAmount.toFixed(2)}</span></p>}
-                {displaySgstAmount > 0 && <p>SGST ({settings.sgstRate}%): <span className="font-semibold">{displaySgstAmount.toFixed(2)}</span></p>}
+                {/* GST only for final sales bills */}
+                {!isEstimateView && bill.type === 'sales-bill' && displayCgstAmount > 0 && <p>CGST ({settings.cgstRate}%): <span className="font-semibold">{displayCgstAmount.toFixed(2)}</span></p>}
+                {!isEstimateView && bill.type === 'sales-bill' && displaySgstAmount > 0 && <p>SGST ({settings.sgstRate}%): <span className="font-semibold">{displaySgstAmount.toFixed(2)}</span></p>}
                 
                 <Separator className="my-1 print:border-gray-400"/>
                 <p className="text-lg font-bold">Total: <span className="text-primary print:text-black">{displayTotalAmount.toFixed(2)}</span></p>

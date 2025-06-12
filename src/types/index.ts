@@ -21,9 +21,8 @@ export interface Settings {
   phoneNumber: string;
   valuables: Valuable[];
   defaultMakingCharge: MakingChargeSetting;
-  netPurchaseMode: 'percentage' | 'fixed_price';
-  netPurchasePercentage: number; // Default net percentage for purchases
-  netPurchaseFixedPrice: number; // Default net fixed price for purchases
+  // Removed: netPurchaseMode, netPurchasePercentage, netPurchaseFixedPrice
+  defaultPurchaseItemNetPercentage: number; // Default net percentage for purchase items if type is 'net_percentage'
   cgstRate: number; // Percentage
   sgstRate: number; // Percentage
   customItemNames: string[]; // For storing unique item names for suggestions
@@ -35,10 +34,15 @@ export interface BillItem {
   name: string; // editable, defaults from Valuable.name, stored for history
   weightOrQuantity: number;
   unit: string; // copied from Valuable.unit
-  rate: number; // price per unit at the time of billing
-  makingCharge?: number; // can be percentage or fixed amount based on context
-  makingChargeType?: 'percentage' | 'fixed';
-  amount: number; // (weightOrQuantity * rate) + makingCharge
+  rate: number; // For sales: price per unit. For purchases (market_rate type): supplier's rate.
+  makingCharge?: number; // can be percentage or fixed amount based on context (Sales only)
+  makingChargeType?: 'percentage' | 'fixed'; // (Sales only)
+  amount: number; // (weightOrQuantity * effective_rate) + makingCharge (for sales)
+
+  // For Purchase Items Only:
+  purchaseNetType?: 'market_rate' | 'net_percentage' | 'fixed_net_price';
+  purchaseNetPercentValue?: number; // Percentage value if type is 'net_percentage'
+  purchaseNetFixedValue?: number;   // Fixed rate if type is 'fixed_net_price' (this becomes the effective rate)
 }
 
 export type BillType = 'purchase' | 'sales-bill';
@@ -60,9 +64,7 @@ export interface Bill {
   sgstAmount?: number;
   totalAmount: number;
   notes?: string;
-  // For purchases specifically
-  purchaseNetApplied?: 'percentage' | 'fixed_price';
-  purchaseNetValueApplied?: number;
+  // Removed: purchaseNetApplied, purchaseNetValueApplied
 }
 
 export const DEFAULT_VALUABLES: Valuable[] = [
@@ -79,9 +81,7 @@ export const DEFAULT_SETTINGS: Settings = {
   phoneNumber: '+1234567890',
   valuables: DEFAULT_VALUABLES,
   defaultMakingCharge: { type: 'percentage', value: 10 },
-  netPurchaseMode: 'percentage',
-  netPurchasePercentage: 10,
-  netPurchaseFixedPrice: 0,
+  defaultPurchaseItemNetPercentage: 10, // Default for item-level purchase net %
   cgstRate: 9,
   sgstRate: 9,
   customItemNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle"], // Initial suggestions
