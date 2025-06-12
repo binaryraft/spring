@@ -15,7 +15,7 @@ export interface MakingChargeSetting {
 }
 
 export interface CurrencyDefinition {
-  symbol: string; // HTML entity or direct character
+  symbol: string; // Direct character like '₹', '$', '€'
   code: string; // e.g., "INR", "USD"
   name: string; // e.g., "Indian Rupee", "US Dollar"
 }
@@ -34,7 +34,7 @@ export interface Settings {
   cgstRate: number; // Percentage
   sgstRate: number; // Percentage
   productNames: string[]; // Stores unique product names for suggestions
-  currencySymbol: string; // Will hold the selected symbol (e.g., '&#x20B9;', '$')
+  currencySymbol: string; // Will hold the selected symbol (e.g., '₹', '$')
   availableCurrencies: CurrencyDefinition[];
 }
 
@@ -90,10 +90,10 @@ export const DEFAULT_VALUABLES: Valuable[] = [
 ];
 
 export const AVAILABLE_CURRENCIES: CurrencyDefinition[] = [
-  { symbol: '&#x20B9;', code: 'INR', name: 'Indian Rupee' }, // Changed to HTML entity
+  { symbol: '₹', code: 'INR', name: 'Indian Rupee' },
   { symbol: '$', code: 'USD', name: 'US Dollar' },
-  { symbol: '&#x20AC;', code: 'EUR', name: 'Euro' }, // Using entity for Euro too for consistency
-  { symbol: '&#x00A3;', code: 'GBP', name: 'British Pound' }, // Using entity for Pound
+  { symbol: '€', code: 'EUR', name: 'Euro' },
+  { symbol: '£', code: 'GBP', name: 'British Pound' },
 ];
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -110,7 +110,6 @@ export const DEFAULT_SETTINGS: Settings = {
   cgstRate: 1.5, // As per Indian standards for gold jewellery
   sgstRate: 1.5, // As per Indian standards for gold jewellery
   productNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle", "Bangles", "Rings", "Necklace"],
-  currencySymbol: '&#x20B9;', // Default to INR HTML entity
+  currencySymbol: '₹', // Default to INR direct character
   availableCurrencies: AVAILABLE_CURRENCIES,
 };
-
