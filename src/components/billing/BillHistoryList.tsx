@@ -27,71 +27,70 @@ interface BillHistoryListProps {
 }
 
 const BillHistoryList: React.FC<BillHistoryListProps> = ({ billType, onEditBill, onViewBill }) => {
-  const { bills, deleteBill } = useAppContext();
+  const { settings, bills, deleteBill } = useAppContext();
 
   const filteredBills = bills.filter(bill => bill.type === billType).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getBillTypeIcon = (type: BillType) => {
     switch (type) {
-      case 'purchase': return <ShoppingCart className="h-4 w-4 text-blue-500" />;
-      // case 'sales-estimate': return <FileText className="h-4 w-4 text-yellow-500" />; // Removed
-      case 'sales-bill': return <FileCheck className="h-4 w-4 text-green-500" />;
+      case 'purchase': return <ShoppingCart className="h-5 w-5 text-blue-500" />;
+      case 'sales-bill': return <FileCheck className="h-5 w-5 text-green-500" />;
       default: return null;
     }
   };
   
   if (filteredBills.length === 0) {
-    return <p className="text-muted-foreground p-4 text-center">No {billType === 'purchase' ? 'purchases' : 'sales'} found.</p>;
+    return <p className="text-muted-foreground p-6 text-center text-lg">No {billType === 'purchase' ? 'purchases' : 'sales'} found.</p>;
   }
 
   return (
-    <div className="mt-6">
-      <h3 className="text-xl font-headline mb-4 text-primary">
+    <div className="mt-8">
+      <h3 className="text-2xl lg:text-3xl font-headline mb-6 text-primary">
         {billType === 'purchase' ? 'Purchase History' : 'Sales Bill History'}
       </h3>
-      <div className="rounded-md border">
+      <div className="rounded-lg border shadow-md overflow-hidden">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="w-[50px]">Type</TableHead>
-              <TableHead>Bill No.</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>{billType === 'purchase' ? 'Supplier' : 'Customer'}</TableHead>
-              <TableHead className="text-right">Total Amount</TableHead>
-              <TableHead className="text-center w-[150px]">Actions</TableHead>
+              <TableHead className="w-[60px] text-base pl-4">Type</TableHead>
+              <TableHead className="text-base">Bill No.</TableHead>
+              <TableHead className="text-base">Date</TableHead>
+              <TableHead className="text-base">{billType === 'purchase' ? 'Supplier' : 'Customer'}</TableHead>
+              <TableHead className="text-right text-base">Total Amount</TableHead>
+              <TableHead className="text-center w-[180px] text-base pr-4">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredBills.map((bill) => (
-              <TableRow key={bill.id}>
-                <TableCell>{getBillTypeIcon(bill.type)}</TableCell>
-                <TableCell className="font-medium">{bill.billNumber || 'N/A'}</TableCell>
-                <TableCell>{format(new Date(bill.date), 'dd/MM/yyyy')}</TableCell>
-                <TableCell>{bill.customerName || 'N/A'}</TableCell>
-                <TableCell className="text-right">{bill.totalAmount.toFixed(2)}</TableCell>
-                <TableCell className="text-center space-x-1">
-                  <Button variant="ghost" size="icon" onClick={() => onViewBill(bill)} title="View Bill">
-                    <Eye className="h-4 w-4" />
+              <TableRow key={bill.id} className="text-base hover:bg-primary/5">
+                <TableCell className="pl-4 py-3">{getBillTypeIcon(bill.type)}</TableCell>
+                <TableCell className="font-medium py-3">{bill.billNumber || 'N/A'}</TableCell>
+                <TableCell className="py-3">{format(new Date(bill.date), 'dd/MM/yyyy')}</TableCell>
+                <TableCell className="py-3">{bill.customerName || 'N/A'}</TableCell>
+                <TableCell className="text-right py-3">{settings.currencySymbol}{bill.totalAmount.toFixed(2)}</TableCell>
+                <TableCell className="text-center space-x-1.5 py-3 pr-4">
+                  <Button variant="ghost" size="icon" onClick={() => onViewBill(bill)} title="View Bill" className="hover:bg-accent/20">
+                    <Eye className="h-5 w-5" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onEditBill(bill)} title="Edit Bill">
-                    <Edit3 className="h-4 w-4 text-accent" />
+                  <Button variant="ghost" size="icon" onClick={() => onEditBill(bill)} title="Edit Bill" className="hover:bg-accent/20">
+                    <Edit3 className="h-5 w-5 text-accent" />
                   </Button>
                    <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" title="Delete Bill">
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                      <Button variant="ghost" size="icon" title="Delete Bill" className="hover:bg-destructive/20">
+                        <Trash2 className="h-5 w-5 text-destructive" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="text-xl">Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-base">
                           This action cannot be undone. This will permanently delete the bill ({bill.billNumber || bill.id}).
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteBill(bill.id)} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogCancel className="text-base px-4 py-2 h-auto">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteBill(bill.id)} className="bg-destructive hover:bg-destructive/90 text-base px-4 py-2 h-auto">
                           Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>

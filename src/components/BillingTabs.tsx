@@ -26,7 +26,6 @@ const BillingTabs: React.FC = () => {
     } else if (savedBill.type === 'purchase') {
       setShowPurchaseForm(false);
     }
-    // Automatically open the bill view modal for printing the saved bill
     handleViewBill(savedBill, false); 
   };
 
@@ -58,14 +57,14 @@ const BillingTabs: React.FC = () => {
   return (
     <div className="container mx-auto py-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6 bg-primary/10 rounded-lg p-1">
-          <TabsTrigger value="sales-bill" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md">Sales</TabsTrigger>
-          <TabsTrigger value="purchase" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md">Purchases</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 mb-8 bg-primary/10 rounded-lg p-1.5 h-auto">
+          <TabsTrigger value="sales-bill" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-md text-lg py-2.5">Sales</TabsTrigger>
+          <TabsTrigger value="purchase" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-md text-lg py-2.5">Purchases</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales-bill">
-          <Card className="bg-card shadow-lg">
-            <CardContent className="p-6">
+          <Card className="bg-card shadow-xl border border-border">
+            <CardContent className="p-6 md:p-8">
               {showSalesForm ? (
                 <BillForm
                   key={editingBill && editingBill.type === 'sales-bill' ? editingBill.id : 'new-sales-bill'}
@@ -77,9 +76,9 @@ const BillingTabs: React.FC = () => {
                 />
               ) : (
                 <>
-                  <div className="flex justify-end mb-4">
-                    <Button onClick={() => { setEditingBill(undefined); setShowSalesForm(true); }} className="shadow-md hover:shadow-lg transition-shadow">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Create Sales Bill
+                  <div className="flex justify-end mb-6">
+                    <Button onClick={() => { setEditingBill(undefined); setShowSalesForm(true); }} className="shadow-md hover:shadow-lg transition-shadow text-base px-5 py-2.5 h-auto">
+                      <PlusCircle className="mr-2 h-5 w-5" /> Create Sales Bill
                     </Button>
                   </div>
                   <BillHistoryList billType="sales-bill" onEditBill={handleEditBill} onViewBill={(bill) => handleViewBill(bill, false)} />
@@ -90,8 +89,8 @@ const BillingTabs: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="purchase">
-           <Card className="bg-card shadow-lg">
-            <CardContent className="p-6">
+           <Card className="bg-card shadow-xl border border-border">
+            <CardContent className="p-6 md:p-8">
               {showPurchaseForm ? (
                 <BillForm
                   key={editingBill && editingBill.type === 'purchase' ? editingBill.id : 'new-purchase'}
@@ -103,9 +102,9 @@ const BillingTabs: React.FC = () => {
                 />
               ) : (
                 <>
-                  <div className="flex justify-end mb-4">
-                    <Button onClick={() => { setEditingBill(undefined); setShowPurchaseForm(true); }} className="shadow-md hover:shadow-lg transition-shadow">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Create Purchase Bill
+                  <div className="flex justify-end mb-6">
+                    <Button onClick={() => { setEditingBill(undefined); setShowPurchaseForm(true); }} className="shadow-md hover:shadow-lg transition-shadow text-base px-5 py-2.5 h-auto">
+                      <PlusCircle className="mr-2 h-5 w-5" /> Create Purchase Bill
                     </Button>
                   </div>
                   <BillHistoryList billType="purchase" onEditBill={handleEditBill} onViewBill={(bill) => handleViewBill(bill, false)} />

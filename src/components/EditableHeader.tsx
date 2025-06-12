@@ -38,38 +38,38 @@ const EditableHeader: React.FC = () => {
 
   if (activeValuables.length === 0) {
     return (
-      <div className="p-6 text-center text-muted-foreground text-sm bg-card rounded-lg shadow-md">
+      <div className="p-6 text-center text-muted-foreground text-base bg-card rounded-lg shadow-md">
         No market prices selected for display. Configure in Settings.
       </div>
     );
   }
   
   return (
-    <div className="mt-6 p-6 rounded-lg bg-card border border-border shadow-lg">
-      <h3 className="text-xl font-semibold text-center mb-6 text-primary">
+    <div className="mt-8 p-6 rounded-lg bg-card border border-border shadow-lg">
+      <h3 className="text-2xl font-semibold text-center mb-8 text-primary">
         Live Market Prices
       </h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-8">
         {activeValuables.map((valuable) => (
-          <div key={valuable.id} className="flex flex-col space-y-1.5 items-center">
-            <Label htmlFor={`price-${valuable.id}`} className="flex items-center text-base font-medium text-foreground">
-              <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-5 h-5 mr-2" />
+          <div key={valuable.id} className="flex flex-col space-y-2 items-center">
+            <Label htmlFor={`price-${valuable.id}`} className="flex items-center text-lg font-medium text-foreground">
+              <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-6 h-6 mr-2.5" />
               {valuable.name}
             </Label>
             <div className="flex items-center">
-              <span className="mr-1 text-sm text-muted-foreground">{settings.currencySymbol}</span>
+              <span className="mr-1.5 text-base text-muted-foreground">{settings.currencySymbol}</span>
               <Input
                 id={`price-${valuable.id}`}
                 type="number"
                 value={editingPrices[valuable.id] ?? valuable.price}
                 onChange={(e) => handlePriceChange(valuable.id, e.target.value)}
                 onBlur={() => handleBlur(valuable.id)}
-                className="w-full border-input focus:ring-primary h-9 text-sm shadow-sm text-center"
+                className="w-full border-input focus:ring-primary h-10 text-base shadow-sm text-center"
                 min="0"
                 step="0.01"
               />
             </div>
-            <p className="text-xs text-muted-foreground text-center">per {valuable.unit}</p>
+            <p className="text-sm text-muted-foreground text-center">per {valuable.unit}</p>
           </div>
         ))}
       </div>

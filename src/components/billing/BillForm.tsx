@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Save, Calculator, FileText, XCircle, Info, Users, ShoppingBag, ListOrdered, StickyNote, Banknote } from 'lucide-react';
+import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, ListOrdered, StickyNote, Banknote } from 'lucide-react';
 import BillItemRow from './BillItemRow';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
@@ -370,50 +370,50 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
   return (
     <Card className="shadow-xl border-primary/20 bg-card">
-      <CardHeader className="pb-4">
-        <CardTitle className="font-headline text-3xl text-primary flex items-center">
-          <Calculator className="mr-3 h-8 w-8" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
+      <CardHeader className="pb-6">
+        <CardTitle className="font-headline text-3xl lg:text-4xl text-primary flex items-center">
+          <Calculator className="mr-3 h-8 w-8 lg:h-9 lg:w-9" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6 pt-4">
+      <CardContent className="space-y-8 pt-2">
         {(isSalesBill || isPurchase) && (
-          <div className="space-y-4 p-6 border border-border rounded-lg bg-background shadow-sm">
-            <h3 className="text-xl font-semibold text-accent mb-4 flex items-center">
-                {isPurchase ? <ShoppingBag className="mr-2 h-6 w-6"/> : <Users className="mr-2 h-6 w-6"/>}
+          <div className="space-y-5 p-6 border border-border rounded-lg bg-background shadow-sm">
+            <h3 className="text-xl lg:text-2xl font-semibold text-accent mb-5 flex items-center">
+                {isPurchase ? <ShoppingBag className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/> : <Users className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/>}
                 {isPurchase ? "Supplier" : "Customer"} Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
                 <div>
-                <Label htmlFor="customerName">{isPurchase ? "Supplier" : "Customer"} Name</Label>
+                <Label htmlFor="customerName" className="text-base">{isPurchase ? "Supplier" : "Customer"} Name</Label>
                 <Input
                     id="customerName"
                     ref={customerNameRef}
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     onKeyDown={(e) => handleCustomerKeyDown(e, customerPhoneRef)}
-                    className="mt-1"
+                    className="mt-1.5 h-11 text-base"
                 />
                 </div>
                 <div>
-                <Label htmlFor="customerPhone">{isPurchase ? "Supplier" : "Customer"} Phone</Label>
+                <Label htmlFor="customerPhone" className="text-base">{isPurchase ? "Supplier" : "Customer"} Phone</Label>
                 <Input
                     id="customerPhone"
                     ref={customerPhoneRef}
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     onKeyDown={(e) => handleCustomerKeyDown(e, customerAddressRef)}
-                    className="mt-1"
+                    className="mt-1.5 h-11 text-base"
                 />
                 </div>
                 <div className="md:col-span-3">
-                <Label htmlFor="customerAddress">{isPurchase ? "Supplier" : "Customer"} Address</Label>
+                <Label htmlFor="customerAddress" className="text-base">{isPurchase ? "Supplier" : "Customer"} Address</Label>
                 <Textarea
                     id="customerAddress"
                     ref={customerAddressRef}
                     value={customerAddress}
                     onChange={(e) => setCustomerAddress(e.target.value)}
                     onKeyDown={(e) => handleCustomerKeyDown(e)} 
-                    className="mt-1"
+                    className="mt-1.5 text-base"
                     rows={2}
                 />
                 </div>
@@ -422,8 +422,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         )}
 
         <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
-          <h3 className="text-xl font-semibold text-accent mb-4 flex items-center"><ListOrdered className="mr-2 h-6 w-6"/>Items</h3>
-           <div className={`py-2 px-3 grid ${isPurchase ? 'grid-cols-12' : 'grid-cols-12'} gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
+          <h3 className="text-xl lg:text-2xl font-semibold text-accent mb-5 flex items-center"><ListOrdered className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/>Items</h3>
+           <div className={`py-2.5 px-3.5 grid ${isPurchase ? 'grid-cols-12' : 'grid-cols-12'} gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
             <div className="col-span-2">Material</div>
             <div className="col-span-3">Product Name</div>
             <div className="col-span-1 text-center">Qty/Wt</div>
@@ -457,57 +457,57 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 />
             ))}
           </div>
-          <Button variant="outline" size="sm" onClick={addItem} className="mt-4 shadow hover:shadow-md transition-shadow">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Item
+          <Button variant="outline" size="default" onClick={addItem} className="mt-5 shadow hover:shadow-md transition-shadow text-base px-5 py-2.5 h-auto">
+            <PlusCircle className="mr-2 h-5 w-5" /> Add Item
           </Button>
         </div>
         
         <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
-            <h3 className="text-xl font-semibold text-accent mb-3 flex items-center"><StickyNote className="mr-2 h-6 w-6"/>Notes</h3>
+            <h3 className="text-xl lg:text-2xl font-semibold text-accent mb-4 flex items-center"><StickyNote className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/>Notes</h3>
             <Textarea
                 id="notes"
                 ref={notesRef}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="shadow-sm"
+                className="shadow-sm text-base"
                 rows={3}
                 placeholder="Any additional notes for the bill..."
             />
         </div>
         
-        <div className="p-6 border-2 border-primary/30 rounded-lg bg-primary/5 space-y-3 text-right shadow-sm">
-          <h3 className="text-xl font-semibold text-primary mb-3 flex items-center justify-end"><Banknote className="mr-2 h-6 w-6"/>Totals</h3>
-          <div className="text-md">Subtotal (Taxable Value): <span className="font-semibold text-lg ml-2">{settings.currencySymbol}{subTotal.toFixed(2)}</span></div>
+        <div className="p-6 border-2 border-primary/30 rounded-lg bg-primary/5 space-y-3.5 text-right shadow-sm">
+          <h3 className="text-xl lg:text-2xl font-semibold text-primary mb-4 flex items-center justify-end"><Banknote className="mr-2.5 h-6 w-6 lg:h-7 lg:w-7"/>Totals</h3>
+          <div className="text-lg">Subtotal (Taxable Value): <span className="font-semibold text-xl ml-2.5">{settings.currencySymbol}{subTotal.toFixed(2)}</span></div>
           {(isSalesBill) && (
             <>
-              <div className="text-md">CGST ({settings.cgstRate}%): <span className="font-semibold text-lg ml-2">{settings.currencySymbol}{billCgstAmount.toFixed(2)}</span></div>
-              <div className="text-md">SGST ({settings.sgstRate}%): <span className="font-semibold text-lg ml-2">{settings.currencySymbol}{billSgstAmount.toFixed(2)}</span></div>
+              <div className="text-lg">CGST ({settings.cgstRate}%): <span className="font-semibold text-xl ml-2.5">{settings.currencySymbol}{billCgstAmount.toFixed(2)}</span></div>
+              <div className="text-lg">SGST ({settings.sgstRate}%): <span className="font-semibold text-xl ml-2.5">{settings.currencySymbol}{billSgstAmount.toFixed(2)}</span></div>
             </>
           )}
-          <Separator className="my-2 bg-primary/20"/>
-          <div className="text-2xl font-bold text-primary">Total: <span className="text-3xl ml-2">{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span></div>
+          <Separator className="my-2.5 bg-primary/20"/>
+          <div className="text-2xl lg:text-3xl font-bold text-primary">Total: <span className="text-3xl lg:text-4xl ml-2.5">{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span></div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between items-center border-t pt-6 mt-4">
-        <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive shadow hover:shadow-md transition-shadow">
-          <XCircle className="mr-2 h-4 w-4" /> Cancel
+      <CardFooter className="flex justify-between items-end border-t pt-6 mt-6">
+        <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive shadow hover:shadow-md transition-shadow text-base px-5 py-2.5 h-auto">
+          <XCircle className="mr-2 h-5 w-5" /> Cancel
         </Button>
-        <div className="flex items-end space-x-3">
+        <div className="flex items-end space-x-4">
           {onShowEstimate && isSalesBill && (
             <div className="flex flex-col items-center">
-                <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent shadow hover:shadow-md transition-shadow w-full">
-                <FileText className="mr-2 h-4 w-4" /> Create Estimate
+                <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent shadow hover:shadow-md transition-shadow text-base px-5 py-2.5 h-auto w-full">
+                <FileText className="mr-2 h-5 w-5" /> Create Estimate
                 </Button>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground mt-1.5">
                     Est. Total: {settings.currencySymbol}{subTotal.toFixed(2)}
                 </p>
             </div>
           )}
            <div className="flex flex-col items-center">
-                <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow w-full">
-                <Save className="mr-2 h-4 w-4" /> {existingBill ? 'Update' : 'Save'} & Print Bill
+                <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-base px-5 py-2.5 h-auto w-full">
+                <Save className="mr-2 h-5 w-5" /> {existingBill ? 'Update' : 'Save'} & Print Bill
                 </Button>
-                <p className="text-xs text-primary-foreground/80 mt-1 bg-primary/80 px-2 py-0.5 rounded">
+                 <p className="text-sm text-primary-foreground/90 mt-1.5 bg-primary/90 px-2.5 py-1 rounded">
                     Bill Total: {settings.currencySymbol}{finalTotalAmount.toFixed(2)}
                 </p>
             </div>
