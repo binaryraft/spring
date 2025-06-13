@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import type { Bill, BillItem } from '@/types';
@@ -88,8 +89,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
     const logoImageHtml = company.showCompanyLogo
       ? company.companyLogo
-        ? `<img src="${company.companyLogo}" alt="${company.companyName} Logo" style="max-width: 80px; max-height: 50px; object-fit: contain; display: inline-block;" />`
-        : `<div style="width: 80px; height: 50px; border: 1px solid ${tableBorderColor}; display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center; font-size: 8pt; color: ${companyDetailsColor}; box-sizing: border-box;">Logo</div>`
+        ? `<img src="${company.companyLogo}" alt="${company.companyName} Logo" style="max-width: 70px; max-height: 45px; object-fit: contain; display: inline-block;" />`
+        : `<div style="width: 70px; height: 45px; border: 1px solid ${tableBorderColor}; display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center; font-size: 8pt; color: ${companyDetailsColor}; box-sizing: border-box;">Logo</div>`
       : '';
     
     const getNameAndDetailsHtml = (textAlign: 'center' | 'left') => `
@@ -105,7 +106,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       case 'top-left':
         companyHeaderHtml = `
           <div class="bill-company-header" style="margin-bottom: 15px; text-align: left;">
-            ${logoImageHtml ? `<div style="margin-bottom: 6px;">${logoImageHtml}</div>` : ''}
+            ${logoImageHtml ? `<div style="margin-bottom: 6px; line-height: 0;">${logoImageHtml}</div>` : ''}
             <div style="${logoImageHtml ? '' : 'margin-top: 10px;'}">
              ${getNameAndDetailsHtml('left')}
             </div>
@@ -367,7 +368,31 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         
         pdf.addImage(imgData, 'PNG', x, y, finalPdfImgWidth, finalPdfImgHeight);
         
-        pdf.output('dataurlnewwindow');
+        const pdfDataUri = pdf.output('datauristring');
+
+        if (pdfDataUri.length < 1000) { // Basic check for a very small (likely empty) PDF
+            console.error("Generated PDF data URI is suspiciously small:", pdfDataUri);
+            alert("Error: Generated PDF seems to be empty or very small. Please check console for details.");
+            if (captureWrapper.parentNode === document.body) {
+                document.body.removeChild(captureWrapper);
+            }
+            document.body.classList.remove('print-capture-active');
+            setIsGeneratingPdf(false);
+            return;
+        }
+
+        const newWindow = window.open("", "_blank"); 
+        if (newWindow) {
+            newWindow.document.open();
+            newWindow.document.write(
+                `<html><head><title>Print Bill</title></head><body style="margin:0; padding:0; overflow:hidden;">` +
+                `<iframe width="100%" height="100%" style="border:none;" src="${pdfDataUri}"></iframe>` +
+                `</body></html>`
+            );
+            newWindow.document.close(); 
+        } else {
+            alert('Failed to open a new window for printing. Please check your pop-up blocker settings.');
+        }
 
     } catch (error) {
         console.error("Error generating PDF:", error);
@@ -572,3 +597,5 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
+
+    
