@@ -1,7 +1,7 @@
 
 "use client";
 import { useAppContext } from "@/contexts/AppContext";
-import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition } from "@/types";
+import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition, PdfLogoPosition } from "@/types";
 import { AVAILABLE_ICONS, AVAILABLE_CURRENCIES } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, Upload, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, FileText as GstinIcon, Paintbrush } from "lucide-react"; 
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, Upload, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, FileText as GstinIcon, Paintbrush, LayoutDashboard } from "lucide-react"; 
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "./ValuableIcon";
@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 
 
 const SettingsPanel: React.FC = () => {
-  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol, addValuable, updateValuableData, removeValuable: removeValuableFromContext, toggleEnableColorBilling } = useAppContext();
+  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol, addValuable, updateValuableData, removeValuable: removeValuableFromContext, toggleEnableColorBilling, updatePdfLogoPosition } = useAppContext();
   const [localSettings, setLocalSettings] = useState<Settings>(() => JSON.parse(JSON.stringify(settings))); 
   const [newProductName, setNewProductName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -195,6 +195,7 @@ const SettingsPanel: React.FC = () => {
     updateSettings(localSettings); 
     updateCurrencySymbol(localSettings.currencySymbol);
     toggleEnableColorBilling(localSettings.enableColorBilling); 
+    updatePdfLogoPosition(localSettings.pdfLogoPosition);
     
     localSettings.valuables.forEach(val => {
       const originalValInContext = settings.valuables.find(v => v.id === val.id);
@@ -303,9 +304,8 @@ const SettingsPanel: React.FC = () => {
                     <div className="flex items-center space-x-3.5 p-3.5 bg-muted/30 rounded-md">
                         <Checkbox
                             id="showCompanyLogo"
-                            checked={settings.showCompanyLogo} 
+                            checked={localSettings.showCompanyLogo} 
                             onCheckedChange={(checked) => {
-                                toggleShowCompanyLogo(!!checked); 
                                 handleChange('showCompanyLogo', !!checked); 
                             }}
                             className="w-5 h-5"
@@ -314,7 +314,7 @@ const SettingsPanel: React.FC = () => {
                             Show company logo on bills & estimates
                         </Label>
                     </div>
-                    {settings.showCompanyLogo && (
+                    {localSettings.showCompanyLogo && (
                         <div className="mt-3.5 space-y-3.5 p-4 border rounded-md">
                             <Input
                                 id="logoUpload"
@@ -324,17 +324,36 @@ const SettingsPanel: React.FC = () => {
                                 ref={fileInputRef}
                                 className="text-lg file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-base file:bg-primary/10 file:text-primary hover:file:bg-primary/20 h-12"
                             />
-                            {settings.companyLogo && (
+                            {localSettings.companyLogo && (
                                 <div className="mt-2.5 p-3.5 border rounded-md bg-muted/50 inline-flex flex-col items-center shadow-sm">
-                                    <Image src={settings.companyLogo} alt="Company Logo Preview" width={160} height={160} className="object-contain rounded" />
+                                    <Image src={localSettings.companyLogo} alt="Company Logo Preview" width={160} height={160} className="object-contain rounded" />
                                     <Button variant="link" size="sm" onClick={handleRemoveLogo} className="text-destructive hover:text-destructive-foreground hover:bg-destructive mt-2.5 text-base px-3 py-1.5 h-auto">
                                       <XCircle className="mr-1.5 h-4 w-4" /> Remove Logo
                                     </Button>
                                 </div>
                             )}
-                            {!settings.companyLogo && (
+                            {!localSettings.companyLogo && (
                                 <p className="text-base text-muted-foreground mt-1.5 italic">No logo uploaded. A default placeholder will be used if enabled.</p>
                             )}
+                             <div className="mt-4">
+                                <Label htmlFor="pdfLogoPosition" className="text-lg">PDF Logo Position</Label>
+                                <Select
+                                    value={localSettings.pdfLogoPosition}
+                                    onValueChange={(value: PdfLogoPosition) => handleChange('pdfLogoPosition', value)}
+                                >
+                                    <SelectTrigger id="pdfLogoPosition" className="mt-1.5 h-12 text-lg">
+                                        <SelectValue placeholder="Select logo position" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="top-center" className="text-lg py-2.5">Top Center</SelectItem>
+                                        <SelectItem value="top-left" className="text-lg py-2.5">Top Left</SelectItem>
+                                        <SelectItem value="inline-left" className="text-lg py-2.5">Inline (Left of Name)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-base text-muted-foreground mt-2 italic">
+                                    Choose where the company logo appears on generated PDF documents.
+                                </p>
+                            </div>
                         </div>
                     )}
                      <div className="flex items-center space-x-3.5 p-3.5 bg-muted/30 rounded-md mt-4">
@@ -666,5 +685,3 @@ const SettingsPanel: React.FC = () => {
 };
 
 export default SettingsPanel;
-
-    

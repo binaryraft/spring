@@ -21,6 +21,8 @@ export interface CurrencyDefinition {
   name: string; 
 }
 
+export type PdfLogoPosition = 'top-center' | 'top-left' | 'inline-left';
+
 export interface Settings {
   companyName: string;
   slogan: string;
@@ -39,7 +41,8 @@ export interface Settings {
   currencySymbol: string; 
   availableCurrencies: CurrencyDefinition[];
   theme: 'light' | 'dark';
-  enableColorBilling: boolean; // New setting for color billing
+  enableColorBilling: boolean;
+  pdfLogoPosition: PdfLogoPosition; 
 }
 
 export interface BillItem {
@@ -125,7 +128,8 @@ export const DEFAULT_SETTINGS: Settings = {
   currencySymbol: '₹', 
   availableCurrencies: AVAILABLE_CURRENCIES,
   theme: 'light',
-  enableColorBilling: false, // Default to monochrome
+  enableColorBilling: false,
+  pdfLogoPosition: 'top-center', 
 };
 
 export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = [
@@ -140,4 +144,3 @@ export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = 
     { value: 'custom-gem', label: 'Custom Gem (Specify Color)' },
     { value: 'other', label: 'Other/Generic' },
 ];
-

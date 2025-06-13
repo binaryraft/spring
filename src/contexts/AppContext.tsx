@@ -2,7 +2,7 @@
 "use client";
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { Settings, Valuable, Bill, BillItem, BillType, CurrencyDefinition } from '@/types';
+import type { Settings, Valuable, Bill, BillItem, BillType, CurrencyDefinition, PdfLogoPosition } from '@/types';
 import { DEFAULT_SETTINGS, AVAILABLE_CURRENCIES } from '@/types';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,7 +28,8 @@ interface AppContextType {
   toggleShowCompanyLogo: (show: boolean) => void;
   updateCurrencySymbol: (symbol: string) => void;
   toggleTheme: () => void;
-  toggleEnableColorBilling: (enable: boolean) => void; // Added for color billing
+  toggleEnableColorBilling: (enable: boolean) => void;
+  updatePdfLogoPosition: (position: PdfLogoPosition) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -187,6 +188,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => ({ ...prev, enableColorBilling: enable }));
   }, [setSettings]);
 
+  const updatePdfLogoPosition = useCallback((position: PdfLogoPosition) => {
+    setSettings(prev => ({ ...prev, pdfLogoPosition: position }));
+  }, [setSettings]);
+
+
   return (
     <AppContext.Provider value={{
       settings,
@@ -207,7 +213,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       toggleShowCompanyLogo,
       updateCurrencySymbol,
       toggleTheme,
-      toggleEnableColorBilling, // Provide the new function
+      toggleEnableColorBilling,
+      updatePdfLogoPosition,
     }}>
       {children}
     </AppContext.Provider>
@@ -221,4 +228,3 @@ export const useAppContext = (): AppContextType => {
   }
   return context;
 };
-

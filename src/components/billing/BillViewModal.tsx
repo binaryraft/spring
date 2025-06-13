@@ -77,19 +77,62 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   const generatePdfHtml = (): string => {
     const useColor = settings.enableColorBilling;
-    const primaryColor = useColor ? '#D4AF37' : '#000000';
-    const secondaryColor = useColor ? '#5D503C' : '#000000'; // Dark muted brown for text on light color bg
-    const tableHeaderBg = useColor ? '#FFF9F0' : '#e0e0e0'; // Very light gold vs gray
-    const tableBorderColor = useColor ? '#E0C9A8' : '#333333'; // Softer gold-beige border vs dark gray
-    const defaultTextColor = '#000000';
+    const primaryColor = useColor ? '#D4AF37' : '#000000'; // Deep Gold or Black
+    const secondaryColor = useColor ? '#5D503C' : '#000000'; // Dark Muted Brown or Black (for text on light colored bg)
+    const tableHeaderBg = useColor ? '#FFF9F0' : '#e0e0e0'; // Very Light Gold/Beige or Light Gray
+    const tableBorderColor = useColor ? '#E0C9A8' : '#333333'; // Softer Gold-Beige or Dark Gray
+    const defaultTextColor = '#000000'; // Always black for default text for contrast
 
-    const logoHtml = company.showCompanyLogo 
-      ? company.companyLogo 
-        ? `<img src="${company.companyLogo}" alt="${company.companyName} Logo" style="max-width: 70px; max-height: 35px; object-fit: contain; margin-bottom: 5px;" />` 
-        : `<div style="width: 60px; height: 30px; border: 1px solid ${tableBorderColor}; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; font-size: 7pt; color: ${secondaryColor};">Logo</div>`
+    const companyNameColor = useColor ? primaryColor : defaultTextColor;
+    const companyDetailsColor = useColor ? secondaryColor : defaultTextColor;
+    const billTypeHeadingColor = useColor ? primaryColor : defaultTextColor;
+
+    const logoImageHtml = company.showCompanyLogo
+      ? company.companyLogo
+        ? `<img src="${company.companyLogo}" alt="${company.companyName} Logo" style="max-width: 70px; max-height: 45px; object-fit: contain;" />`
+        : `<div style="width: 70px; height: 45px; border: 1px solid ${tableBorderColor}; display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center; font-size: 7pt; color: ${secondaryColor}; box-sizing: border-box;">Logo</div>`
       : '';
     
-    const companyGstinDisplay = (!isEstimateView && bill.companyGstin) ? `<p style="font-size: 7.5pt; margin: 0 0 2px 0; color: ${defaultTextColor};">GSTIN: ${bill.companyGstin}</p>` : '';
+    const getNameAndDetailsHtml = (textAlign: 'center' | 'left') => `
+        <h1 style="font-family: 'Playfair Display', serif; font-size: 16pt; margin: 0 0 3px 0; color: ${companyNameColor}; text-align: ${textAlign};">${company.companyName}</h1>
+        ${company.slogan ? `<p style="font-size: 8pt; margin: 0 0 3px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.slogan}</p>` : ''}
+        <p style="font-size: 7.5pt; margin: 0 0 1px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.address}</p>
+        <p style="font-size: 7.5pt; margin: 0 0 1px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">Phone: ${company.phoneNumber}</p>
+        ${(!isEstimateView && bill.companyGstin) ? `<p style="font-size: 7.5pt; margin: 0 0 2px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">GSTIN: ${bill.companyGstin}</p>` : ''}
+    `;
+
+    let companyHeaderHtml = '';
+    switch (settings.pdfLogoPosition) {
+      case 'top-left':
+        companyHeaderHtml = `
+          <div class="bill-company-header" style="margin-bottom: 12px; text-align: left;">
+            ${logoImageHtml ? `<div style="margin-bottom: 5px;">${logoImageHtml}</div>` : ''}
+            <div style="${logoImageHtml ? '' : 'margin-top: 10px;'}">
+             ${getNameAndDetailsHtml('left')}
+            </div>
+          </div>
+        `;
+        break;
+      case 'inline-left':
+        companyHeaderHtml = `
+          <div class="bill-company-header" style="display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; margin-bottom: 12px;">
+            ${logoImageHtml ? `<div style="margin-right: 10px; -ms-flex-negative: 0; flex-shrink: 0;">${logoImageHtml}</div>` : ''}
+            <div style="-webkit-box-flex: 1; -ms-flex-positive: 1; flex-grow: 1; text-align: left;">
+              ${getNameAndDetailsHtml('left')}
+            </div>
+          </div>
+        `;
+        break;
+      case 'top-center':
+      default:
+        companyHeaderHtml = `
+          <div class="bill-company-header" style="text-align: center; margin-bottom: 12px;">
+            ${logoImageHtml ? `<div style="margin-bottom: 5px;">${logoImageHtml}</div>` : ''}
+            ${getNameAndDetailsHtml('center')}
+          </div>
+        `;
+        break;
+    }
 
     const itemsHtml = bill.items.map((item, index) => {
       const valuableDetails = getValuableById(item.valuableId);
@@ -155,16 +198,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     return `
     <div id="bill-content-for-pdf" style="font-family: 'PT Sans', Arial, sans-serif; color: ${defaultTextColor}; width: 100%; max-width: 794px; margin: 0 auto; padding: 8px; background-color: #ffffff; border: 1px solid #ccc; box-sizing: border-box;">
         
-        <div class="bill-company-header" style="text-align: center; margin-bottom: 12px;">
-          ${logoHtml}
-          <h1 style="font-family: 'Playfair Display', serif; font-size: 16pt; margin: 0 0 3px 0; color: ${primaryColor};">${company.companyName}</h1>
-          ${company.slogan ? `<p style="font-size: 8pt; margin: 0 0 3px 0; color: ${defaultTextColor};">${company.slogan}</p>` : ''}
-          <p style="font-size: 7.5pt; margin: 0 0 1px 0; color: ${defaultTextColor};">${company.address}</p>
-          <p style="font-size: 7.5pt; margin: 0 0 1px 0; color: ${defaultTextColor};">Phone: ${company.phoneNumber}</p>
-          ${companyGstinDisplay}
-        </div>
+        ${companyHeaderHtml}
 
-        <h2 class="bill-type-heading" style="font-family: 'Playfair Display', serif; font-size: 12pt; text-align: center; margin: 10px 0; font-weight: 500; text-transform: uppercase; border-top: 1px solid ${useColor ? primaryColor : defaultTextColor}; border-bottom: 1px solid ${useColor ? primaryColor : defaultTextColor}; padding: 3px 0; color: ${primaryColor};">${effectiveBillType}</h2>
+        <h2 class="bill-type-heading" style="font-family: 'Playfair Display', serif; font-size: 12pt; text-align: center; margin: 10px 0; font-weight: 500; text-transform: uppercase; border-top: 1px solid ${billTypeHeadingColor}; border-bottom: 1px solid ${billTypeHeadingColor}; padding: 3px 0; color: ${billTypeHeadingColor};">${effectiveBillType}</h2>
         
         <table class="bill-meta-grid" style="width: 100%; margin-bottom: 10px; font-size: 7.5pt;">
           <tr>
