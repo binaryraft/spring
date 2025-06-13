@@ -3,7 +3,7 @@ import './globals.css';
 // import { Toaster } from "@/components/ui/toaster"; // Toaster removed
 
 export const metadata: Metadata = {
-  title: 'Goldsmith Buddy',
+  title: 'Billing',
   description: 'Manage your gold, silver, and diamond business with ease.',
 };
 
