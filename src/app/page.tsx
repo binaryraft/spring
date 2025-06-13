@@ -35,7 +35,8 @@ function PageContent() {
         <SettingsPanel />
       </div>
       
-      <header className="container mx-auto px-4 pt-12 sm:pt-16 md:pt-20 pb-4 max-w-screen-xl">
+      {/* Header for company name and market prices - retains centering and max-width */}
+      <header className="container mx-auto px-4 pb-4 max-w-screen-xl">
         <div className="text-center mb-8 py-8 rounded-lg bg-primary/10 shadow-md">
           <h1 className="text-5xl lg:text-6xl font-headline text-primary tracking-tight mb-3">
             {settings.companyName || "Goldsmith Buddy"}
@@ -46,9 +47,12 @@ function PageContent() {
         </div>
         <EditableHeader />
       </header>
-      <main className="flex-grow container mx-auto px-4 pb-8 max-w-screen-xl">
+
+      {/* Main content for BillingTabs - now uses w-full */}
+      <main className="flex-grow w-full px-4 pb-8">
         <BillingTabs />
       </main>
+
       <footer className="text-center p-6 text-base text-muted-foreground border-t mt-auto bg-card">
         © {new Date().getFullYear()} {settings.companyName || "Goldsmith Buddy"}. All rights reserved.
       </footer>

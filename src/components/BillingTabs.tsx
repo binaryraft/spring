@@ -58,7 +58,7 @@ const BillingTabs: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="w-full py-8"> {/* Changed: container mx-auto removed, w-full added */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-8 bg-primary/10 rounded-lg p-1.5 h-auto">
           <TabsTrigger value="sales-bill" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg rounded-md text-lg py-3">Sales</TabsTrigger>
@@ -67,7 +67,7 @@ const BillingTabs: React.FC = () => {
 
         <TabsContent value="sales-bill">
           <Card className="bg-card shadow-xl border border-border">
-            <CardContent className="px-3 py-6 md:px-4 md:py-8">
+            <CardContent className="px-3 py-6 md:px-4 md:py-8"> {/* Padding adjusted in previous step, confirm it's suitable */}
               {showSalesForm ? (
                 <BillForm
                   key={editingBill && editingBill.type === 'sales-bill' ? editingBill.id : 'new-sales-bill'}
@@ -92,7 +92,7 @@ const BillingTabs: React.FC = () => {
 
         <TabsContent value="purchase">
            <Card className="bg-card shadow-xl border border-border">
-            <CardContent className="px-3 py-6 md:px-4 md:py-8">
+            <CardContent className="px-3 py-6 md:px-4 md:py-8"> {/* Padding adjusted in previous step, confirm it's suitable */}
               {showPurchaseForm ? (
                 <BillForm
                   key={editingBill && editingBill.type === 'purchase' ? editingBill.id : 'new-purchase'}
