@@ -28,6 +28,7 @@ interface AppContextType {
   toggleShowCompanyLogo: (show: boolean) => void;
   updateCurrencySymbol: (symbol: string) => void;
   toggleTheme: () => void;
+  toggleEnableColorBilling: (enable: boolean) => void; // Added for color billing
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -149,14 +150,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       id: uuidv4(),
       date: new Date().toISOString(),
       billNumber: `${prefix}-${nextBillNumber}`,
-      companyGstin: settings.gstin || undefined, // Save current company GSTIN with the bill
+      companyGstin: settings.gstin || undefined, 
     };
     setBills(prev => [newBill, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     return newBill;
   }, [bills, setBills, settings.gstin]);
 
   const updateBill = useCallback((updatedBill: Bill) => {
-    // Ensure GSTIN is preserved or updated if it was already there
     setBills(prev => prev.map(b => b.id === updatedBill.id ? { ...updatedBill, companyGstin: updatedBill.companyGstin || b.companyGstin } : b).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }, [setBills]);
 
@@ -183,6 +183,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }));
   }, [setSettings]);
 
+  const toggleEnableColorBilling = useCallback((enable: boolean) => {
+    setSettings(prev => ({ ...prev, enableColorBilling: enable }));
+  }, [setSettings]);
 
   return (
     <AppContext.Provider value={{
@@ -204,6 +207,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       toggleShowCompanyLogo,
       updateCurrencySymbol,
       toggleTheme,
+      toggleEnableColorBilling, // Provide the new function
     }}>
       {children}
     </AppContext.Provider>

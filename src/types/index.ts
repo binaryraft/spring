@@ -26,7 +26,7 @@ export interface Settings {
   slogan: string;
   address: string;
   phoneNumber: string;
-  gstin?: string; // Added GSTIN
+  gstin?: string; 
   companyLogo?: string; 
   showCompanyLogo: boolean;
   valuables: Valuable[];
@@ -39,6 +39,7 @@ export interface Settings {
   currencySymbol: string; 
   availableCurrencies: CurrencyDefinition[];
   theme: 'light' | 'dark';
+  enableColorBilling: boolean; // New setting for color billing
 }
 
 export interface BillItem {
@@ -80,7 +81,7 @@ export interface Bill {
   sgstAmount?: number; 
   totalAmount: number; 
   notes?: string;
-  companyGstin?: string; // Added to store GSTIN with the bill
+  companyGstin?: string; 
 }
 
 export const DEFAULT_VALUABLES: Valuable[] = [
@@ -111,7 +112,7 @@ export const DEFAULT_SETTINGS: Settings = {
   slogan: 'Quality you can trust',
   address: '123 Main St, City, Country',
   phoneNumber: '+1234567890',
-  gstin: '', // Default GSTIN
+  gstin: '', 
   companyLogo: undefined,
   showCompanyLogo: true,
   valuables: DEFAULT_VALUABLES,
@@ -124,6 +125,7 @@ export const DEFAULT_SETTINGS: Settings = {
   currencySymbol: '₹', 
   availableCurrencies: AVAILABLE_CURRENCIES,
   theme: 'light',
+  enableColorBilling: false, // Default to monochrome
 };
 
 export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = [

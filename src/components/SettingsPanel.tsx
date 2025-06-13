@@ -20,7 +20,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, Upload, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, FileText as GstinIcon } from "lucide-react"; // Added GstinIcon
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, Upload, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, FileText as GstinIcon, Paintbrush } from "lucide-react"; 
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "./ValuableIcon";
@@ -31,8 +31,8 @@ import { useToast } from "@/hooks/use-toast";
 
 
 const SettingsPanel: React.FC = () => {
-  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol, addValuable, updateValuableData, removeValuable: removeValuableFromContext } = useAppContext();
-  const [localSettings, setLocalSettings] = useState<Settings>(() => JSON.parse(JSON.stringify(settings))); // Deep copy
+  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol, addValuable, updateValuableData, removeValuable: removeValuableFromContext, toggleEnableColorBilling } = useAppContext();
+  const [localSettings, setLocalSettings] = useState<Settings>(() => JSON.parse(JSON.stringify(settings))); 
   const [newProductName, setNewProductName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -194,6 +194,7 @@ const SettingsPanel: React.FC = () => {
   const handleSaveAllSettings = () => {
     updateSettings(localSettings); 
     updateCurrencySymbol(localSettings.currencySymbol);
+    toggleEnableColorBilling(localSettings.enableColorBilling); 
     
     localSettings.valuables.forEach(val => {
       const originalValInContext = settings.valuables.find(v => v.id === val.id);
@@ -227,7 +228,6 @@ const SettingsPanel: React.FC = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        {/* Removed fixed positioning from here */}
         <Button variant="outline" size="icon" className="shadow-lg hover:shadow-xl transition-shadow bg-card hover:bg-muted">
           <SettingsIcon className="h-6 w-6" />
           <span className="sr-only">Open Settings</span>
@@ -298,7 +298,7 @@ const SettingsPanel: React.FC = () => {
             <Separator />
 
             <section>
-                <SectionHeader title="Company Logo" icon={Upload} />
+                <SectionHeader title="Company Logo & Print Options" icon={Paintbrush} />
                 <div className="space-y-5">
                     <div className="flex items-center space-x-3.5 p-3.5 bg-muted/30 rounded-md">
                         <Checkbox
@@ -337,6 +337,22 @@ const SettingsPanel: React.FC = () => {
                             )}
                         </div>
                     )}
+                     <div className="flex items-center space-x-3.5 p-3.5 bg-muted/30 rounded-md mt-4">
+                        <Checkbox
+                            id="enableColorBilling"
+                            checked={localSettings.enableColorBilling} 
+                            onCheckedChange={(checked) => {
+                                handleChange('enableColorBilling', !!checked); 
+                            }}
+                            className="w-5 h-5"
+                        />
+                        <Label htmlFor="enableColorBilling" className="text-lg font-medium leading-none cursor-pointer">
+                            Enable Colour PDF Bills & Estimates
+                        </Label>
+                    </div>
+                     <p className="text-base text-muted-foreground mt-1.5 italic">
+                        When enabled, PDFs will use theme colors. Otherwise, they will be monochrome.
+                    </p>
                 </div>
             </section>
             <Separator />
