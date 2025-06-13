@@ -51,6 +51,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   const company = settings;
   const currency = settings.currencySymbol;
+  const pdfCurrencyDisplay = currency === '₹' ? 'Rs. ' : currency;
 
   let effectiveBillType = '';
   if (isEstimateView) {
@@ -77,11 +78,11 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   const generatePdfHtml = (): string => {
     const useColor = settings.enableColorBilling;
-    const primaryColor = useColor ? '#D4AF37' : '#000000'; // Deep Gold or Black
-    const secondaryColor = useColor ? '#5D503C' : '#000000'; // Dark Muted Brown or Black (for text on light colored bg)
-    const tableHeaderBg = useColor ? '#FFF9F0' : '#e0e0e0'; // Very Light Gold/Beige or Light Gray
-    const tableBorderColor = useColor ? '#E0C9A8' : '#333333'; // Softer Gold-Beige or Dark Gray
-    const defaultTextColor = '#000000'; // Always black for default text for contrast
+    const primaryColor = useColor ? '#D4AF37' : '#000000'; 
+    const secondaryColor = useColor ? '#5D503C' : '#000000'; 
+    const tableHeaderBg = useColor ? '#F8F6F0' : '#E8E8E8'; // Lighter beige / Light Gray
+    const tableBorderColor = useColor ? '#D4C8B8' : '#444444'; // Softer Gold-Beige / Dark Gray
+    const defaultTextColor = '#000000';
 
     const companyNameColor = useColor ? primaryColor : defaultTextColor;
     const companyDetailsColor = useColor ? secondaryColor : defaultTextColor;
@@ -89,24 +90,24 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
     const logoImageHtml = company.showCompanyLogo
       ? company.companyLogo
-        ? `<img src="${company.companyLogo}" alt="${company.companyName} Logo" style="max-width: 70px; max-height: 45px; object-fit: contain;" />`
-        : `<div style="width: 70px; height: 45px; border: 1px solid ${tableBorderColor}; display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center; font-size: 7pt; color: ${secondaryColor}; box-sizing: border-box;">Logo</div>`
+        ? `<img src="${company.companyLogo}" alt="${company.companyName} Logo" style="max-width: 80px; max-height: 50px; object-fit: contain; display: inline-block;" />`
+        : `<div style="width: 80px; height: 50px; border: 1px solid ${tableBorderColor}; display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center; font-size: 8pt; color: ${secondaryColor}; box-sizing: border-box;">Logo</div>`
       : '';
     
     const getNameAndDetailsHtml = (textAlign: 'center' | 'left') => `
-        <h1 style="font-family: 'Playfair Display', serif; font-size: 16pt; margin: 0 0 3px 0; color: ${companyNameColor}; text-align: ${textAlign};">${company.companyName}</h1>
-        ${company.slogan ? `<p style="font-size: 8pt; margin: 0 0 3px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.slogan}</p>` : ''}
-        <p style="font-size: 7.5pt; margin: 0 0 1px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.address}</p>
-        <p style="font-size: 7.5pt; margin: 0 0 1px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">Phone: ${company.phoneNumber}</p>
-        ${(!isEstimateView && bill.companyGstin) ? `<p style="font-size: 7.5pt; margin: 0 0 2px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">GSTIN: ${bill.companyGstin}</p>` : ''}
+        <h1 style="font-family: 'Playfair Display', serif; font-size: 20pt; margin: 0 0 4px 0; color: ${companyNameColor}; text-align: ${textAlign}; line-height: 1.2;">${company.companyName}</h1>
+        ${company.slogan ? `<p style="font-size: 8.5pt; margin: 0 0 4px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.slogan}</p>` : ''}
+        <p style="font-size: 8pt; margin: 0 0 2px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.address}</p>
+        <p style="font-size: 8pt; margin: 0 0 2px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">Phone: ${company.phoneNumber}</p>
+        ${(!isEstimateView && bill.companyGstin) ? `<p style="font-size: 8pt; margin: 0 0 3px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">GSTIN: ${bill.companyGstin}</p>` : ''}
     `;
 
     let companyHeaderHtml = '';
     switch (settings.pdfLogoPosition) {
       case 'top-left':
         companyHeaderHtml = `
-          <div class="bill-company-header" style="margin-bottom: 12px; text-align: left;">
-            ${logoImageHtml ? `<div style="margin-bottom: 5px;">${logoImageHtml}</div>` : ''}
+          <div class="bill-company-header" style="margin-bottom: 15px; text-align: left;">
+            ${logoImageHtml ? `<div style="margin-bottom: 6px;">${logoImageHtml}</div>` : ''}
             <div style="${logoImageHtml ? '' : 'margin-top: 10px;'}">
              ${getNameAndDetailsHtml('left')}
             </div>
@@ -115,8 +116,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         break;
       case 'inline-left':
         companyHeaderHtml = `
-          <div class="bill-company-header" style="display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; margin-bottom: 12px;">
-            ${logoImageHtml ? `<div style="margin-right: 10px; -ms-flex-negative: 0; flex-shrink: 0;">${logoImageHtml}</div>` : ''}
+          <div class="bill-company-header" style="display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; margin-bottom: 15px;">
+            ${logoImageHtml ? `<div style="margin-right: 12px; -ms-flex-negative: 0; flex-shrink: 0;">${logoImageHtml}</div>` : ''}
             <div style="-webkit-box-flex: 1; -ms-flex-positive: 1; flex-grow: 1; text-align: left;">
               ${getNameAndDetailsHtml('left')}
             </div>
@@ -126,8 +127,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       case 'top-center':
       default:
         companyHeaderHtml = `
-          <div class="bill-company-header" style="text-align: center; margin-bottom: 12px;">
-            ${logoImageHtml ? `<div style="margin-bottom: 5px;">${logoImageHtml}</div>` : ''}
+          <div class="bill-company-header" style="text-align: center; margin-bottom: 15px;">
+            ${logoImageHtml ? `<div style="margin-bottom: 6px; line-height: 0;">${logoImageHtml}</div>` : ''}
             ${getNameAndDetailsHtml('center')}
           </div>
         `;
@@ -152,19 +153,19 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       }
 
       return `
-        <tr style="font-size: 7.5pt; page-break-inside: avoid; color: ${defaultTextColor};">
-          <td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: center;">${index + 1}</td>
-          <td style="border: 1px solid ${tableBorderColor}; padding: 3px;">${item.name} ${valuableDetails ? `(${valuableDetails.name})` : ''}</td>
-          ${showHsnInPdf ? `<td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: center;">${item.hsnCode || '-'}</td>` : (bill.type === 'sales-bill' && !isEstimateView && bill.type !== 'purchase' ? `<td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: center;">-</td>` : '')}
-          <td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: right;">${item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} ${item.unit}</td>
-          <td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: right;">${currency}${effectiveRate.toFixed(2)}</td>
-          ${bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0) ? `<td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : currency + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
-          ${showItemGstCols ? `<td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: right;">${currency}${taxableAmount.toFixed(2)}</td>` : ''}
+        <tr style="font-size: 8pt; page-break-inside: avoid; color: ${defaultTextColor};">
+          <td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: center;">${index + 1}</td>
+          <td style="border: 1px solid ${tableBorderColor}; padding: 4px;">${item.name} ${valuableDetails ? `(${valuableDetails.name})` : ''}</td>
+          ${showHsnInPdf ? `<td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: center;">${item.hsnCode || '-'}</td>` : (bill.type === 'sales-bill' && !isEstimateView && bill.type !== 'purchase' ? `<td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: center;">-</td>` : '')}
+          <td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right;">${item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} ${item.unit}</td>
+          <td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right;">${pdfCurrencyDisplay}${effectiveRate.toFixed(2)}</td>
+          ${bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0) ? `<td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : pdfCurrencyDisplay + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
+          ${showItemGstCols ? `<td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right;">${pdfCurrencyDisplay}${taxableAmount.toFixed(2)}</td>` : ''}
           ${showItemGstCols ? `
-            <td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: right;">${currency}${itemCgst.toFixed(2)}<br/><span style="font-size:5.5pt;">(${settings.cgstRate}%)</span></td>
-            <td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: right;">${currency}${itemSgst.toFixed(2)}<br/><span style="font-size:5.5pt;">(${settings.sgstRate}%)</span></td>
+            <td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right;">${pdfCurrencyDisplay}${itemCgst.toFixed(2)}<br/><span style="font-size:6pt;">(${settings.cgstRate}%)</span></td>
+            <td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right;">${pdfCurrencyDisplay}${itemSgst.toFixed(2)}<br/><span style="font-size:6pt;">(${settings.sgstRate}%)</span></td>
           ` : ''}
-          <td style="border: 1px solid ${tableBorderColor}; padding: 3px; text-align: right; font-weight: 500;">${currency}${lineTotal.toFixed(2)}</td>
+          <td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right; font-weight: 500;">${pdfCurrencyDisplay}${lineTotal.toFixed(2)}</td>
         </tr>
       `;
     }).join('');
@@ -176,19 +177,19 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
 
     let tableHeaders = `
-      <th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: center; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">#</th>
-      <th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: left; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">Item Description</th>
+      <th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: center; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">#</th>
+      <th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: left; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Item Description</th>
     `;
-    if (showHsnColInPdfForHeader) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: center; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">HSN</th>`;
-    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">Qty/Wt</th>`;
-    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">Rate / ${(bill.items[0]?.unit || 'unit')}</th>`;
-    if (showMakingChargeColumnInPdf) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">Making</th>`;
-    if (showItemTaxableColInPdf) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">Taxable Amt</th>`;
+    if (showHsnColInPdfForHeader) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: center; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">HSN</th>`;
+    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Qty/Wt</th>`;
+    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Rate / ${(bill.items[0]?.unit || 'unit')}</th>`;
+    if (showMakingChargeColumnInPdf) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Making</th>`;
+    if (showItemTaxableColInPdf) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Taxable Amt</th>`;
     if (showItemGstColsInPdf) {
-      tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">CGST</th>`;
-      tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">SGST</th>`;
+      tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">CGST</th>`;
+      tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">SGST</th>`;
     }
-    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 7.5pt;">Line Total</th>`;
+    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Line Total</th>`;
 
     const billDateFormatted = format(new Date(bill.date), 'dd MMM, yyyy');
     const billNumberDisplay = bill.billNumber || (isEstimateView ? 'N/A (Estimate)' : 'N/A');
@@ -196,56 +197,56 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     const customerLabel = bill.type === 'purchase' ? 'From (Supplier):' : 'To (Customer):';
 
     return `
-    <div id="bill-content-for-pdf" style="font-family: 'PT Sans', Arial, sans-serif; color: ${defaultTextColor}; width: 100%; max-width: 794px; margin: 0 auto; padding: 8px; background-color: #ffffff; border: 1px solid #ccc; box-sizing: border-box;">
+    <div id="bill-content-for-pdf" style="font-family: 'PT Sans', Arial, sans-serif; color: ${defaultTextColor}; width: 100%; max-width: 794px; margin: 0 auto; padding: 10px; background-color: #ffffff; border: 1px solid #ccc; box-sizing: border-box;">
         
         ${companyHeaderHtml}
 
-        <h2 class="bill-type-heading" style="font-family: 'Playfair Display', serif; font-size: 12pt; text-align: center; margin: 10px 0; font-weight: 500; text-transform: uppercase; border-top: 1px solid ${billTypeHeadingColor}; border-bottom: 1px solid ${billTypeHeadingColor}; padding: 3px 0; color: ${billTypeHeadingColor};">${effectiveBillType}</h2>
+        <h2 class="bill-type-heading" style="font-family: 'Playfair Display', serif; font-size: 15pt; text-align: center; margin: 15px 0; font-weight: 500; text-transform: uppercase; border-top: 1.5px solid ${billTypeHeadingColor}; border-bottom: 1.5px solid ${billTypeHeadingColor}; padding: 6px 0; color: ${billTypeHeadingColor};">${effectiveBillType}</h2>
         
-        <table class="bill-meta-grid" style="width: 100%; margin-bottom: 10px; font-size: 7.5pt;">
+        <table class="bill-meta-grid" style="width: 100%; margin-bottom: 12px; font-size: 8pt;">
           <tr>
-            <td style="width: 50%; vertical-align: top; padding-right: 6px;">
-              <h3 style="font-size: 8pt; font-weight: 500; margin-bottom: 3px; color: ${secondaryColor};">Bill Details:</h3>
-              <p style="margin: 1.5px 0;">${billTypeLabel} <span style="font-weight: 400;">${billNumberDisplay}</span></p>
-              <p style="margin: 1.5px 0;">Date: <span style="font-weight: 400;">${billDateFormatted}</span></p>
+            <td style="width: 50%; vertical-align: top; padding-right: 8px;">
+              <h3 style="font-size: 8.5pt; font-weight: 500; margin-bottom: 4px; color: ${secondaryColor};">Bill Details:</h3>
+              <p style="margin: 2px 0;">${billTypeLabel} <span style="font-weight: 400;">${billNumberDisplay}</span></p>
+              <p style="margin: 2px 0;">Date: <span style="font-weight: 400;">${billDateFormatted}</span></p>
             </td>
-            <td style="width: 50%; text-align: right; vertical-align: top; padding-left: 6px;">
-              <h3 style="font-size: 8pt; font-weight: 500; margin-bottom: 3px; color: ${secondaryColor};">${customerLabel}</h3>
-              <p style="margin: 1.5px 0; font-weight: 500;">${bill.customerName || 'N/A'}</p>
-              ${bill.customerAddress ? `<p style="font-size: 7pt; margin: 1.5px 0;">${bill.customerAddress}</p>` : ''}
-              ${bill.customerPhone ? `<p style="font-size: 7pt; margin: 1.5px 0;">Phone: ${bill.customerPhone}</p>` : ''}
+            <td style="width: 50%; text-align: right; vertical-align: top; padding-left: 8px;">
+              <h3 style="font-size: 8.5pt; font-weight: 500; margin-bottom: 4px; color: ${secondaryColor};">${customerLabel}</h3>
+              <p style="margin: 2px 0; font-weight: 500;">${bill.customerName || 'N/A'}</p>
+              ${bill.customerAddress ? `<p style="font-size: 7.5pt; margin: 2px 0;">${bill.customerAddress}</p>` : ''}
+              ${bill.customerPhone ? `<p style="font-size: 7.5pt; margin: 2px 0;">Phone: ${bill.customerPhone}</p>` : ''}
             </td>
           </tr>
         </table>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 7.5pt;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8pt;">
           <thead>
-            <tr style="font-size: 7.5pt;">${tableHeaders}</tr>
+            <tr style="font-size: 8pt;">${tableHeaders}</tr>
           </thead>
           <tbody>${itemsHtml}</tbody>
         </table>
         
-        <hr style="border: 0; border-top: 0.5px solid ${useColor ? primaryColor : '#555555'}; margin: 10px 0;" />
+        <hr style="border: 0; border-top: 0.5px solid ${useColor ? primaryColor : '#555555'}; margin: 12px 0;" />
 
-        <table class="bill-summary-grid" style="width: 100%; margin-top: 10px; font-size: 7.5pt;">
+        <table class="bill-summary-grid" style="width: 100%; margin-top: 12px; font-size: 8pt;">
           <tr>
             <td style="width: 60%; vertical-align: top; white-space: pre-line;">
-              ${bill.notes ? `<h4 style="font-weight: 500; margin-bottom: 2px; font-size: 7.5pt; color: ${secondaryColor};">Notes:</h4><p style="font-size:7pt;">${bill.notes}</p>` : ''}
+              ${bill.notes ? `<h4 style="font-weight: 500; margin-bottom: 3px; font-size: 8pt; color: ${secondaryColor};">Notes:</h4><p style="font-size:7.5pt;">${bill.notes}</p>` : ''}
             </td>
-            <td style="width: 40%; text-align: right; vertical-align: top; padding-left: 8px;">
-              <p style="margin: 2px 0;">Subtotal ${(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span style="font-weight: 500;">${currency}${bill.subTotal.toFixed(2)}</span></p>
-              ${!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 ? `<p style="margin: 2px 0;">Total CGST (${settings.cgstRate}%): <span style="font-weight: 500;">${currency}${(bill.cgstAmount || 0).toFixed(2)}</span></p>` : ''}
-              ${!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 ? `<p style="margin: 2px 0;">Total SGST (${settings.sgstRate}%): <span style="font-weight: 500;">${currency}${(bill.sgstAmount || 0).toFixed(2)}</span></p>` : ''}
-              ${isEstimateView && bill.type === 'sales-bill' ? `<p style="font-size: 6pt; color: #555; margin: 2px 0;">(GST not applicable for estimates)</p>` : ''}
-              <hr style="border: 0; border-top: 0.5px solid ${useColor ? primaryColor : '#555555'}; margin: 4px 0;" />
-              <p style="font-size: 9pt; font-weight: 500; margin-top: 4px; color: ${primaryColor};">Total: <span style="font-weight: 500; font-size: 11pt;">${currency}${bill.totalAmount.toFixed(2)}</span></p>
+            <td style="width: 40%; text-align: right; vertical-align: top; padding-left: 10px;">
+              <p style="margin: 3px 0;">Subtotal ${(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span style="font-weight: 500;">${pdfCurrencyDisplay}${bill.subTotal.toFixed(2)}</span></p>
+              ${!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 ? `<p style="margin: 3px 0;">Total CGST (${settings.cgstRate}%): <span style="font-weight: 500;">${pdfCurrencyDisplay}${(bill.cgstAmount || 0).toFixed(2)}</span></p>` : ''}
+              ${!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 ? `<p style="margin: 3px 0;">Total SGST (${settings.sgstRate}%): <span style="font-weight: 500;">${pdfCurrencyDisplay}${(bill.sgstAmount || 0).toFixed(2)}</span></p>` : ''}
+              ${isEstimateView && bill.type === 'sales-bill' ? `<p style="font-size: 6.5pt; color: #555; margin: 3px 0;">(GST not applicable for estimates)</p>` : ''}
+              <hr style="border: 0; border-top: 0.5px solid ${useColor ? primaryColor : '#555555'}; margin: 5px 0;" />
+              <p style="font-size: 10pt; font-weight: 500; margin-top: 5px; color: ${primaryColor};">Total: <span style="font-weight: 500; font-size: 12pt;">${pdfCurrencyDisplay}${bill.totalAmount.toFixed(2)}</span></p>
             </td>
           </tr>
         </table>
 
-        <div class="bill-footer" style="text-align: center; margin-top: 15px; padding-top: 8px; border-top: 1px solid ${useColor ? primaryColor : defaultTextColor}; font-size: 7pt; color: ${secondaryColor};">
+        <div class="bill-footer" style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid ${useColor ? primaryColor : defaultTextColor}; font-size: 7.5pt; color: ${secondaryColor};">
           <p>Thank you for your business!</p>
-          <p style="margin-top: 3px;">--- ${company.companyName} ---</p>
+          <p style="margin-top: 4px;">--- ${company.companyName} ---</p>
         </div>
       </div>
     `;
@@ -508,23 +509,23 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                       </td>
                       {showHsnColumnInModal && bill.type === 'sales-bill' && bill.type !== 'purchase' && <td className="py-2 px-2 text-center text-xs">{item.hsnCode || '-'}</td>}
                       <td className="py-2 px-2 text-right text-xs">{item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} {item.unit}</td>
-                      <td className="py-2 px-2 text-right text-xs">{currency}{effectiveRate.toFixed(2)}</td>
+                      <td className="py-2 px-2 text-right text-xs">{pdfCurrencyDisplay}{effectiveRate.toFixed(2)}</td>
                       {showMakingChargeColumn && (
                         <td className="py-2 px-2 text-right text-xs">
                           {item.makingCharge && item.makingCharge > 0 ?
-                           (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : currency + item.makingCharge.toFixed(2))
+                           (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : pdfCurrencyDisplay + item.makingCharge.toFixed(2))
                            : '-'}
                         </td>
                       )}
-                      {bill.type === 'sales-bill' && !isEstimateView && <td className="py-2 px-2 text-right text-xs">{currency}{taxableAmount.toFixed(2)}</td>}
+                      {bill.type === 'sales-bill' && !isEstimateView && <td className="py-2 px-2 text-right text-xs">{pdfCurrencyDisplay}{taxableAmount.toFixed(2)}</td>}
                       
                       {showItemLevelGstColumns && (
                         <>
-                            <td className="py-2 px-2 text-right text-xs">{currency}{itemCgst.toFixed(2)}</td>
-                            <td className="py-2 px-2 text-right text-xs">{currency}{itemSgst.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-right text-xs">{pdfCurrencyDisplay}{itemCgst.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-right text-xs">{pdfCurrencyDisplay}{itemSgst.toFixed(2)}</td>
                         </>
                       )}
-                      <td className="py-2 px-2 text-right font-medium text-xs">{currency}{lineTotal.toFixed(2)}</td>
+                      <td className="py-2 px-2 text-right font-medium text-xs">{pdfCurrencyDisplay}{lineTotal.toFixed(2)}</td>
                     </tr>
                   )})}
                 </tbody>
@@ -543,15 +544,15 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     )}
                 </div>
                 <div className="w-2/5 pl-2.5 text-right space-y-1.5">
-                    <p>Subtotal {(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span className="font-semibold text-base">{currency}{bill.subTotal.toFixed(2)}</span></p>
+                    <p>Subtotal {(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span className="font-semibold text-base">{pdfCurrencyDisplay}{bill.subTotal.toFixed(2)}</span></p>
 
-                    {!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 && <p>Total CGST ({settings.cgstRate}%): <span className="font-semibold text-base">{currency}{(bill.cgstAmount || 0).toFixed(2)}</span></p>}
-                    {!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 && <p>Total SGST ({settings.sgstRate}%): <span className="font-semibold text-base">{currency}{(bill.sgstAmount || 0).toFixed(2)}</span></p>}
+                    {!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 && <p>Total CGST ({settings.cgstRate}%): <span className="font-semibold text-base">{pdfCurrencyDisplay}{(bill.cgstAmount || 0).toFixed(2)}</span></p>}
+                    {!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 && <p>Total SGST ({settings.sgstRate}%): <span className="font-semibold text-base">{pdfCurrencyDisplay}{(bill.sgstAmount || 0).toFixed(2)}</span></p>}
                     
                     {isEstimateView && bill.type === 'sales-bill' && <p className="text-xs text-muted-foreground">(GST not applicable for estimates)</p>}
 
                     <hr className="my-2 !mt-2.5 !mb-2.5 border-border"/>
-                    <p className="text-lg font-bold">Total: <span className="text-xl">{currency}{bill.totalAmount.toFixed(2)}</span></p>
+                    <p className="text-lg font-bold">Total: <span className="text-xl">{pdfCurrencyDisplay}{bill.totalAmount.toFixed(2)}</span></p>
                 </div>
             </div>
 
@@ -578,3 +579,4 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
+
