@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import type { Bill, BillItem } from '@/types';
@@ -79,27 +78,26 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   const generatePdfHtml = (): string => {
     const useColor = settings.enableColorBilling;
     const primaryColor = useColor ? '#D4AF37' : '#000000'; 
-    const secondaryColor = useColor ? '#5D503C' : '#000000'; 
-    const tableHeaderBg = useColor ? '#F8F6F0' : '#E8E8E8'; // Lighter beige / Light Gray
-    const tableBorderColor = useColor ? '#D4C8B8' : '#444444'; // Softer Gold-Beige / Dark Gray
+    const companyDetailsColor = useColor ? '#5D503C' : '#000000'; 
+    const tableHeaderBg = useColor ? '#F8F6F0' : '#E8E8E8'; 
+    const tableBorderColor = useColor ? '#D4C8B8' : '#444444'; 
     const defaultTextColor = '#000000';
 
     const companyNameColor = useColor ? primaryColor : defaultTextColor;
-    const companyDetailsColor = useColor ? secondaryColor : defaultTextColor;
     const billTypeHeadingColor = useColor ? primaryColor : defaultTextColor;
 
     const logoImageHtml = company.showCompanyLogo
       ? company.companyLogo
         ? `<img src="${company.companyLogo}" alt="${company.companyName} Logo" style="max-width: 80px; max-height: 50px; object-fit: contain; display: inline-block;" />`
-        : `<div style="width: 80px; height: 50px; border: 1px solid ${tableBorderColor}; display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center; font-size: 8pt; color: ${secondaryColor}; box-sizing: border-box;">Logo</div>`
+        : `<div style="width: 80px; height: 50px; border: 1px solid ${tableBorderColor}; display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center; font-size: 8pt; color: ${companyDetailsColor}; box-sizing: border-box;">Logo</div>`
       : '';
     
     const getNameAndDetailsHtml = (textAlign: 'center' | 'left') => `
         <h1 style="font-family: 'Playfair Display', serif; font-size: 20pt; margin: 0 0 4px 0; color: ${companyNameColor}; text-align: ${textAlign}; line-height: 1.2;">${company.companyName}</h1>
-        ${company.slogan ? `<p style="font-size: 8.5pt; margin: 0 0 4px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.slogan}</p>` : ''}
-        <p style="font-size: 8pt; margin: 0 0 2px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.address}</p>
-        <p style="font-size: 8pt; margin: 0 0 2px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">Phone: ${company.phoneNumber}</p>
-        ${(!isEstimateView && bill.companyGstin) ? `<p style="font-size: 8pt; margin: 0 0 3px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">GSTIN: ${bill.companyGstin}</p>` : ''}
+        ${company.slogan ? `<p style="font-family: 'PT Sans', sans-serif; font-size: 8.5pt; margin: 0 0 4px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.slogan}</p>` : ''}
+        <p style="font-family: 'PT Sans', sans-serif; font-size: 8pt; margin: 0 0 2px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">${company.address}</p>
+        <p style="font-family: 'PT Sans', sans-serif; font-size: 8pt; margin: 0 0 2px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">Phone: ${company.phoneNumber}</p>
+        ${(!isEstimateView && bill.companyGstin) ? `<p style="font-family: 'PT Sans', sans-serif; font-size: 8pt; margin: 0 0 3px 0; color: ${companyDetailsColor}; text-align: ${textAlign};">GSTIN: ${bill.companyGstin}</p>` : ''}
     `;
 
     let companyHeaderHtml = '';
@@ -153,7 +151,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       }
 
       return `
-        <tr style="font-size: 8pt; page-break-inside: avoid; color: ${defaultTextColor};">
+        <tr style="font-family: 'PT Sans', sans-serif; font-size: 8pt; page-break-inside: avoid; color: ${defaultTextColor};">
           <td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: center;">${index + 1}</td>
           <td style="border: 1px solid ${tableBorderColor}; padding: 4px;">${item.name} ${valuableDetails ? `(${valuableDetails.name})` : ''}</td>
           ${showHsnInPdf ? `<td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: center;">${item.hsnCode || '-'}</td>` : (bill.type === 'sales-bill' && !isEstimateView && bill.type !== 'purchase' ? `<td style="border: 1px solid ${tableBorderColor}; padding: 4px; text-align: center;">-</td>` : '')}
@@ -177,19 +175,19 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
 
     let tableHeaders = `
-      <th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: center; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">#</th>
-      <th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: left; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Item Description</th>
+      <th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: center; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">#</th>
+      <th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: left; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">Item Description</th>
     `;
-    if (showHsnColInPdfForHeader) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: center; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">HSN</th>`;
-    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Qty/Wt</th>`;
-    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Rate / ${(bill.items[0]?.unit || 'unit')}</th>`;
-    if (showMakingChargeColumnInPdf) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Making</th>`;
-    if (showItemTaxableColInPdf) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Taxable Amt</th>`;
+    if (showHsnColInPdfForHeader) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: center; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">HSN</th>`;
+    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">Qty/Wt</th>`;
+    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">Rate / ${(bill.items[0]?.unit || 'unit')}</th>`;
+    if (showMakingChargeColumnInPdf) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">Making</th>`;
+    if (showItemTaxableColInPdf) tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">Taxable Amt</th>`;
     if (showItemGstColsInPdf) {
-      tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">CGST</th>`;
-      tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">SGST</th>`;
+      tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">CGST</th>`;
+      tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">SGST</th>`;
     }
-    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${secondaryColor}; font-size: 8pt;">Line Total</th>`;
+    tableHeaders += `<th style="border: 1px solid ${tableBorderColor}; padding: 5px; text-align: right; font-weight: 500; background-color: ${tableHeaderBg}; color: ${companyDetailsColor}; font-size: 8pt;">Line Total</th>`;
 
     const billDateFormatted = format(new Date(bill.date), 'dd MMM, yyyy');
     const billNumberDisplay = bill.billNumber || (isEstimateView ? 'N/A (Estimate)' : 'N/A');
@@ -203,15 +201,15 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
         <h2 class="bill-type-heading" style="font-family: 'Playfair Display', serif; font-size: 15pt; text-align: center; margin: 15px 0; font-weight: 500; text-transform: uppercase; border-top: 1.5px solid ${billTypeHeadingColor}; border-bottom: 1.5px solid ${billTypeHeadingColor}; padding: 6px 0; color: ${billTypeHeadingColor};">${effectiveBillType}</h2>
         
-        <table class="bill-meta-grid" style="width: 100%; margin-bottom: 12px; font-size: 8pt;">
+        <table class="bill-meta-grid" style="width: 100%; margin-bottom: 12px; font-family: 'PT Sans', sans-serif; font-size: 8pt;">
           <tr>
             <td style="width: 50%; vertical-align: top; padding-right: 8px;">
-              <h3 style="font-size: 8.5pt; font-weight: 500; margin-bottom: 4px; color: ${secondaryColor};">Bill Details:</h3>
+              <h3 style="font-size: 8.5pt; font-weight: 500; margin-bottom: 4px; color: ${companyDetailsColor};">Bill Details:</h3>
               <p style="margin: 2px 0;">${billTypeLabel} <span style="font-weight: 400;">${billNumberDisplay}</span></p>
               <p style="margin: 2px 0;">Date: <span style="font-weight: 400;">${billDateFormatted}</span></p>
             </td>
             <td style="width: 50%; text-align: right; vertical-align: top; padding-left: 8px;">
-              <h3 style="font-size: 8.5pt; font-weight: 500; margin-bottom: 4px; color: ${secondaryColor};">${customerLabel}</h3>
+              <h3 style="font-size: 8.5pt; font-weight: 500; margin-bottom: 4px; color: ${companyDetailsColor};">${customerLabel}</h3>
               <p style="margin: 2px 0; font-weight: 500;">${bill.customerName || 'N/A'}</p>
               ${bill.customerAddress ? `<p style="font-size: 7.5pt; margin: 2px 0;">${bill.customerAddress}</p>` : ''}
               ${bill.customerPhone ? `<p style="font-size: 7.5pt; margin: 2px 0;">Phone: ${bill.customerPhone}</p>` : ''}
@@ -219,7 +217,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </tr>
         </table>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8pt;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-family: 'PT Sans', sans-serif; font-size: 8pt;">
           <thead>
             <tr style="font-size: 8pt;">${tableHeaders}</tr>
           </thead>
@@ -228,10 +226,10 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         
         <hr style="border: 0; border-top: 0.5px solid ${useColor ? primaryColor : '#555555'}; margin: 12px 0;" />
 
-        <table class="bill-summary-grid" style="width: 100%; margin-top: 12px; font-size: 8pt;">
+        <table class="bill-summary-grid" style="width: 100%; margin-top: 12px; font-family: 'PT Sans', sans-serif; font-size: 8pt;">
           <tr>
             <td style="width: 60%; vertical-align: top; white-space: pre-line;">
-              ${bill.notes ? `<h4 style="font-weight: 500; margin-bottom: 3px; font-size: 8pt; color: ${secondaryColor};">Notes:</h4><p style="font-size:7.5pt;">${bill.notes}</p>` : ''}
+              ${bill.notes ? `<h4 style="font-weight: 500; margin-bottom: 3px; font-size: 8pt; color: ${companyDetailsColor};">Notes:</h4><p style="font-size:7.5pt;">${bill.notes}</p>` : ''}
             </td>
             <td style="width: 40%; text-align: right; vertical-align: top; padding-left: 10px;">
               <p style="margin: 3px 0;">Subtotal ${(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span style="font-weight: 500;">${pdfCurrencyDisplay}${bill.subTotal.toFixed(2)}</span></p>
@@ -244,7 +242,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </tr>
         </table>
 
-        <div class="bill-footer" style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid ${useColor ? primaryColor : defaultTextColor}; font-size: 7.5pt; color: ${secondaryColor};">
+        <div class="bill-footer" style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid ${useColor ? primaryColor : defaultTextColor}; font-size: 7.5pt; color: ${companyDetailsColor};">
           <p>Thank you for your business!</p>
           <p style="margin-top: 4px;">--- ${company.companyName} ---</p>
         </div>
@@ -369,12 +367,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         
         pdf.addImage(imgData, 'PNG', x, y, finalPdfImgWidth, finalPdfImgHeight);
         
-        const dateStr = format(new Date(), 'yyyyMMdd_HHmmss');
-        const fileNameBase = effectiveBillType.replace(/[\s/]+/g, '_'); 
-        const billNumPart = bill.billNumber ? `_${bill.billNumber.replace(/[\s/]+/g, '_')}` : (isEstimateView ? '_Estimate' : '_Bill');
-        const fileName = `${fileNameBase}${billNumPart}_${dateStr}.pdf`;
-
-        pdf.save(fileName);
+        pdf.output('dataurlnewwindow');
 
     } catch (error) {
         console.error("Error generating PDF:", error);
@@ -439,7 +432,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 {company.slogan && <p className="text-lg text-muted-foreground mt-1">{company.slogan}</p>}
                 <p className="text-sm text-muted-foreground mt-1.5">{company.address}</p>
                 <p className="text-sm text-muted-foreground">Phone: {company.phoneNumber}</p>
-                {!isEstimateView && bill.companyGstin && <p className="text-sm text-muted-foreground mt-0.5">GSTIN: {bill.companyGstin}</p>}
+                {!isEstimateView && bill.companyGstin && <p className="text-sm text-muted-foreground mt-0.5">GSTIN: {company.companyGstin}</p>}
             </div>
 
             <h2 className="bill-type-heading text-xl lg:text-2xl font-headline text-center font-semibold my-5 py-2 border-y border-primary/30">{effectiveBillType.toUpperCase()}</h2>
@@ -569,7 +562,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             ) : (
               <Printer className="mr-2 h-4 w-4"/>
             )}
-            Download PDF
+            Print
           </Button>
           <Button variant="outline" onClick={onClose} disabled={isGeneratingPdf} className="text-base px-5 py-2.5 h-auto">Close</Button>
         </DialogFooter>
@@ -579,4 +572,3 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
-
