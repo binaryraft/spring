@@ -1,19 +1,20 @@
 
 "use client";
-import React, { useRef } from 'react'; 
+import React, { useRef, useMemo } from 'react';
 import type { BillItem, Valuable, MakingChargeSetting } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
 import ValuableIcon from '../ValuableIcon';
+import { cn } from '@/lib/utils';
 
 interface BillItemRowProps {
   item: Partial<BillItem>;
   onItemChange: (updatedFields: Partial<BillItem>) => void;
   onProductNameBlur: (name: string) => void;
   onRemoveItem: () => void;
-  availableValuables: Valuable[];
+  availableValuables: Valuable[]; // All valuables from settings
   productNames: string[];
   isPurchase: boolean;
   defaultMakingCharge: MakingChargeSetting;
@@ -21,8 +22,8 @@ interface BillItemRowProps {
   defaultPurchaseNetFixedValue: number;
   getValuablePrice: (valuableId: string) => number;
   onEnterInLastField?: () => void;
-  focusNextRowFirstElement?: () => void; 
-  rowIndex: number; 
+  focusNextRowFirstElement?: () => void;
+  rowIndex: number;
   itemRefs: React.MutableRefObject<Array<Array<HTMLInputElement | HTMLButtonElement | null>>>;
   currencySymbol: string;
 }
@@ -45,16 +46,16 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   currencySymbol,
 }) => {
 
-  const materialSelectRef = useRef<HTMLButtonElement>(null); 
+  const materialSelectRef = useRef<HTMLButtonElement>(null);
   const productNameInputRef = useRef<HTMLInputElement>(null);
   const hsnCodeInputRef = useRef<HTMLInputElement>(null);
   const qtyInputRef = useRef<HTMLInputElement>(null);
-  const rateInputRef = useRef<HTMLInputElement>(null); 
-  const mcTypeSelectRef = useRef<HTMLButtonElement>(null); 
-  const mcValueInputRef = useRef<HTMLInputElement>(null); 
-  const purchaseNetTypeSelectRef = useRef<HTMLButtonElement>(null); 
-  const purchaseNetPercentInputRef = useRef<HTMLInputElement>(null); 
-  const purchaseNetFixedInputRef = useRef<HTMLInputElement>(null); 
+  const rateInputRef = useRef<HTMLInputElement>(null);
+  const mcTypeSelectRef = useRef<HTMLButtonElement>(null);
+  const mcValueInputRef = useRef<HTMLInputElement>(null);
+  const purchaseNetTypeSelectRef = useRef<HTMLButtonElement>(null);
+  const purchaseNetPercentInputRef = useRef<HTMLInputElement>(null);
+  const purchaseNetFixedInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     const fields = [
@@ -79,21 +80,34 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
     itemRefs.current[rowIndex] = fields.filter(Boolean) as Array<HTMLInputElement | HTMLButtonElement>;
   }, [rowIndex, itemRefs, isPurchase, item.purchaseNetType]);
 
+  const displayableMaterials = useMemo(() => {
+    let filtered = availableValuables.filter(v => v.selectedInHeader);
+    const currentItemValuable = item.valuableId ? availableValuables.find(v => v.id === item.valuableId) : null;
+
+    if (currentItemValuable && !currentItemValuable.selectedInHeader) {
+      // Ensure the currently selected (but not header-selected) valuable is in the list for this item
+      if (!filtered.find(v => v.id === currentItemValuable.id)) {
+        filtered.push(currentItemValuable);
+      }
+    }
+    return filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }, [availableValuables, item.valuableId]);
+
 
   const handleValuableSelect = (valuableId: string) => {
-    const selectedValuable = availableValuables.find(v => v.id === valuableId);
+    const selectedValuable = availableValuables.find(v => v.id === valuableId); // Use all available for logic
     if (selectedValuable) {
       const updates: Partial<BillItem> = {
         valuableId,
         unit: selectedValuable.unit,
       };
 
-      if (!isPurchase) { 
+      if (!isPurchase) {
         updates.rate = selectedValuable.price;
         updates.makingChargeType = item.makingChargeType || defaultMakingCharge.type;
         updates.makingCharge = item.makingCharge === undefined ? defaultMakingCharge.value : item.makingCharge;
-      } else { 
-        updates.purchaseNetType = item.purchaseNetType || 'net_percentage'; 
+      } else {
+        updates.purchaseNetType = item.purchaseNetType || 'net_percentage';
         if (updates.purchaseNetType === 'net_percentage') {
           updates.purchaseNetPercentValue = item.purchaseNetPercentValue ?? defaultPurchaseNetPercentage;
         } else if (updates.purchaseNetType === 'fixed_net_price') {
@@ -146,7 +160,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       const currentRowFields = itemRefs.current[rowIndex];
       if (currentFieldIndex < currentRowFields.length - 1) {
         const nextField = currentRowFields[currentFieldIndex + 1];
-        if (nextField && typeof (nextField as any).focus === 'function') { 
+        if (nextField && typeof (nextField as any).focus === 'function') {
             (nextField as HTMLElement).focus();
           }
       } else {
@@ -157,12 +171,15 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
     }
   };
 
-  const gridColsClass = isPurchase 
-    ? "grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]" // Material, Name, Qty, NetType, Value, Amount, Action
-    : "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]"; // Material, Name, HSN, Qty, Rate, MCType, Making, Amount, Action
+  const gridColsClass = isPurchase
+    ? "grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]"
+    : "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]";
+
+  const showHsnForSales = !isPurchase;
+
 
   return (
-    <div className={`grid ${gridColsClass} gap-3 items-start p-3.5 border-b last:border-b-0 hover:bg-muted/50 transition-colors`}>
+    <div className={cn(`grid items-start p-3.5 border-b last:border-b-0 hover:bg-muted/50 transition-colors`, gridColsClass)}>
       <datalist id={datalistId}>
         {productNames.map(name => <option key={name} value={name} />)}
       </datalist>
@@ -181,7 +198,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
             <SelectValue placeholder="Material" />
           </SelectTrigger>
           <SelectContent>
-            {availableValuables.map(v => (
+            {displayableMaterials.map(v => (
               <SelectItem key={v.id} value={v.id} className="text-base py-2">
                 <div className="flex items-center">
                   <ValuableIcon valuableType={v.icon} color={v.iconColor} className="w-5 h-5 mr-2.5"/>
@@ -189,6 +206,9 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                 </div>
               </SelectItem>
             ))}
+            {displayableMaterials.length === 0 && !item.valuableId && (
+              <div className="p-2 text-sm text-muted-foreground">No active materials selected in header.</div>
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -206,9 +226,9 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           className="h-12 text-base"
         />
       </div>
-      
+
       {/* Column 3: HSN Code (Sales Only) */}
-      {!isPurchase && (
+      {showHsnForSales && (
         <div>
           <Input
             ref={hsnCodeInputRef}
@@ -364,5 +384,3 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 };
 
 export default BillItemRow;
-
-    
