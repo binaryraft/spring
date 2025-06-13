@@ -102,7 +102,7 @@ export const DEFAULT_VALUABLES: Valuable[] = [
 ];
 
 export const AVAILABLE_CURRENCIES: CurrencyDefinition[] = [
-  { symbol: '₹', code: 'INR', name: 'Indian Rupee' },
+  { symbol: 'Rs ', code: 'INR', name: 'Indian Rupee' },
   { symbol: '$', code: 'USD', name: 'US Dollar' },
   { symbol: '€', code: 'EUR', name: 'Euro' },
   { symbol: '£', code: 'GBP', name: 'British Pound' },

@@ -11,7 +11,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, ListOrdered, StickyNote, Banknote } from 'lucide-react';
 import BillItemRow from './BillItemRow';
 import { v4 as uuidv4 } from 'uuid';
-import { useToast } from '@/hooks/use-toast';
+// import { useToast } from '@/hooks/use-toast'; // Toast removed
 import { Separator } from '../ui/separator';
 
 interface BillFormProps {
@@ -24,7 +24,7 @@ interface BillFormProps {
 
 const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPrint, onCancel, onShowEstimate }) => {
   const { settings, addBill, updateBill, addProductName, getValuableById } = useAppContext();
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Toast removed
 
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
@@ -291,7 +291,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const handleSubmit = () => {
     const billDetails = getCurrentBillData(false); 
     if (billDetails.items.length === 0) {
-      toast({ title: "Error", description: "Please add at least one valid item with a selected material type.", variant: "destructive" });
+      // toast({ title: "Error", description: "Please add at least one valid item with a selected material type.", variant: "destructive" }); // Toast removed
       return;
     }
 
@@ -299,10 +299,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     if (existingBill) {
       savedBill = { ...existingBill, ...billDetails };
       updateBill(savedBill);
-      toast({ title: "Success", description: `${billTypeLabel()} updated.` });
+      // toast({ title: "Success", description: `${billTypeLabel()} updated.` }); // Toast removed
     } else {
       savedBill = addBill(billDetails);
-      toast({ title: "Success", description: `${billTypeLabel()} created.` });
+      // toast({ title: "Success", description: `${billTypeLabel()} created.` }); // Toast removed
     }
     onSaveAndPrint(savedBill);
   };
@@ -508,11 +508,11 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           <div className="text-3xl lg:text-4xl font-bold text-primary">Total: <span className="text-4xl lg:text-5xl ml-3">{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span></div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between items-end border-t pt-8 mt-8">
+      <CardFooter className="flex justify-between items-start border-t pt-8 mt-8">
         <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto">
           <XCircle className="mr-2.5 h-5 w-5" /> Cancel
         </Button>
-        <div className="flex items-start space-x-5"> {/* Changed items-end to items-start for vertical alignment */}
+        <div className="flex items-start space-x-5">
           {onShowEstimate && ( 
             <div className="flex flex-col items-center">
                 <Button 
@@ -545,5 +545,3 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 };
 
 export default BillForm;
-
-    

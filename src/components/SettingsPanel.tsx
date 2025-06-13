@@ -27,7 +27,7 @@ import ValuableIcon from "./ValuableIcon";
 import Image from "next/image";
 import { cn } from "@/lib/utils"; 
 import { v4 as uuidv4 } from 'uuid';
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast"; // Toast removed
 
 
 const SettingsPanel: React.FC = () => {
@@ -35,7 +35,7 @@ const SettingsPanel: React.FC = () => {
   const [localSettings, setLocalSettings] = useState<Settings>(() => JSON.parse(JSON.stringify(settings))); 
   const [newProductName, setNewProductName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Toast removed
 
   const [isEditingMaterial, setIsEditingMaterial] = useState<Valuable | null>(null);
   const [customMaterialForm, setCustomMaterialForm] = useState<Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>>({
@@ -81,15 +81,15 @@ const SettingsPanel: React.FC = () => {
     if (newProductName.trim() !== '') {
       addProductName(newProductName.trim()); 
       setNewProductName('');
-      toast({ title: "Success", description: "Product name suggestion added." });
+      // toast({ title: "Success", description: "Product name suggestion added." }); // Toast removed
     } else {
-      toast({ title: "Error", description: "Product name cannot be empty.", variant: "destructive" });
+      // toast({ title: "Error", description: "Product name cannot be empty.", variant: "destructive" }); // Toast removed
     }
   };
   
   const handleRemoveProductNameFromList = (productNameToRemove: string) => {
     removeProductName(productNameToRemove); 
-    toast({ title: "Success", description: `"${productNameToRemove}" removed from suggestions.` });
+    // toast({ title: "Success", description: `"${productNameToRemove}" removed from suggestions.` }); // Toast removed
   };
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,11 +98,11 @@ const SettingsPanel: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setCompanyLogo(reader.result as string);
-        toast({ title: "Success", description: "Company logo uploaded." });
+        // toast({ title: "Success", description: "Company logo uploaded." }); // Toast removed
       };
       reader.readAsDataURL(file);
     } else {
-      toast({ title: "Error", description: "Please upload a valid image file.", variant: "destructive" });
+      // toast({ title: "Error", description: "Please upload a valid image file.", variant: "destructive" }); // Toast removed
     }
   };
 
@@ -111,7 +111,7 @@ const SettingsPanel: React.FC = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = ""; 
     }
-    toast({ title: "Success", description: "Company logo removed." });
+    // toast({ title: "Success", description: "Company logo removed." }); // Toast removed
   };
 
   const handleCustomMaterialFormChange = (field: keyof typeof customMaterialForm, value: any) => {
@@ -120,15 +120,15 @@ const SettingsPanel: React.FC = () => {
 
   const handleSaveCustomMaterial = () => {
     if (!customMaterialForm.name.trim()) {
-      toast({ title: "Error", description: "Material name cannot be empty.", variant: "destructive" });
+      // toast({ title: "Error", description: "Material name cannot be empty.", variant: "destructive" }); // Toast removed
       return;
     }
     if (!customMaterialForm.unit.trim()) {
-        toast({ title: "Error", description: "Material unit cannot be empty.", variant: "destructive" });
+        // toast({ title: "Error", description: "Material unit cannot be empty.", variant: "destructive" }); // Toast removed
         return;
     }
     if (customMaterialForm.price < 0) {
-      toast({ title: "Error", description: "Material price cannot be negative.", variant: "destructive" });
+      // toast({ title: "Error", description: "Material price cannot be negative.", variant: "destructive" }); // Toast removed
       return;
     }
 
@@ -140,21 +140,21 @@ const SettingsPanel: React.FC = () => {
     
     if (isEditingMaterial) {
       if (settings.valuables.some(v => v.id !== isEditingMaterial.id && v.name.toLowerCase() === materialToSave.name.trim().toLowerCase())) {
-        toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" });
+        // toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" }); // Toast removed
         return;
       }
       updateValuableData(isEditingMaterial.id, materialToSave);
-      toast({ title: "Success", description: `Material "${materialToSave.name}" updated.` });
+      // toast({ title: "Success", description: `Material "${materialToSave.name}" updated.` }); // Toast removed
     } else {
       if (settings.valuables.some(v => v.name.toLowerCase() === materialToSave.name.trim().toLowerCase())) {
-        toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" });
+        // toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" }); // Toast removed
         return;
       }
       const addedValuable = addValuable(materialToSave);
       if (addedValuable) {
-        toast({ title: "Success", description: `Material "${materialToSave.name}" added.` });
+        // toast({ title: "Success", description: `Material "${materialToSave.name}" added.` }); // Toast removed
       } else {
-        toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists or an error occurred.`, variant: "destructive" });
+        // toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists or an error occurred.`, variant: "destructive" }); // Toast removed
       }
     }
     resetCustomMaterialForm();
@@ -181,11 +181,11 @@ const SettingsPanel: React.FC = () => {
   const handleDeleteValuable = (valuableId: string) => {
     const valuableToRemove = settings.valuables.find(v => v.id === valuableId);
     if (valuableToRemove?.isDefault) {
-        toast({ title: "Error", description: "Default materials cannot be deleted.", variant: "destructive" });
+        // toast({ title: "Error", description: "Default materials cannot be deleted.", variant: "destructive" }); // Toast removed
         return;
     }
     removeValuableFromContext(valuableId);
-    toast({ title: "Success", description: `Material "${valuableToRemove?.name}" deleted.` });
+    // toast({ title: "Success", description: `Material "${valuableToRemove?.name}" deleted.` }); // Toast removed
     if (isEditingMaterial && isEditingMaterial.id === valuableId) {
         resetCustomMaterialForm();
     }
@@ -216,7 +216,7 @@ const SettingsPanel: React.FC = () => {
         updateValuableData(id, dataToUpdateInContext);
       }
     });
-    toast({ title: "Success", description: "All settings saved!" });
+    // toast({ title: "Success", description: "All settings saved!" }); // Toast removed
   };
 
   const SectionHeader: React.FC<{ title: string; icon: React.ElementType; className?: string; id?:string }> = ({ title, icon: Icon, className, id }) => (
