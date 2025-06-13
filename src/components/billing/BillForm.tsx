@@ -374,8 +374,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   }, [items.length]);
 
   const headerGridColsClass = isPurchase
-    ? "grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]" // Material, Name, Qty, NetType, Value, Amount, Action
-    : "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]"; // Material, Name, HSN, Qty, Rate, MCType, Making, Amount, Action
+    ? "grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]" 
+    : billType === 'sales-bill' 
+      ? "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]" 
+      : "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_0.5fr]";
 
 
   return (
@@ -435,7 +437,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
            <div className={`py-3.5 px-4 grid ${headerGridColsClass} gap-3 text-base font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
             <div className="col-span-1">Material</div>
             <div className="col-span-1">Product Name</div>
-            {!isPurchase && <div className="col-span-1 text-center">HSN</div>}
+            {billType === 'sales-bill' && <div className="col-span-1 text-center">HSN</div>}
             <div className="col-span-1 text-center">Qty/Wt</div>
             {isPurchase ? (
                 <>
@@ -510,23 +512,30 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto">
           <XCircle className="mr-2.5 h-5 w-5" /> Cancel
         </Button>
-        <div className="flex items-end space-x-5">
+        <div className="flex items-start space-x-5"> {/* Changed items-end to items-start for vertical alignment */}
           {onShowEstimate && ( 
             <div className="flex flex-col items-center">
-                <Button variant="outline" onClick={handleShowEstimate} className="text-accent border-accent hover:bg-accent/10 hover:text-accent shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto w-full">
-                <FileText className="mr-2.5 h-5 w-5" /> Create Estimate
+                <Button 
+                  variant="outline" 
+                  onClick={handleShowEstimate} 
+                  className="text-accent border-accent hover:bg-accent/10 hover:text-accent shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto w-full"
+                >
+                  <FileText className="mr-2.5 h-5 w-5" /> Create Estimate
                 </Button>
-                <p className="text-base text-muted-foreground mt-2">
-                    Est. Total: {settings.currencySymbol}{subTotal.toFixed(2)}
+                <p className="text-lg text-foreground mt-2.5"> 
+                    {settings.currencySymbol}{subTotal.toFixed(2)}
                 </p>
             </div>
           )}
            <div className="flex flex-col items-center">
-                <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto w-full">
-                <Save className="mr-2.5 h-5 w-5" /> {existingBill ? 'Update' : 'Save'} & Print Bill
+                <Button 
+                  onClick={handleSubmit} 
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto w-full"
+                >
+                  <Save className="mr-2.5 h-5 w-5" /> {existingBill ? 'Update' : 'Save'} & Print Bill
                 </Button>
-                 <p className="text-base text-primary-foreground/90 mt-2 bg-primary/90 px-3 py-1.5 rounded-md">
-                    Bill Total: {settings.currencySymbol}{finalTotalAmount.toFixed(2)}
+                <p className="text-lg text-secondary mt-2.5">
+                    {settings.currencySymbol}{finalTotalAmount.toFixed(2)}
                 </p>
             </div>
         </div>
