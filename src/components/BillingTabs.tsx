@@ -67,7 +67,7 @@ const BillingTabs: React.FC = () => {
 
         <TabsContent value="sales-bill">
           <Card className="bg-card shadow-xl border border-border">
-            <CardContent className="p-6 md:p-8">
+            <CardContent className="px-3 py-6 md:px-4 md:py-8">
               {showSalesForm ? (
                 <BillForm
                   key={editingBill && editingBill.type === 'sales-bill' ? editingBill.id : 'new-sales-bill'}
@@ -92,7 +92,7 @@ const BillingTabs: React.FC = () => {
 
         <TabsContent value="purchase">
            <Card className="bg-card shadow-xl border border-border">
-            <CardContent className="p-6 md:p-8">
+            <CardContent className="px-3 py-6 md:px-4 md:py-8">
               {showPurchaseForm ? (
                 <BillForm
                   key={editingBill && editingBill.type === 'purchase' ? editingBill.id : 'new-purchase'}
