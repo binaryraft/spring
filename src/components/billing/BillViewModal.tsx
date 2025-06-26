@@ -163,7 +163,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       </style>
     </head>
     <body>
-      <div id="bill-content-for-pdf" style="width: 794px; height: 1123px; margin: 0 auto; background-color: #ffffff; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
+      <div id="bill-content-for-pdf" style="width: 794px; margin: 0 auto; background-color: #ffffff; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
         
         <header>
             <div style="text-align: center; margin-bottom: 25px;">
@@ -296,8 +296,11 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         
         pdf.autoPrint();
