@@ -90,15 +90,16 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   const generatePdfHtml = (): string => {
     if (!bill) return '';
 
-    const useColor = settings.enableColorBilling;
+    const useColor = settings.enableColorBilling && !isViewingEstimate;
     
-    // Define color palettes
+    // Define color palettes for printing - background is always white
     const color = {
       primary: useColor ? '#B58B5D' : '#000000',
-      text: '#333333',
-      textLight: '#FFFFFF',
-      border: useColor ? '#EAE3D8' : '#CCCCCC',
-      headerBg: useColor ? '#FAF7F2' : '#F5F5F5',
+      text: useColor ? '#333333' : '#000000',
+      textMuted: useColor ? '#777777' : '#555555',
+      border: useColor ? '#EAE3D8' : '#cccccc',
+      headerBg: '#ffffff', // Always white for clean printing
+      signatoryBorder: useColor ? '#999999' : '#000000',
     };
     
     const pdfCurrencyDisplay = settings.currencySymbol === '₹' ? 'Rs. ' : settings.currencySymbol;
@@ -120,9 +121,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       return `
         <tr style="font-family: 'PT Sans', sans-serif; font-size: 9pt; border-bottom: 1px solid ${color.border};">
           <td style="padding: 8px; text-align: center;">${index + 1}</td>
-          <td style="padding: 8px; font-weight: bold;">
+          <td style="padding: 8px; font-weight: bold; color: ${color.text};">
             ${item.name}
-            <span style="font-weight: normal; color: #555; font-size: 8pt;">${valuableDetails ? `(${valuableDetails.name})` : ''}</span>
+            <span style="font-weight: normal; color: ${color.textMuted}; font-size: 8pt;">${valuableDetails ? `(${valuableDetails.name})` : ''}</span>
           </td>
           ${showHsnInPdf ? `<td style="padding: 8px; text-align: center;">${item.hsnCode || '-'}</td>` : ''}
           <td style="padding: 8px; text-align: right;">${item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} ${item.unit}</td>
@@ -178,7 +179,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
               <tr>
                 <td style="width: 60%; vertical-align: top; border: 1px solid ${color.border}; padding: 10px;">
-                  <p style="margin: 0 0 5px 0; font-size: 9pt; color: #777;">BILL TO</p>
+                  <p style="margin: 0 0 5px 0; font-size: 9pt; color: ${color.textMuted};">BILL TO</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt; color: ${color.text};">${bill.customerName || 'N/A'}</p>
                   ${bill.customerAddress ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerAddress}</p>`: ''}
                   ${bill.customerPhone ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerPhone}</p>`: ''}
@@ -186,8 +187,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 </td>
                 <td style="width: 40%; padding: 15px; text-align: right; vertical-align: top;">
                   <h2 style="font-family: 'Playfair Display', serif; font-size: 20pt; margin: 0 0 10px 0; color: ${color.text};">${effectiveBillType.toUpperCase()}</h2>
-                  <p style="margin: 0; font-size: 9pt;"><span style="color: #777;">Invoice #</span> ${bill.billNumber || 'N/A'}</p>
-                  <p style="margin: 2px 0 0 0; font-size: 9pt;"><span style="color: #777;">Date:</span> ${format(new Date(bill.date), 'dd MMM, yyyy')}</p>
+                  <p style="margin: 0; font-size: 9pt;"><span style="color: ${color.textMuted};">Invoice #</span> ${bill.billNumber || 'N/A'}</p>
+                  <p style="margin: 2px 0 0 0; font-size: 9pt;"><span style="color: ${color.textMuted};">Date:</span> ${format(new Date(bill.date), 'dd MMM, yyyy')}</p>
                 </td>
               </tr>
             </table>
@@ -202,7 +203,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             </table>
         </main>
         
-        <footer>
+        <footer style="padding-top: 10px;">
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
               <tr>
                 <td style="width: 55%; vertical-align: top; padding-right: 20px;">
@@ -241,9 +242,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             </table>
             
             <div style="margin-top: 50px; padding-top: 15px; display: flex; justify-content: space-between; align-items: flex-end;">
-              <p style="font-size: 8.5pt; color: #777;">Thank you for your business! - ${settings.companyName}</p>
+              <p style="font-size: 8.5pt; color: ${color.textMuted};">Thank you for your business! - ${settings.companyName}</p>
               <div style="text-align: center;">
-                 <div style="width: 180px; height: 40px; border-bottom: 1px solid #999;"></div>
+                 <div style="width: 180px; height: 40px; border-bottom: 1px solid ${color.signatoryBorder};"></div>
                  <p style="font-size: 9pt; margin-top: 5px;">Authorised Signatory</p>
               </div>
             </div>
@@ -301,7 +302,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         const imgProps = pdf.getImageProperties(imgData);
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
         
         pdf.autoPrint();
         const pdfUrl = URL.createObjectURL(pdf.output('blob'));
