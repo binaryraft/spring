@@ -64,8 +64,10 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     const effectiveBillType = isViewingEstimate ? 'Estimate' : (bill.type === 'purchase' ? 'Purchase Invoice' : 'Sales Invoice');
 
     const logoImageHtml = settings.showCompanyLogo && settings.companyLogo
-      ? `<img src="${settings.companyLogo}" alt="Logo" style="max-width: 140px; max-height: 70px; object-fit: contain; margin-bottom: 10px;">`
+      ? `<img src="${settings.companyLogo}" alt="Logo" style="max-width: 140px; max-height: 70px; object-fit: contain; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;">`
       : '';
+
+    const showGstColumns = bill.type === 'sales-bill' && !isViewingEstimate;
 
     const itemsHtml = bill.items.map((item, index) => {
       const valuableDetails = getValuableById(item.valuableId);
@@ -86,6 +88,10 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${effectiveRate.toFixed(2)}</td>
           ${showMakingChargeInPdf ? `<td style="padding: 8px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : pdfCurrencyDisplay + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
           <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${taxableAmount.toFixed(2)}</td>
+          ${showGstColumns ? `
+            <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${(item.itemCgstAmount || 0).toFixed(2)}</td>
+            <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${(item.itemSgstAmount || 0).toFixed(2)}</td>
+          ` : ''}
         </tr>
       `;
     }).join('');
@@ -100,7 +106,11 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       <th style="padding: 10px 8px; text-align: right;">Qty/Wt</th>
       <th style="padding: 10px 8px; text-align: right;">Rate</th>
       ${showMakingChargeColumnInPdf ? `<th style="padding: 10px 8px; text-align: right;">Making</th>` : ''}
-      <th style="padding: 10px 8px; text-align: right;">Amount</th>
+      <th style="padding: 10px 8px; text-align: right;">Taxable Amt</th>
+      ${showGstColumns ? `
+        <th style="padding: 10px 8px; text-align: right;">CGST (${settings.cgstRate}%)</th>
+        <th style="padding: 10px 8px; text-align: right;">SGST (${settings.sgstRate}%)</th>
+      ` : ''}
     `;
 
     return `
