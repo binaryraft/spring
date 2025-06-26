@@ -90,7 +90,7 @@ const EditableHeader: React.FC = () => {
                   {settings.currencySymbol}{valuable.price.toFixed(2)}
                 </span>
                 <Button variant="ghost" size="icon" onClick={() => handleEditClick(valuable)} className="ml-3 opacity-50 group-hover:opacity-100 transition-opacity">
-                  <Edit3 className="h-5 w-5 text-accent" />
+                  <Edit3 className="h-5 w-5 text-muted-foreground" />
                   <span className="sr-only">Edit price for {valuable.name}</span>
                 </Button>
               </div>
