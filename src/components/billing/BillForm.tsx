@@ -390,7 +390,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-xl font-headline">
-              {isPurchase ? <ShoppingBag className="mr-3 h-6 w-6"/> : <Users className="mr-3 h-6 w-6"/>}
+              {isPurchase 
+                ? <ShoppingBag className="mr-3 h-6 w-6 text-destructive"/> 
+                : <Users className="mr-3 h-6 w-6 text-success"/>
+              }
               {isPurchase ? "Supplier" : "Customer"} Details
             </CardTitle>
           </CardHeader>
@@ -436,10 +439,13 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center text-xl font-headline"><ListOrdered className="mr-3 h-6 w-6"/>Items</CardTitle>
+            <CardTitle className="flex items-center text-xl font-headline">
+              <ListOrdered className={cn("mr-3 h-6 w-6", isSalesBill ? "text-success" : "text-destructive")}/>
+              Items
+            </CardTitle>
           </CardHeader>
           <CardContent className="px-3 sm:px-6">
-            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b`}>
+            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b bg-muted/30 rounded-t-lg`}>
               <div className="col-span-1">Material</div>
               <div className="col-span-1">Product Name</div>
               {billType === 'sales-bill' && <div className="col-span-1 text-center">HSN</div>}
@@ -490,7 +496,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <Card className="lg:col-span-3">
               <CardHeader>
-                  <CardTitle className="flex items-center text-xl font-headline"><StickyNote className="mr-3 h-6 w-6"/>Notes</CardTitle>
+                  <CardTitle className="flex items-center text-xl font-headline">
+                    <StickyNote className={cn("mr-3 h-6 w-6", isSalesBill ? "text-success" : "text-destructive")}/>
+                    Notes
+                  </CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea
@@ -506,13 +515,18 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </Card>
           
           <Card className={cn(
-            "lg:col-span-2 bg-muted/40",
-            isSalesBill ? "border-success/30" : "border-destructive/30"
+            "lg:col-span-2 border-2",
+            isSalesBill 
+              ? "bg-success/10 border-success/30" 
+              : "bg-destructive/10 border-destructive/30"
           )}>
             <CardHeader>
-                <CardTitle className="flex items-center text-xl font-headline"><Banknote className="mr-3 h-6 w-6"/>Summary</CardTitle>
+                <CardTitle className="flex items-center text-xl font-headline">
+                  <Banknote className={cn("mr-3 h-6 w-6", isSalesBill ? "text-success" : "text-destructive")}/>
+                  Summary
+                </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-base">
+            <CardContent className="space-y-3 text-base p-4">
                 <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="font-medium">{settings.currencySymbol}{subTotal.toFixed(2)}</span>
@@ -531,8 +545,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 )}
                 <Separator className="my-2" />
                 <div className={cn(
-                  "flex justify-between items-center text-2xl font-bold",
-                  isSalesBill ? "text-success" : "text-destructive"
+                    "flex justify-between items-center text-2xl font-bold p-4 mt-2 rounded-lg shadow-inner",
+                    isSalesBill 
+                        ? "bg-success text-success-foreground" 
+                        : "bg-destructive text-destructive-foreground"
                 )}>
                   <span>TOTAL</span>
                   <span>{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span>
@@ -556,7 +572,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
               variant="outline"
               size="lg"
               onClick={handleShowEstimate} 
-              className="h-12 text-base text-primary border-primary/50 hover:bg-primary/10"
+              className="h-12 text-base border-2 border-success text-success hover:bg-success/10 hover:text-success"
             >
               <FileText className="mr-2.5 h-5 w-5" /> Create Estimate
             </Button>
