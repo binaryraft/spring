@@ -387,7 +387,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-2 px-0 space-y-6">
-        <Card>
+        <Card className={cn("border", isSalesBill ? "border-success/50 bg-success/5" : "border-destructive/50 bg-destructive/5")}>
           <CardHeader>
             <CardTitle className="flex items-center text-xl font-headline">
               {isPurchase 
@@ -437,15 +437,13 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl font-headline">
-              <ListOrdered className={cn("mr-3 h-6 w-6", isSalesBill ? "text-success" : "text-destructive")}/>
-              Items
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b bg-muted/30 rounded-t-lg`}>
+        <div className={cn("dark rounded-xl p-4 sm:p-6 shadow-lg", isSalesBill ? "bg-success" : "bg-destructive")}>
+          <h3 className="flex items-center text-xl font-headline text-primary-foreground mb-4">
+            <ListOrdered className="mr-3 h-6 w-6"/>
+            Items
+          </h3>
+          <div className="px-0">
+            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b border-white/20 bg-black/10 rounded-t-lg`}>
               <div className="col-span-1">Material</div>
               <div className="col-span-1">Product Name</div>
               {billType === 'sales-bill' && <div className="col-span-1 text-center">HSN</div>}
@@ -465,7 +463,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
               <div className="col-span-1 text-right">Taxable Amt</div>
               <div className="col-span-1 text-center">Action</div>
             </div>
-            <div className="divide-y">
+            <div className="divide-y divide-white/20">
               {items.map((item, index) => (
                   <BillItemRow
                   key={item.id || index}
@@ -487,11 +485,16 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                   />
               ))}
             </div>
-            <Button variant="outline" size="sm" onClick={addItem} className="mt-4 shadow-sm text-base h-10 px-4">
+            <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={addItem} 
+                className="mt-4 shadow-sm text-base h-10 px-4 border border-white/40 text-primary-foreground hover:bg-white/10 hover:text-white"
+            >
               <PlusCircle className="mr-2 h-4 w-4" /> Add Item
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <Card className="lg:col-span-3">

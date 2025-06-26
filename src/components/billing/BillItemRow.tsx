@@ -185,7 +185,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   const showHsnForSales = !isPurchase;
 
   return (
-    <div className={cn(`group grid items-start gap-x-4 gap-y-3 py-4 hover:bg-muted/50 transition-colors px-3`, gridColsClass)}>
+    <div className={cn(`group grid items-start gap-x-4 gap-y-3 py-4 hover:bg-white/5 transition-colors px-3`, gridColsClass)}>
       <datalist id={datalistId}>
         {productSuggestions.map(p => <option key={p.name} value={p.name} />)}
       </datalist>
@@ -390,7 +390,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
       {/* Action Button */}
       <div className="text-center self-center">
-        <Button variant="ghost" size="icon" onClick={onRemoveItem} className="text-destructive hover:bg-destructive/10 h-10 w-10 opacity-50 md:opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button variant="ghost" size="icon" onClick={onRemoveItem} className="text-white/70 hover:bg-white/10 hover:text-white h-10 w-10 opacity-50 md:opacity-0 group-hover:opacity-100 transition-opacity">
           <Trash2 className="w-5 h-5" />
            <span className="sr-only">Remove Item</span>
         </Button>
