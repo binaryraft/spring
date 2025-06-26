@@ -7,15 +7,18 @@ import { Receipt, ShoppingCart } from 'lucide-react';
 import EditableHeader from '@/components/EditableHeader';
 import AccountingSummary from '@/components/dashboard/AccountingSummary';
 import TaxSummary from '@/components/dashboard/TaxSummary';
+import { useAppContext } from '@/contexts/AppContext';
 
 export default function DashboardPage() {
+  const { settings } = useAppContext();
+  
   return (
     <div className="space-y-12">
       {/* Header Section */}
       <div className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-8 shadow-2xl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="text-center md:text-left">
-                <h1 className="text-4xl lg:text-5xl font-bold font-headline tracking-tight">Dashboard</h1>
+                <h1 className="text-4xl lg:text-5xl font-bold font-headline tracking-tight">{settings.companyName}</h1>
                 <p className="text-xl text-primary-foreground/80 mt-2">
                     Welcome back! Here's a snapshot of your business.
                 </p>
@@ -35,11 +38,11 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      {/* Live Market Prices */}
+      {/* Today's Prices */}
       <EditableHeader />
       
       {/* Summaries Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <div className="flex flex-col gap-8">
         <AccountingSummary />
         <TaxSummary />
       </div>

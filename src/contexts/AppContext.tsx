@@ -47,7 +47,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => ({
       ...prev,
       valuables: prev.valuables.map(v =>
-        v.id === valuableId ? { ...v, price: Math.max(0, newPrice) } : v 
+        v.id === valuableId ? { ...v, price: Math.max(0, newPrice), lastUpdated: new Date().toISOString() } : v 
       ),
     }));
   }, [setSettings]);

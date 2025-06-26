@@ -3,6 +3,7 @@ export interface Valuable {
   id: string;
   name: string;
   price: number;
+  lastUpdated?: string;
   icon: string; 
   iconColor?: string; 
   selectedInHeader: boolean;

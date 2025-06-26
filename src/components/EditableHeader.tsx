@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ValuableIcon from "./ValuableIcon";
 import { Button } from "@/components/ui/button";
-import { Edit3, Save, XCircle, TrendingUp } from "lucide-react";
+import { Edit3, Save, XCircle, TrendingUp, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { isToday } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const EditableHeader: React.FC = () => {
   const { settings, updateValuablePrice } = useAppContext();
@@ -52,11 +54,29 @@ const EditableHeader: React.FC = () => {
     <Card className="p-6 sm:p-8 rounded-2xl shadow-xl border-border">
       <h3 className="text-3xl font-bold text-center mb-10 text-primary flex items-center justify-center gap-3">
         <TrendingUp className="w-8 h-8"/>
-        Live Market Prices
+        Today's Prices
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {activeValuables.map((valuable) => (
+        {activeValuables.map((valuable) => {
+          const isPriceUpdatedToday = valuable.lastUpdated ? isToday(new Date(valuable.lastUpdated)) : false;
+          return (
           <div key={valuable.id} className="relative group flex flex-col items-center justify-between p-4 rounded-xl bg-gradient-to-br from-background to-muted/50 shadow-lg border border-primary/10 hover:shadow-primary/20 hover:-translate-y-1 transition-all duration-300">
+            
+            {!isPriceUpdatedToday && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="absolute top-2 left-2 text-yellow-500 cursor-help">
+                        <AlertTriangle className="h-5 w-5" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Price not updated today.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
             <div className="flex flex-col items-center text-center">
                 <Label htmlFor={`price-display-${valuable.id}`} className="flex items-center text-xl font-headline text-foreground">
                     <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-7 h-7 mr-3" />
@@ -101,7 +121,7 @@ const EditableHeader: React.FC = () => {
               </div>
             )}
           </div>
-        ))}
+        )})}
       </div>
     </Card>
   );
