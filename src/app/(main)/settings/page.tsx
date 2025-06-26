@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, FileText as GstinIcon } from "lucide-react"; 
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, FileText as GstinIcon, Loader2 } from "lucide-react"; 
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "@/components/ValuableIcon";
@@ -39,6 +39,7 @@ export default function SettingsPage() {
   const [customMaterialForm, setCustomMaterialForm] = useState<Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>>({
     name: '', price: 0, unit: 'gram', icon: 'other', iconColor: '#808080'
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setLocalSettings(JSON.parse(JSON.stringify(settings))); 
@@ -187,7 +188,11 @@ export default function SettingsPage() {
   };
 
   const handleSaveAllSettings = () => {
+    setIsSaving(true);
     updateSettings(localSettings);
+    setTimeout(() => {
+        setIsSaving(false);
+    }, 1200);
   };
 
   return (
@@ -537,10 +542,27 @@ export default function SettingsPage() {
 
 
         <div className="flex justify-end pt-6 border-t mt-8">
-            <Button onClick={handleSaveAllSettings} size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg h-auto px-8 py-3">
-                <Save className="mr-2.5 h-5 w-5" /> Save All Settings
+            <Button 
+              onClick={handleSaveAllSettings} 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg h-auto px-8 py-3 w-52"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2.5 h-5 w-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2.5 h-5 w-5" /> 
+                  Save All Settings
+                </>
+              )}
             </Button>
         </div>
     </div>
   );
 };
+
+    
