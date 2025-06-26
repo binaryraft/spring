@@ -7,7 +7,6 @@ import { SidebarProvider, Sidebar, SidebarTrigger, SidebarMenu, SidebarMenuItem,
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, Receipt, ShoppingCart, Settings, Moon, Sun, PanelLeft, Gem, FilePieChart } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
-import SettingsPanel from '@/components/SettingsPanel';
 import { cn } from '@/lib/utils';
 
 // This wrapper ensures its children are only rendered on the client-side,
@@ -101,7 +100,12 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                     <SidebarSeparator />
                     <SidebarMenu>
                        <SidebarMenuItem>
-                            <SettingsPanel />
+                            <Link href="/settings" passHref>
+                                <SidebarMenuButton isActive={pathname === '/settings'} tooltip="Settings" className="h-14 text-lg">
+                                    <Settings className="h-6 w-6"/>
+                                    <span>Settings</span>
+                                </SidebarMenuButton>
+                            </Link>
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarFooter>
