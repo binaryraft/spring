@@ -20,13 +20,116 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check, Wrench } from "lucide-react"; 
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check, Wrench, GripVertical } from "lucide-react"; 
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "@/components/ValuableIcon";
 import Image from "next/image";
 import { cn } from "@/lib/utils"; 
 import { v4 as uuidv4 } from 'uuid';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableValuableCard({ 
+    valuable, 
+    currencySymbol,
+    handleLocalValuableChange, 
+    handleEditValuable,
+    handleDeleteValuable
+}: { 
+    valuable: Valuable, 
+    currencySymbol: string,
+    handleLocalValuableChange: (valuableId: string, field: keyof Valuable, value: any) => void,
+    handleEditValuable: (valuable: Valuable) => void,
+    handleDeleteValuable: (valuableId: string) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: valuable.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 'auto',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <div className="absolute top-1/2 -left-8 -translate-y-1/2" {...attributes} {...listeners}>
+        <GripVertical className="h-8 w-8 text-muted-foreground cursor-grab active:cursor-grabbing" />
+      </div>
+      <div key={valuable.id} className="p-4 border rounded-lg space-y-4 bg-card shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                  <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-7 h-7 text-primary" />
+                  {valuable.isDefault ? 
+                      <span className="text-lg font-semibold">{valuable.name}</span> :
+                      <Input value={valuable.name} onChange={(e) => handleLocalValuableChange(valuable.id, 'name', e.target.value)} className="text-lg font-semibold mr-2 w-auto inline-flex h-10 bg-transparent border-0 focus:ring-1 focus:ring-primary"/>
+                  }
+              </div>
+              <div className="flex items-center space-x-3">
+                  <Checkbox id={`select-${valuable.id}`} checked={valuable.selectedInHeader} onCheckedChange={(checked) => handleLocalValuableChange(valuable.id, 'selectedInHeader', !!checked)} className="w-5 h-5"/>
+                  <Label htmlFor={`select-${valuable.id}`} className="text-sm font-medium cursor-pointer">Show in Header</Label>
+              </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div>
+                  <Label htmlFor={`price-${valuable.id}`} className="text-sm font-medium">Market Price ({currencySymbol})</Label>
+                  <Input id={`price-${valuable.id}`} type="number" value={valuable.price} onChange={(e) => handleLocalValuableChange(valuable.id, 'price', parseFloat(e.target.value))} className="mt-1.5 h-11 text-base" min="0"/>
+              </div>
+              <div>
+                  <Label htmlFor={`unit-${valuable.id}`} className="text-sm font-medium">Unit</Label>
+                  <Input id={`unit-${valuable.id}`} value={valuable.unit} onChange={(e) => handleLocalValuableChange(valuable.id, 'unit', e.target.value)} className="mt-1.5 h-11 text-base" disabled={valuable.isDefault && ['gold', 'silver', 'diamond', 'platinum'].includes(valuable.icon)}/>
+              </div>
+              {!valuable.isDefault && (
+                  <>
+                  <div>
+                      <Label htmlFor={`icon-select-${valuable.id}`} className="text-sm font-medium">Icon</Label>
+                      <Select value={valuable.icon} onValueChange={(newIcon) => handleLocalValuableChange(valuable.id, 'icon', newIcon)}>
+                          <SelectTrigger id={`icon-select-${valuable.id}`} className="mt-1.5 h-11 text-base"><SelectValue placeholder="Select icon" /></SelectTrigger>
+                          <SelectContent>
+                              {AVAILABLE_ICONS.map(iconOpt => (<SelectItem key={iconOpt.value} value={iconOpt.value} className="text-base py-2 flex items-center"><ValuableIcon valuableType={iconOpt.value} className="w-5 h-5 mr-3" color={iconOpt.value === 'custom-gem' ? valuable.iconColor : undefined} /> {iconOpt.label}</SelectItem>))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+                  {valuable.icon === 'custom-gem' && (
+                      <div>
+                          <Label htmlFor={`icon-color-${valuable.id}`} className="text-sm font-medium flex items-center"><Palette className="w-4 h-4 mr-2"/>Icon Color</Label>
+                          <Input id={`icon-color-${valuable.id}`} type="color" value={valuable.iconColor || '#808080'} onChange={(e) => handleLocalValuableChange(valuable.id, 'iconColor', e.target.value)} className="mt-1.5 h-11 text-base w-full"/>
+                      </div>
+                  )}
+                  </>
+              )}
+          </div>
+          {!valuable.isDefault && (
+              <div className="flex justify-end space-x-2.5 pt-2 border-t mt-3">
+                  <Button variant="outline" size="sm" onClick={() => handleEditValuable(valuable)} className="text-sm px-3 py-1.5 h-auto"><Edit3 className="mr-1.5 h-4 w-4"/> Edit in Form</Button>
+                  <AlertDialog>
+                      <AlertDialogTrigger asChild><Button variant="destructive" size="sm" className="text-sm px-3 py-1.5 h-auto"><Trash2 className="mr-1.5 h-4 w-4"/> Delete</Button></AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitle className="text-xl">Confirm Deletion</AlertDialogTitle>
+                              <AlertDialogDescription className="text-base">Are you sure you want to delete the material "{valuable.name}"? This action cannot be undone.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel className="text-base h-auto px-4 py-2">Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteValuable(valuable.id)} className="bg-destructive hover:bg-destructive/90 text-base h-auto px-4 py-2">Delete Material</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+              </div>
+          )}
+      </div>
+    </div>
+  );
+}
+
 
 export default function SettingsPage() {
   const { settings, updateSettings } = useAppContext();
@@ -140,7 +243,7 @@ export default function SettingsPage() {
       if (materialNameExists(materialToSave.name, isEditingMaterial.id)) return;
       setLocalSettings(prev => ({
         ...prev,
-        valuables: prev.valuables.map(v => v.id === isEditingMaterial.id ? { ...v, ...materialToSave } : v).sort((a, b) => a.name.localeCompare(b.name)),
+        valuables: prev.valuables.map(v => v.id === isEditingMaterial.id ? { ...v, ...materialToSave } : v),
       }));
     } else {
       if (materialNameExists(materialToSave.name)) return;
@@ -152,7 +255,7 @@ export default function SettingsPage() {
       };
       setLocalSettings(prev => ({
         ...prev,
-        valuables: [...prev.valuables, newFullValuable].sort((a, b) => a.name.localeCompare(b.name)),
+        valuables: [...prev.valuables, newFullValuable],
       }));
     }
     resetCustomMaterialForm();
@@ -208,6 +311,29 @@ export default function SettingsPage() {
     { id: 'billing', label: 'Billing Defaults', icon: Package },
     { id: 'features', label: 'Features', icon: Wrench },
   ];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setLocalSettings((prev) => {
+        const oldIndex = prev.valuables.findIndex((v) => v.id === active.id);
+        const newIndex = prev.valuables.findIndex((v) => v.id === over.id);
+        return {
+          ...prev,
+          valuables: arrayMove(prev.valuables, oldIndex, newIndex),
+        };
+      });
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -408,72 +534,22 @@ export default function SettingsPage() {
                         </div>
 
                         <h4 className="text-lg font-semibold mb-4 text-muted-foreground">Current Materials List</h4>
-                        <div className="space-y-4">
-                            {localSettings.valuables.sort((a,b) => a.name.localeCompare(b.name)).map((valuable) => (
-                            <div key={valuable.id} className="p-4 border rounded-lg space-y-4 bg-card shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-7 h-7 text-primary" />
-                                        {valuable.isDefault ? 
-                                            <span className="text-lg font-semibold">{valuable.name}</span> :
-                                            <Input value={valuable.name} onChange={(e) => handleLocalValuableChange(valuable.id, 'name', e.target.value)} className="text-lg font-semibold mr-2 w-auto inline-flex h-10 bg-transparent border-0 focus:ring-1 focus:ring-primary"/>
-                                        }
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                        <Checkbox id={`select-${valuable.id}`} checked={valuable.selectedInHeader} onCheckedChange={(checked) => handleLocalValuableChange(valuable.id, 'selectedInHeader', !!checked)} className="w-5 h-5"/>
-                                        <Label htmlFor={`select-${valuable.id}`} className="text-sm font-medium cursor-pointer">Show in Header</Label>
-                                    </div>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={localSettings.valuables.map(v => v.id)} strategy={verticalListSortingStrategy}>
+                                <div className="space-y-4 ml-8">
+                                    {localSettings.valuables.map((valuable) => (
+                                        <SortableValuableCard 
+                                            key={valuable.id} 
+                                            valuable={valuable} 
+                                            currencySymbol={localSettings.currencySymbol}
+                                            handleLocalValuableChange={handleLocalValuableChange}
+                                            handleEditValuable={handleEditValuable}
+                                            handleDeleteValuable={handleDeleteValuable}
+                                        />
+                                    ))}
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                                    <div>
-                                        <Label htmlFor={`price-${valuable.id}`} className="text-sm font-medium">Market Price ({localSettings.currencySymbol})</Label>
-                                        <Input id={`price-${valuable.id}`} type="number" value={valuable.price} onChange={(e) => handleLocalValuableChange(valuable.id, 'price', parseFloat(e.target.value))} className="mt-1.5 h-11 text-base" min="0"/>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor={`unit-${valuable.id}`} className="text-sm font-medium">Unit</Label>
-                                        <Input id={`unit-${valuable.id}`} value={valuable.unit} onChange={(e) => handleLocalValuableChange(valuable.id, 'unit', e.target.value)} className="mt-1.5 h-11 text-base" disabled={valuable.isDefault && ['gold', 'silver', 'diamond', 'platinum'].includes(valuable.icon)}/>
-                                    </div>
-                                    {!valuable.isDefault && (
-                                        <>
-                                        <div>
-                                            <Label htmlFor={`icon-select-${valuable.id}`} className="text-sm font-medium">Icon</Label>
-                                            <Select value={valuable.icon} onValueChange={(newIcon) => handleLocalValuableChange(valuable.id, 'icon', newIcon)}>
-                                                <SelectTrigger id={`icon-select-${valuable.id}`} className="mt-1.5 h-11 text-base"><SelectValue placeholder="Select icon" /></SelectTrigger>
-                                                <SelectContent>
-                                                    {AVAILABLE_ICONS.map(iconOpt => (<SelectItem key={iconOpt.value} value={iconOpt.value} className="text-base py-2 flex items-center"><ValuableIcon valuableType={iconOpt.value} className="w-5 h-5 mr-3" color={iconOpt.value === 'custom-gem' ? valuable.iconColor : undefined} /> {iconOpt.label}</SelectItem>))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        {valuable.icon === 'custom-gem' && (
-                                            <div>
-                                                <Label htmlFor={`icon-color-${valuable.id}`} className="text-sm font-medium flex items-center"><Palette className="w-4 h-4 mr-2"/>Icon Color</Label>
-                                                <Input id={`icon-color-${valuable.id}`} type="color" value={valuable.iconColor || '#808080'} onChange={(e) => handleLocalValuableChange(valuable.id, 'iconColor', e.target.value)} className="mt-1.5 h-11 text-base w-full"/>
-                                            </div>
-                                        )}
-                                        </>
-                                    )}
-                                </div>
-                                {!valuable.isDefault && (
-                                    <div className="flex justify-end space-x-2.5 pt-2 border-t mt-3">
-                                        <Button variant="outline" size="sm" onClick={() => handleEditValuable(valuable)} className="text-sm px-3 py-1.5 h-auto"><Edit3 className="mr-1.5 h-4 w-4"/> Edit in Form</Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild><Button variant="destructive" size="sm" className="text-sm px-3 py-1.5 h-auto"><Trash2 className="mr-1.5 h-4 w-4"/> Delete</Button></AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle className="text-xl">Confirm Deletion</AlertDialogTitle>
-                                                    <AlertDialogDescription className="text-base">Are you sure you want to delete the material "{valuable.name}"? This action cannot be undone.</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel className="text-base h-auto px-4 py-2">Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteValuable(valuable.id)} className="bg-destructive hover:bg-destructive/90 text-base h-auto px-4 py-2">Delete Material</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                )}
-                            </div>
-                            ))}
-                        </div>
+                            </SortableContext>
+                        </DndContext>
                     </CardContent>
                 </Card>
               )}

@@ -356,7 +356,9 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                     <Select value={currentItem.valuableId || ''} onValueChange={handleValuableSelect}>
                         <SelectTrigger className="h-11 text-base w-full" ref={materialSelectTriggerRef}><SelectValue placeholder="Select Material" /></SelectTrigger>
                         <SelectContent>
-                            {settings.valuables.sort((a,b) => a.name.localeCompare(b.name)).map(v => (
+                            {settings.valuables
+                                .filter(v => v.selectedInHeader)
+                                .map(v => (
                                 <SelectItem key={v.id} value={v.id} className="text-base py-2">
                                 <div className="flex items-center"><ValuableIcon valuableType={v.icon} color={v.iconColor} className="w-5 h-5 mr-2.5"/>{v.name}</div>
                                 </SelectItem>
