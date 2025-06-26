@@ -11,9 +11,11 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['PT Sans', 'sans-serif'],
-        headline: ['Playfair Display', 'serif'],
-        code: ['monospace'],
+        sans: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['ui-serif', 'Georgia', 'serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
+        headline: ['ui-serif', 'Georgia', 'serif'], // Fallback to serif
+        body: ['ui-sans-serif', 'system-ui', 'sans-serif'], // Fallback to sans-serif
       },
       colors: {
         background: 'hsl(var(--background))',
