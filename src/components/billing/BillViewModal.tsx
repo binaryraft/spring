@@ -72,7 +72,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       const valuableDetails = getValuableById(item.valuableId);
       const effectiveRate = getEffectiveRateForItem(item);
       const taxableAmount = item.amount;
-      const showHsnInPdf = bill.type === 'sales-bill' && !isEstimateView && item.hsnCode;
+      const showHsnInPdf = bill.type === 'sales-bill' && !isViewingEstimate && item.hsnCode;
       const showMakingChargeInPdf = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
 
       return `
