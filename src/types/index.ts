@@ -23,6 +23,11 @@ export interface CurrencyDefinition {
 
 export type PdfLogoPosition = 'top-center' | 'top-left' | 'inline-left';
 
+export interface ProductSuggestion {
+  name: string;
+  hsnCode: string;
+}
+
 export interface Settings {
   companyName: string;
   slogan: string;
@@ -37,7 +42,7 @@ export interface Settings {
   defaultPurchaseItemNetFixedValue: number;
   cgstRate: number; 
   sgstRate: number; 
-  productNames: string[]; 
+  productSuggestions: ProductSuggestion[]; 
   currencySymbol: string; 
   availableCurrencies: CurrencyDefinition[];
   theme: 'light' | 'dark';
@@ -124,12 +129,22 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultPurchaseItemNetFixedValue: 4500,
   cgstRate: 1.5, 
   sgstRate: 1.5, 
-  productNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle", "Bangles", "Rings", "Necklace", "Platinum Band", "Ruby Earrings"],
+  productSuggestions: [
+    { name: "Gold Ring", hsnCode: "7113" },
+    { name: "Silver Chain", hsnCode: "7113" },
+    { name: "Diamond Pendant", hsnCode: "7113" },
+    { name: "Gold Bangle", hsnCode: "7113" },
+    { name: "Bangles", hsnCode: "7113" },
+    { name: "Rings", hsnCode: "7113" },
+    { name: "Necklace", hsnCode: "7113" },
+    { name: "Platinum Band", hsnCode: "7114" },
+    { name: "Ruby Earrings", hsnCode: "7113" }
+  ],
   currencySymbol: 'Rs ', 
   availableCurrencies: AVAILABLE_CURRENCIES,
   theme: 'light',
-  enableColorBilling: false,
-  pdfLogoPosition: 'top-center', 
+  enableColorBilling: true,
+  pdfLogoPosition: 'inline-left', 
 };
 
 export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = [

@@ -2,7 +2,7 @@
 "use client";
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { Settings, Valuable, Bill, BillItem, BillType, CurrencyDefinition, PdfLogoPosition } from '@/types';
+import type { Settings, Valuable, Bill, BillItem, BillType, CurrencyDefinition, PdfLogoPosition, ProductSuggestion } from '@/types';
 import { DEFAULT_SETTINGS, AVAILABLE_CURRENCIES } from '@/types';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,8 +17,9 @@ interface AppContextType {
   updateValuableData: (valuableId: string, updatedData: Partial<Omit<Valuable, 'id' | 'isDefault'>>) => void;
   removeValuable: (valuableId: string) => void;
 
-  addProductName: (name: string) => void;
-  removeProductName: (name: string) => void;
+  addOrUpdateProductSuggestion: (name: string, hsnCode: string) => void;
+  removeProductSuggestion: (name: string) => void;
+
   bills: Bill[];
   addBill: (bill: Omit<Bill, 'id' | 'date' | 'billNumber' | 'companyGstin'>) => Bill;
   updateBill: (updatedBill: Bill) => void;
@@ -112,25 +113,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, [setSettings]);
 
-
-  const addProductName = useCallback((name: string) => {
+  const addOrUpdateProductSuggestion = useCallback((name: string, hsnCode: string) => {
     if (!name || name.trim() === '') return;
+    const trimmedName = name.trim();
+    const lowerCaseName = trimmedName.toLowerCase();
+    
     setSettings(prev => {
-      const lowerCaseName = name.trim().toLowerCase();
-      if (prev.productNames.some(n => n.toLowerCase() === lowerCaseName)) {
-        return prev; 
+      const existingSuggestion = prev.productSuggestions.find(p => p.name.toLowerCase() === lowerCaseName);
+
+      if (existingSuggestion) {
+        // Update HSN if it has changed
+        if (existingSuggestion.hsnCode !== hsnCode) {
+          return {
+            ...prev,
+            productSuggestions: prev.productSuggestions.map(p =>
+              p.name.toLowerCase() === lowerCaseName ? { ...p, hsnCode: hsnCode || '' } : p
+            )
+          };
+        }
+        return prev; // No change needed
+      } else {
+        // Add new suggestion
+        const newSuggestion: ProductSuggestion = { name: trimmedName, hsnCode: hsnCode || '' };
+        return {
+          ...prev,
+          productSuggestions: [...prev.productSuggestions, newSuggestion].sort((a, b) => a.name.localeCompare(b.name))
+        };
       }
-      return {
-        ...prev,
-        productNames: [...prev.productNames, name.trim()].sort((a, b) => a.localeCompare(b)),
-      };
     });
   }, [setSettings]);
 
-  const removeProductName = useCallback((nameToRemove: string) => {
+  const removeProductSuggestion = useCallback((nameToRemove: string) => {
     setSettings(prev => ({
       ...prev,
-      productNames: prev.productNames.filter(name => name !== nameToRemove),
+      productSuggestions: prev.productSuggestions.filter(p => p.name !== nameToRemove),
     }));
   }, [setSettings]);
 
@@ -192,7 +208,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSettings(prev => ({ ...prev, pdfLogoPosition: position }));
   }, [setSettings]);
 
-
   return (
     <AppContext.Provider value={{
       settings,
@@ -202,8 +217,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addValuable,
       updateValuableData,
       removeValuable,
-      addProductName,
-      removeProductName,
+      addOrUpdateProductSuggestion,
+      removeProductSuggestion,
       bills,
       addBill,
       updateBill,

@@ -1,7 +1,7 @@
 
 "use client";
 import { useAppContext } from "@/contexts/AppContext";
-import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition, PdfLogoPosition } from "@/types";
+import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition, PdfLogoPosition, ProductSuggestion } from "@/types";
 import { AVAILABLE_ICONS, AVAILABLE_CURRENCIES } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,15 +27,12 @@ import ValuableIcon from "./ValuableIcon";
 import Image from "next/image";
 import { cn } from "@/lib/utils"; 
 import { v4 as uuidv4 } from 'uuid';
-// import { useToast } from "@/hooks/use-toast"; // Toast removed
-
 
 const SettingsPanel: React.FC = () => {
-  const { settings, updateSettings, toggleValuableInHeader, addProductName, removeProductName, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol, addValuable, updateValuableData, removeValuable: removeValuableFromContext, toggleEnableColorBilling, updatePdfLogoPosition } = useAppContext();
+  const { settings, updateSettings, toggleValuableInHeader, addOrUpdateProductSuggestion, removeProductSuggestion, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol, addValuable, updateValuableData, removeValuable: removeValuableFromContext, toggleEnableColorBilling, updatePdfLogoPosition } = useAppContext();
   const [localSettings, setLocalSettings] = useState<Settings>(() => JSON.parse(JSON.stringify(settings))); 
   const [newProductName, setNewProductName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // const { toast } = useToast(); // Toast removed
 
   const [isEditingMaterial, setIsEditingMaterial] = useState<Valuable | null>(null);
   const [customMaterialForm, setCustomMaterialForm] = useState<Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>>({
@@ -76,21 +73,34 @@ const SettingsPanel: React.FC = () => {
       ),
     }));
   };
-
-  const handleAddProductNameToList = () => {
-    if (newProductName.trim() !== '') {
-      addProductName(newProductName.trim()); 
-      setNewProductName('');
-      // toast({ title: "Success", description: "Product name suggestion added." }); // Toast removed
-    } else {
-      // toast({ title: "Error", description: "Product name cannot be empty.", variant: "destructive" }); // Toast removed
+  
+  const handleAddProductSuggestion = () => {
+    if (newProductName.trim() && !localSettings.productSuggestions.some(p => p.name.toLowerCase() === newProductName.trim().toLowerCase())) {
+        const newSuggestion: ProductSuggestion = { name: newProductName.trim(), hsnCode: '' };
+        setLocalSettings(prev => ({
+            ...prev,
+            productSuggestions: [...prev.productSuggestions, newSuggestion].sort((a, b) => a.name.localeCompare(b.name)),
+        }));
+        setNewProductName('');
     }
   };
-  
-  const handleRemoveProductNameFromList = (productNameToRemove: string) => {
-    removeProductName(productNameToRemove); 
-    // toast({ title: "Success", description: `"${productNameToRemove}" removed from suggestions.` }); // Toast removed
+
+  const handleProductSuggestionHsnChange = (productName: string, newHsn: string) => {
+    setLocalSettings(prev => ({
+        ...prev,
+        productSuggestions: prev.productSuggestions.map(p =>
+            p.name === productName ? { ...p, hsnCode: newHsn } : p
+        ),
+    }));
   };
+  
+  const handleRemoveProductSuggestion = (productName: string) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      productSuggestions: prev.productSuggestions.filter(p => p.name !== productName),
+    }));
+  };
+
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -98,11 +108,8 @@ const SettingsPanel: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setCompanyLogo(reader.result as string);
-        // toast({ title: "Success", description: "Company logo uploaded." }); // Toast removed
       };
       reader.readAsDataURL(file);
-    } else {
-      // toast({ title: "Error", description: "Please upload a valid image file.", variant: "destructive" }); // Toast removed
     }
   };
 
@@ -111,7 +118,6 @@ const SettingsPanel: React.FC = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = ""; 
     }
-    // toast({ title: "Success", description: "Company logo removed." }); // Toast removed
   };
 
   const handleCustomMaterialFormChange = (field: keyof typeof customMaterialForm, value: any) => {
@@ -120,15 +126,12 @@ const SettingsPanel: React.FC = () => {
 
   const handleSaveCustomMaterial = () => {
     if (!customMaterialForm.name.trim()) {
-      // toast({ title: "Error", description: "Material name cannot be empty.", variant: "destructive" }); // Toast removed
       return;
     }
     if (!customMaterialForm.unit.trim()) {
-        // toast({ title: "Error", description: "Material unit cannot be empty.", variant: "destructive" }); // Toast removed
         return;
     }
     if (customMaterialForm.price < 0) {
-      // toast({ title: "Error", description: "Material price cannot be negative.", variant: "destructive" }); // Toast removed
       return;
     }
 
@@ -140,22 +143,14 @@ const SettingsPanel: React.FC = () => {
     
     if (isEditingMaterial) {
       if (settings.valuables.some(v => v.id !== isEditingMaterial.id && v.name.toLowerCase() === materialToSave.name.trim().toLowerCase())) {
-        // toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" }); // Toast removed
         return;
       }
       updateValuableData(isEditingMaterial.id, materialToSave);
-      // toast({ title: "Success", description: `Material "${materialToSave.name}" updated.` }); // Toast removed
     } else {
       if (settings.valuables.some(v => v.name.toLowerCase() === materialToSave.name.trim().toLowerCase())) {
-        // toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists.`, variant: "destructive" }); // Toast removed
         return;
       }
-      const addedValuable = addValuable(materialToSave);
-      if (addedValuable) {
-        // toast({ title: "Success", description: `Material "${materialToSave.name}" added.` }); // Toast removed
-      } else {
-        // toast({ title: "Error", description: `Material with name "${materialToSave.name}" already exists or an error occurred.`, variant: "destructive" }); // Toast removed
-      }
+      addValuable(materialToSave);
     }
     resetCustomMaterialForm();
   };
@@ -181,18 +176,26 @@ const SettingsPanel: React.FC = () => {
   const handleDeleteValuable = (valuableId: string) => {
     const valuableToRemove = settings.valuables.find(v => v.id === valuableId);
     if (valuableToRemove?.isDefault) {
-        // toast({ title: "Error", description: "Default materials cannot be deleted.", variant: "destructive" }); // Toast removed
         return;
     }
     removeValuableFromContext(valuableId);
-    // toast({ title: "Success", description: `Material "${valuableToRemove?.name}" deleted.` }); // Toast removed
     if (isEditingMaterial && isEditingMaterial.id === valuableId) {
         resetCustomMaterialForm();
     }
   };
 
   const handleSaveAllSettings = () => {
-    updateSettings(localSettings); 
+    updateSettings(localSettings);
+    // These functions need to be called to update the global state
+    // since some parts of the context rely on their own logic (like adding suggestions)
+    localSettings.productSuggestions.forEach(p => addOrUpdateProductSuggestion(p.name, p.hsnCode));
+    // Check for removed suggestions
+    settings.productSuggestions.forEach(oldP => {
+        if (!localSettings.productSuggestions.some(newP => newP.name === oldP.name)) {
+            removeProductSuggestion(oldP.name);
+        }
+    });
+
     updateCurrencySymbol(localSettings.currencySymbol);
     toggleEnableColorBilling(localSettings.enableColorBilling); 
     updatePdfLogoPosition(localSettings.pdfLogoPosition);
@@ -216,7 +219,6 @@ const SettingsPanel: React.FC = () => {
         updateValuableData(id, dataToUpdateInContext);
       }
     });
-    // toast({ title: "Success", description: "All settings saved!" }); // Toast removed
   };
 
   const SectionHeader: React.FC<{ title: string; icon: React.ElementType; className?: string; id?:string }> = ({ title, icon: Icon, className, id }) => (
@@ -544,9 +546,9 @@ const SettingsPanel: React.FC = () => {
             <Separator />
 
             <section>
-              <SectionHeader title="Product Names Suggestions" icon={Tag} />
+              <SectionHeader title="Product Name & HSN Suggestions" icon={Tag} />
               <div className="space-y-4 mb-5">
-                <Label htmlFor="newProductName" className="font-medium text-lg">Add New Product Name Suggestion</Label>
+                <Label htmlFor="newProductName" className="font-medium text-lg">Add New Product Suggestion</Label>
                 <div className="flex space-x-2.5">
                   <Input
                     id="newProductName"
@@ -555,19 +557,48 @@ const SettingsPanel: React.FC = () => {
                     placeholder="e.g., Ring, Bangle, Earring"
                     className="h-12 text-lg"
                   />
-                  <Button onClick={handleAddProductNameToList} size="default" className="h-12 shadow hover:shadow-md transition-shadow text-lg px-5">
+                  <Button onClick={handleAddProductSuggestion} size="default" className="h-12 shadow hover:shadow-md transition-shadow text-lg px-5">
                     <PlusCircle className="mr-2 h-5 w-5" /> Add
                   </Button>
                 </div>
               </div>
-              {settings.productNames.length > 0 ? (
-                <div className="max-h-72 overflow-y-auto border rounded-md p-4 space-y-2.5 bg-muted/30">
-                  {settings.productNames.map((productName) => (
-                    <div key={productName} className="flex items-center justify-between p-3 bg-card rounded text-lg shadow-sm">
-                      <span>{productName}</span>
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveProductNameFromList(productName)} className="h-8 w-8 text-destructive hover:bg-destructive/10">
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
+              {localSettings.productSuggestions.length > 0 ? (
+                <div className="max-h-80 overflow-y-auto border rounded-md p-4 space-y-3 bg-muted/30">
+                  <div className="grid grid-cols-[2fr_1fr_auto] gap-x-4 items-center px-3 py-2 font-semibold text-muted-foreground">
+                      <span>Product Name</span>
+                      <span>HSN Code</span>
+                      <span className="text-right">Action</span>
+                  </div>
+                  {localSettings.productSuggestions.map((product) => (
+                    <div key={product.name} className="grid grid-cols-[2fr_1fr_auto] gap-x-4 items-center p-3 bg-card rounded shadow-sm">
+                      <span className="text-lg font-medium">{product.name}</span>
+                      <Input
+                        value={product.hsnCode}
+                        onChange={(e) => handleProductSuggestionHsnChange(product.name, e.target.value)}
+                        placeholder="HSN Code"
+                        className="h-11 text-base"
+                      />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10">
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete the product suggestion "{product.name}"?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleRemoveProductSuggestion(product.name)} className="bg-destructive hover:bg-destructive/90">
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   ))}
                 </div>
@@ -575,7 +606,7 @@ const SettingsPanel: React.FC = () => {
                 <p className="text-lg text-muted-foreground italic">No custom product names added yet.</p>
               )}
               <p className="text-base text-muted-foreground mt-3">
-                These names appear as suggestions. Product names are also automatically added here when entered in bills.
+                HSN codes are automatically saved here when you create bills. You can also edit them manually.
               </p>
             </section>
 

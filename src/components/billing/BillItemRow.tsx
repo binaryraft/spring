@@ -1,7 +1,7 @@
 
 "use client";
 import React, { useRef, useMemo } from 'react';
-import type { BillItem, Valuable, MakingChargeSetting } from '@/types';
+import type { BillItem, Valuable, MakingChargeSetting, ProductSuggestion } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,10 +12,9 @@ import { cn } from '@/lib/utils';
 interface BillItemRowProps {
   item: Partial<BillItem>;
   onItemChange: (updatedFields: Partial<BillItem>) => void;
-  onProductNameBlur: (name: string) => void;
   onRemoveItem: () => void;
   availableValuables: Valuable[]; // All valuables from settings
-  productNames: string[];
+  productSuggestions: ProductSuggestion[];
   isPurchase: boolean;
   defaultMakingCharge: MakingChargeSetting;
   defaultPurchaseNetPercentage: number;
@@ -31,10 +30,9 @@ interface BillItemRowProps {
 const BillItemRow: React.FC<BillItemRowProps> = ({
   item,
   onItemChange,
-  onProductNameBlur,
   onRemoveItem,
   availableValuables,
-  productNames,
+  productSuggestions,
   isPurchase,
   defaultMakingCharge,
   defaultPurchaseNetPercentage,
@@ -85,7 +83,6 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
     const currentItemValuable = item.valuableId ? availableValuables.find(v => v.id === item.valuableId) : null;
 
     if (currentItemValuable && !currentItemValuable.selectedInHeader) {
-      // Ensure the currently selected (but not header-selected) valuable is in the list for this item
       if (!filtered.find(v => v.id === currentItemValuable.id)) {
         filtered.push(currentItemValuable);
       }
@@ -95,7 +92,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
 
   const handleValuableSelect = (valuableId: string) => {
-    const selectedValuable = availableValuables.find(v => v.id === valuableId); // Use all available for logic
+    const selectedValuable = availableValuables.find(v => v.id === valuableId);
     if (selectedValuable) {
       const updates: Partial<BillItem> = {
         valuableId,
@@ -115,6 +112,15 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         }
       }
       onItemChange(updates);
+    }
+  };
+  
+  const handleProductNameChange = (newName: string) => {
+    const suggestion = productSuggestions.find(p => p.name.toLowerCase() === newName.toLowerCase());
+    if (suggestion) {
+      onItemChange({ name: newName, hsnCode: suggestion.hsnCode });
+    } else {
+      onItemChange({ name: newName });
     }
   };
 
@@ -177,11 +183,10 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
   const showHsnForSales = !isPurchase;
 
-
   return (
     <div className={cn(`grid items-start p-3.5 border-b last:border-b-0 hover:bg-muted/50 transition-colors`, gridColsClass)}>
       <datalist id={datalistId}>
-        {productNames.map(name => <option key={name} value={name} />)}
+        {productSuggestions.map(p => <option key={p.name} value={p.name} />)}
       </datalist>
 
       {/* Column 1: Material */}
@@ -219,8 +224,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           ref={productNameInputRef}
           placeholder="Product Name"
           value={item.name || ''}
-          onChange={(e) => handleFieldChange('name', e.target.value)}
-          onBlur={(e) => onProductNameBlur(e.target.value)}
+          onChange={(e) => handleProductNameChange(e.target.value)}
           onKeyDown={(e) => handleKeyDown(e, 1)}
           list={datalistId}
           className="h-12 text-base"

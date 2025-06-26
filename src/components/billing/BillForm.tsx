@@ -11,7 +11,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, ListOrdered, StickyNote, Banknote } from 'lucide-react';
 import BillItemRow from './BillItemRow';
 import { v4 as uuidv4 } from 'uuid';
-// import { useToast } from '@/hooks/use-toast'; // Toast removed
 import { Separator } from '../ui/separator';
 
 interface BillFormProps {
@@ -23,8 +22,7 @@ interface BillFormProps {
 }
 
 const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPrint, onCancel, onShowEstimate }) => {
-  const { settings, addBill, updateBill, addProductName, getValuableById } = useAppContext();
-  // const { toast } = useToast(); // Toast removed
+  const { settings, addBill, updateBill, addOrUpdateProductSuggestion, getValuableById } = useAppContext();
 
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
@@ -172,12 +170,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     });
   };
 
-  const handleProductNameBlur = (name: string) => {
-    if (name && name.trim() !== '') {
-      addProductName(name.trim());
-    }
-  };
-
   const addItem = useCallback(() => {
     const newItemShell: Partial<BillItem> = {
       id: uuidv4(),
@@ -225,7 +217,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         const taxableAmount = item.amount || 0;
         let itemCgst = 0;
         let itemSgst = 0;
-        // HSN should only be included for non-estimate sales bills
         const includeHsn = billType === 'sales-bill' && !isEstimateMode;
 
 
@@ -291,18 +282,22 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const handleSubmit = () => {
     const billDetails = getCurrentBillData(false); 
     if (billDetails.items.length === 0) {
-      // toast({ title: "Error", description: "Please add at least one valid item with a selected material type.", variant: "destructive" }); // Toast removed
       return;
     }
+
+    // Auto-save/update HSN codes from bill items
+    billDetails.items.forEach(item => {
+      if (item.name && item.name.trim() !== '' && isSalesBill) {
+        addOrUpdateProductSuggestion(item.name.trim(), item.hsnCode || '');
+      }
+    });
 
     let savedBill;
     if (existingBill) {
       savedBill = { ...existingBill, ...billDetails };
       updateBill(savedBill);
-      // toast({ title: "Success", description: `${billTypeLabel()} updated.` }); // Toast removed
     } else {
       savedBill = addBill(billDetails);
-      // toast({ title: "Success", description: `${billTypeLabel()} created.` }); // Toast removed
     }
     onSaveAndPrint(savedBill);
   };
@@ -460,10 +455,9 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 key={item.id || index}
                 item={item}
                 onItemChange={(updatedFields) => handleItemChange(index, updatedFields)}
-                onProductNameBlur={handleProductNameBlur}
                 onRemoveItem={() => removeItem(index)}
                 availableValuables={settings.valuables}
-                productNames={settings.productNames}
+                productSuggestions={settings.productSuggestions}
                 isPurchase={isPurchase}
                 defaultMakingCharge={settings.defaultMakingCharge}
                 defaultPurchaseNetPercentage={settings.defaultPurchaseItemNetPercentage}
