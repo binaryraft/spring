@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Bill, BillType } from '@/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, ArrowLeft } from 'lucide-react';
+import { PlusCircle, List } from 'lucide-react';
 import BillForm from './BillForm';
 import BillHistoryList from './BillHistoryList';
 import BillViewModal from './BillViewModal';
@@ -20,7 +20,7 @@ type Period = 'daily' | 'monthly' | 'yearly' | 'all';
 const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
   const { bills } = useAppContext();
   const [period, setPeriod] = useState<Period>('daily');
-  const [showForm, setShowForm] = useState(false);
+  const [isFormVisible, setIsFormVisible] = useState(true);
   const [editingBill, setEditingBill] = useState<Bill | undefined>(undefined);
   const [viewingBill, setViewingBill] = useState<Bill | null>(null);
   const [isViewingEstimate, setIsViewingEstimate] = useState(false);
@@ -57,13 +57,13 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
 
   const handleSaveAndPrintBill = (savedBill: Bill) => {
     setEditingBill(undefined);
-    setShowForm(false);
+    setIsFormVisible(false);
     handleViewBill(savedBill, false);
   };
 
   const handleEditBill = (bill: Bill) => {
     setEditingBill(bill);
-    setShowForm(true);
+    setIsFormVisible(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -78,27 +78,27 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
 
   const handleCreateNew = () => {
     setEditingBill(undefined);
-    setShowForm(true);
+    setIsFormVisible(true);
   };
 
-  const handleCancelForm = () => {
+  const handleShowHistory = () => {
     setEditingBill(undefined);
-    setShowForm(false);
+    setIsFormVisible(false);
   };
 
   const commonFormProps = {
     onSaveAndPrint: handleSaveAndPrintBill,
     onShowEstimate: billType === 'sales-bill' ? handleShowEstimatePreview : undefined,
-    onCancel: handleCancelForm,
+    onCancel: handleShowHistory,
   };
 
   return (
     <div className="w-full space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl lg:text-4xl font-headline text-primary">{billTypeLabel} Management</h1>
-        {showForm ? (
-          <Button variant="outline" onClick={handleCancelForm} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
-            <ArrowLeft className="mr-2.5 h-5 w-5" /> Back to History
+        {isFormVisible ? (
+          <Button variant="outline" onClick={handleShowHistory} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
+            <List className="mr-2.5 h-5 w-5" /> View History
           </Button>
         ) : (
           <Button onClick={handleCreateNew} variant={billVariant} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
@@ -108,7 +108,7 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
       </div>
 
       <div className="bg-card p-4 sm:p-6 md:p-8 rounded-lg shadow-xl border border-border">
-        {showForm ? (
+        {isFormVisible ? (
           <BillForm
             key={editingBill ? editingBill.id : 'new-bill'}
             billType={billType}
