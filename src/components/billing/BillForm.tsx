@@ -1,6 +1,5 @@
-
 "use client";
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Bill, BillItem, BillType } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
@@ -42,6 +41,16 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [currentItem, setCurrentItem] = useState<Partial<BillItem>>({});
 
+  // Refs for keyboard navigation
+  const customerNameRef = useRef<HTMLInputElement>(null);
+  const customerPhoneRef = useRef<HTMLInputElement>(null);
+  const customerAddressRef = useRef<HTMLTextAreaElement>(null);
+  const materialSelectTriggerRef = useRef<HTMLButtonElement>(null);
+  const productNameRef = useRef<HTMLInputElement>(null);
+  const hsnCodeRef = useRef<HTMLInputElement>(null);
+  const qtyWtRef = useRef<HTMLInputElement>(null);
+  const addItemButtonRef = useRef<HTMLButtonElement>(null);
+
   const getBlankItem = useCallback((): Partial<BillItem> => ({
     id: uuidv4(),
     name: '',
@@ -69,6 +78,13 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     setCurrentItem(getBlankItem());
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingBill, getBlankItem]);
+
+  const handleKeyDown = (e: React.KeyboardEvent, nextFieldRef?: React.RefObject<HTMLElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      nextFieldRef?.current?.focus();
+    }
+  };
 
   const calculateItemTaxableAmount = useCallback((item: Partial<BillItem>): number => {
     if (typeof item.weightOrQuantity !== 'number' || item.weightOrQuantity <= 0 || !item.valuableId) return 0;
@@ -125,11 +141,17 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         updates.rate = selectedValuable.price;
       }
       setCurrentItem(prev => ({...prev, ...updates}));
+      productNameRef.current?.focus();
     }
   };
 
   const handleAddItem = () => {
-    if (!currentItem.valuableId || !currentItem.name || !currentItem.weightOrQuantity) return;
+    if (!currentItem.valuableId || !currentItem.name || !currentItem.weightOrQuantity) {
+        if (!currentItem.valuableId) materialSelectTriggerRef.current?.focus();
+        else if (!currentItem.name) productNameRef.current?.focus();
+        else if (!currentItem.weightOrQuantity) qtyWtRef.current?.focus();
+        return;
+    }
     const amount = calculateItemTaxableAmount(currentItem);
     const newItem: BillItem = {
       ...getBlankItem(),
@@ -150,11 +172,13 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     
     setCurrentItem(getBlankItem());
     setEditingItemIndex(null);
+    materialSelectTriggerRef.current?.focus();
   };
 
   const handleEditItem = (index: number) => {
     setEditingItemIndex(index);
     setCurrentItem({...items[index]});
+    materialSelectTriggerRef.current?.focus();
   };
 
   const handleCancelEdit = () => {
@@ -268,15 +292,15 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
               <div>
                 <Label htmlFor="customerName" className="text-base">{isSalesBill ? "Customer" : "Supplier"} Name</Label>
-                <Input id="customerName" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1.5 h-11 text-base"/>
+                <Input id="customerName" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1.5 h-11 text-base" ref={customerNameRef} onKeyDown={e => handleKeyDown(e, customerPhoneRef)}/>
               </div>
               <div>
                 <Label htmlFor="customerPhone" className="text-base">{isSalesBill ? "Customer" : "Supplier"} Phone</Label>
-                <Input id="customerPhone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="mt-1.5 h-11 text-base"/>
+                <Input id="customerPhone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="mt-1.5 h-11 text-base" ref={customerPhoneRef} onKeyDown={e => handleKeyDown(e, customerAddressRef)}/>
               </div>
               <div className="md:col-span-3">
                 <Label htmlFor="customerAddress" className="text-base">{isSalesBill ? "Customer" : "Supplier"} Address</Label>
-                <Textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="mt-1.5 text-base" rows={2}/>
+                <Textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="mt-1.5 text-base" rows={2} ref={customerAddressRef} onKeyDown={e => handleKeyDown(e, materialSelectTriggerRef)}/>
               </div>
           </div>
         </CardContent>
@@ -297,7 +321,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                                 <TableHead className="text-right">Qty/Wt</TableHead>
                                 <TableHead className="text-right">Rate</TableHead>
                                 {isSalesBill && <TableHead className="text-right">Making Charge</TableHead>}
-                                <TableHead className="text-right">Amount</TableHead>
+                                <TableHead className="text-right">Subtotal</TableHead>
                                 <TableHead className="w-[120px] text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -329,7 +353,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 <div className="md:col-span-2 space-y-1.5">
                     <Label>Material</Label>
                     <Select value={currentItem.valuableId || ''} onValueChange={handleValuableSelect}>
-                        <SelectTrigger className="h-11 text-base w-full"><SelectValue placeholder="Select Material" /></SelectTrigger>
+                        <SelectTrigger className="h-11 text-base w-full" ref={materialSelectTriggerRef}><SelectValue placeholder="Select Material" /></SelectTrigger>
                         <SelectContent>
                             {settings.valuables.sort((a,b) => a.name.localeCompare(b.name)).map(v => (
                                 <SelectItem key={v.id} value={v.id} className="text-base py-2">
@@ -341,13 +365,13 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 </div>
                 <div className="md:col-span-3 space-y-1.5">
                     <Label>Product Name</Label>
-                    <Input placeholder="e.g., Ring, Chain" value={currentItem.name || ''} onChange={(e) => handleItemFormChange('name', e.target.value)} list={datalistId} className="h-11 text-base"/>
+                    <Input placeholder="e.g., Ring, Chain" value={currentItem.name || ''} onChange={(e) => handleItemFormChange('name', e.target.value)} list={datalistId} className="h-11 text-base" ref={productNameRef} onKeyDown={e => handleKeyDown(e, (isSalesBill && settings.enableHsnCode) ? hsnCodeRef : qtyWtRef)}/>
                     <datalist id={datalistId}>{settings.productSuggestions.map(p => <option key={p.name} value={p.name} />)}</datalist>
-                    {isSalesBill && settings.enableHsnCode && <Input placeholder="HSN Code" value={currentItem.hsnCode || ''} onChange={e => handleItemFormChange('hsnCode', e.target.value)} className="h-9 text-sm mt-1"/>}
+                    {isSalesBill && settings.enableHsnCode && <Input placeholder="HSN Code" value={currentItem.hsnCode || ''} onChange={e => handleItemFormChange('hsnCode', e.target.value)} className="h-9 text-sm mt-1" ref={hsnCodeRef} onKeyDown={e => handleKeyDown(e, qtyWtRef)}/>}
                 </div>
                 <div className="md:col-span-2 space-y-1.5">
                     <Label>{`Qty / ${getValuableById(currentItem.valuableId || '')?.unit || 'Wt'}`}</Label>
-                    <Input type="number" value={currentItem.weightOrQuantity || ''} onChange={(e) => handleItemFormChange('weightOrQuantity', parseFloat(e.target.value))} className="h-11 text-base"/>
+                    <Input type="number" value={currentItem.weightOrQuantity || ''} onChange={(e) => handleItemFormChange('weightOrQuantity', parseFloat(e.target.value))} className="h-11 text-base" ref={qtyWtRef} onKeyDown={e => handleKeyDown(e, addItemButtonRef)}/>
                 </div>
                 <div className="md:col-span-3 space-y-1.5">
                     {!isSalesBill ? (
@@ -408,7 +432,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                                         placeholder="MC Value" 
                                         value={currentItem.makingCharge || ''} 
                                         onChange={(e) => handleItemFormChange('makingCharge', parseFloat(e.target.value))} 
-                                        className="h-9 text-sm" 
+                                        className="h-9 text-sm w-full" 
                                     />
                                 </div>
                             </div>
@@ -419,7 +443,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </CardContent>
           <CardFooter className="justify-end space-x-2">
             {isEditing && <Button variant="outline" onClick={handleCancelEdit}>Cancel Edit</Button>}
-            <Button onClick={handleAddItem} className="shadow-md hover:shadow-lg">
+            <Button onClick={handleAddItem} className="shadow-md hover:shadow-lg" ref={addItemButtonRef}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 {isEditing ? 'Update Item' : 'Add Item'}
             </Button>
