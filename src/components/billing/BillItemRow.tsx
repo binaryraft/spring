@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import type { BillItem, Valuable, MakingChargeSetting, ProductSuggestion } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,6 @@ interface BillItemRowProps {
   defaultPurchaseNetFixedValue: number;
   getValuablePrice: (valuableId: string) => number;
   onEnterInLastField?: () => void;
-  focusNextRowFirstElement?: () => void;
   rowIndex: number;
   itemRefs: React.MutableRefObject<Array<Array<HTMLInputElement | HTMLButtonElement | null>>>;
   currencySymbol: string;
@@ -58,12 +57,14 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   const purchaseNetPercentInputRef = useRef<HTMLInputElement>(null);
   const purchaseNetFixedInputRef = useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => {
-    const fields = [
+  const showHsnForSales = !isPurchase && enableHsnCode;
+
+  useEffect(() => {
+    const fields: Array<HTMLInputElement | HTMLButtonElement | null> = [
       materialSelectRef.current,
       productNameInputRef.current,
     ];
-    if (!isPurchase && enableHsnCode) {
+    if (showHsnForSales) {
       fields.push(hsnCodeInputRef.current);
     }
     fields.push(qtyInputRef.current);
@@ -78,8 +79,8 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       fields.push(mcTypeSelectRef.current);
       fields.push(mcValueInputRef.current);
     }
-    itemRefs.current[rowIndex] = fields.filter(Boolean) as Array<HTMLInputElement | HTMLButtonElement>;
-  }, [rowIndex, itemRefs, isPurchase, item.purchaseNetType, enableHsnCode]);
+    itemRefs.current[rowIndex] = fields.filter(Boolean);
+  }, [rowIndex, itemRefs, isPurchase, item.purchaseNetType, showHsnForSales]);
 
   const displayableMaterials = useMemo(() => {
     let filtered = availableValuables.filter(v => v.selectedInHeader);
@@ -182,238 +183,163 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
     }
   };
 
-  const showHsnForSales = !isPurchase && enableHsnCode;
-
-  const gridColsClass = useMemo(() => {
-    if (isPurchase) {
-      // [mat, prod, qty, net type, value, sub, action] -> 7
-      return "md:grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1.5fr_0.5fr]";
-    }
-    // isSalesBill
-    if (showHsnForSales) {
-      // [mat, prod, hsn, qty, rate, mctype, mc, sub, action] -> 9
-      return "md:grid-cols-[1.5fr_2fr_0.75fr_1fr_1fr_1fr_1fr_1.5fr_0.5fr]";
-    }
-    // [mat, prod, qty, rate, mctype, mc, sub, action] -> 8
-    return "md:grid-cols-[1.5fr_2.75fr_1fr_1fr_1fr_1fr_1.5fr_0.5fr]";
-  }, [isPurchase, showHsnForSales]);
-
-
   return (
-    <div className={cn('group grid items-start gap-x-4 gap-y-3 p-3 border-b last:border-b-0 hover:bg-muted/50 transition-colors', gridColsClass)}>
-      <datalist id={datalistId}>
-        {productSuggestions.map(p => <option key={p.name} value={p.name} />)}
-      </datalist>
+    <div className="p-4 border rounded-lg space-y-4 bg-card shadow-sm hover:shadow-md transition-shadow relative group/item">
+      <Button variant="ghost" size="icon" onClick={onRemoveItem} className="absolute top-2 right-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8 opacity-0 group-hover/item:opacity-100 transition-opacity z-10">
+          <Trash2 className="w-4 h-4" />
+          <span className="sr-only">Remove Item</span>
+      </Button>
 
-      {/* Column 1: Material */}
-      <div className="w-full">
-        <Label className="text-xs md:hidden text-muted-foreground">Material</Label>
-        <Select
-          value={item.valuableId || ''}
-          onValueChange={handleValuableSelect}
-        >
-          <SelectTrigger
-            ref={materialSelectRef}
-            className="h-11 text-base w-full mt-1 md:mt-0"
-            onKeyDown={(e) => handleKeyDown(e, 0)}
-          >
-            <SelectValue placeholder="Material" />
-          </SelectTrigger>
-          <SelectContent>
-            {displayableMaterials.map(v => (
-              <SelectItem key={v.id} value={v.id} className="text-base py-2">
-                <div className="flex items-center">
-                  <ValuableIcon valuableType={v.icon} color={v.iconColor} className="w-5 h-5 mr-2.5"/>
-                  {v.name}
-                </div>
-              </SelectItem>
-            ))}
-            {displayableMaterials.length === 0 && !item.valuableId && (
-              <div className="p-2 text-sm text-muted-foreground">No active materials selected in header.</div>
-            )}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Column 2: Product Name */}
-      <div>
-        <Label className="text-xs md:hidden text-muted-foreground">Product Name</Label>
-        <Input
-          ref={productNameInputRef}
-          placeholder="Product Name"
-          value={item.name || ''}
-          onChange={(e) => handleProductNameChange(e.target.value)}
-          onKeyDown={(e) => handleKeyDown(e, 1)}
-          list={datalistId}
-          className="h-11 text-base mt-1 md:mt-0"
-        />
-      </div>
-
-      {/* Column 3: HSN Code (Sales Only) */}
-      {showHsnForSales && (
-        <div>
-          <Label className="text-xs md:hidden text-muted-foreground">HSN</Label>
-          <Input
-            ref={hsnCodeInputRef}
-            placeholder="HSN"
-            value={item.hsnCode || ''}
-            onChange={(e) => handleFieldChange('hsnCode', e.target.value)}
-            onKeyDown={(e) => handleKeyDown(e, 2)}
-            className="h-11 text-base text-center mt-1 md:mt-0"
-          />
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
+        <div className="md:col-span-1 space-y-1.5">
+          <Label htmlFor={`material-select-${item.id}`}>Material</Label>
+          <Select value={item.valuableId || ''} onValueChange={handleValuableSelect}>
+            <SelectTrigger id={`material-select-${item.id}`} ref={materialSelectRef} className="h-11 text-base w-full" onKeyDown={(e) => handleKeyDown(e, 0)}>
+              <SelectValue placeholder="Material" />
+            </SelectTrigger>
+            <SelectContent>
+              {displayableMaterials.map(v => (
+                <SelectItem key={v.id} value={v.id} className="text-base py-2">
+                  <div className="flex items-center">
+                    <ValuableIcon valuableType={v.icon} color={v.iconColor} className="w-5 h-5 mr-2.5"/>
+                    {v.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      )}
 
-      {/* Column 4 (Sales) / 3 (Purchase): Qty/Wt */}
-      <div>
-        <Label className="text-xs md:hidden text-muted-foreground">{`Qty/${selectedValuableDetails?.unit || 'unit'}`}</Label>
-        <Input
-          ref={qtyInputRef}
-          type="number"
-          placeholder={`Qty/${selectedValuableDetails?.unit || 'unit'}`}
-          value={item.weightOrQuantity === undefined ? '' : item.weightOrQuantity}
-          onChange={(e) => handleFieldChange('weightOrQuantity', e.target.value)}
-          onKeyDown={(e) => handleKeyDown(e, isPurchase ? 2 : (showHsnForSales ? 3 : 2))}
-          min="0"
-          step={selectedValuableDetails?.unit === 'carat' || selectedValuableDetails?.unit === 'ct' ? '0.001' : '0.01'}
-          className="h-11 text-base text-center mt-1 md:mt-0"
-        />
-      </div>
-
-      {/* Columns for Purchase vs Sales */}
-      {isPurchase ? (
-        <>
-          {/* Purchase Column 4: Net Type */}
-          <div className="flex flex-col space-y-1">
-             <Label className="text-xs md:hidden text-muted-foreground">Net Type</Label>
-            <Select
-              value={item.purchaseNetType || 'net_percentage'}
-              onValueChange={(val: 'net_percentage' | 'fixed_net_price') => handleFieldChange('purchaseNetType', val)}
-            >
-              <SelectTrigger
-                ref={purchaseNetTypeSelectRef}
-                className="h-11 text-base mt-1 md:mt-0"
-                onKeyDown={(e) => handleKeyDown(e, 3)}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="net_percentage" className="text-base py-2">Net % Off Market</SelectItem>
-                <SelectItem value="fixed_net_price" className="text-base py-2">Fixed Net Rate ({currencySymbol})</SelectItem>
-              </SelectContent>
-            </Select>
-            {item.purchaseNetType === 'net_percentage' && selectedValuableDetails && (
-                <p className="text-xs text-muted-foreground text-center">Mkt: {currencySymbol}{marketPriceForPurchase.toFixed(2)}</p>
-            )}
-          </div>
-
-          {/* Purchase Column 5: Value Input (Percentage or Fixed) */}
-          <div className="flex flex-col space-y-1">
-             <Label className="text-xs md:hidden text-muted-foreground">Value</Label>
-            {item.purchaseNetType === 'net_percentage' && (
-              <Input
-                ref={purchaseNetPercentInputRef}
-                type="number"
-                placeholder="%"
-                value={item.purchaseNetPercentValue === undefined ? '' : item.purchaseNetPercentValue}
-                onChange={(e) => handleFieldChange('purchaseNetPercentValue', e.target.value)}
-                className="h-11 text-base text-center mt-1 md:mt-0"
-                min="0"
-                step="0.01"
-                onKeyDown={(e) => handleKeyDown(e, 4)}
-              />
-            )}
-            {item.purchaseNetType === 'fixed_net_price' && (
-              <Input
-                ref={purchaseNetFixedInputRef}
-                type="number"
-                placeholder="Net Rate"
-                value={item.purchaseNetFixedValue === undefined ? '' : item.purchaseNetFixedValue}
-                onChange={(e) => handleFieldChange('purchaseNetFixedValue', e.target.value)}
-                className="h-11 text-base text-center mt-1 md:mt-0"
-                min="0"
-                step="0.01"
-                onKeyDown={(e) => handleKeyDown(e, 4)}
-              />
-            )}
-            {(item.purchaseNetType === 'net_percentage' || item.purchaseNetType === 'fixed_net_price') && item.valuableId && (
-                 <p className="text-xs text-muted-foreground text-center">Eff: {currencySymbol}{effectiveRateForPurchaseDisplay.toFixed(2)}</p>
-            )}
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Sales Column 5: Rate */}
-          <div>
-            <Label className="text-xs md:hidden text-muted-foreground">Rate</Label>
-            <Input
-              ref={rateInputRef}
-              type="number"
-              placeholder="Rate"
-              value={item.rate === undefined ? '' : item.rate}
-              onChange={(e) => handleFieldChange('rate', e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 4 : 3)}
-              min="0"
-              step="0.01"
-              className="h-11 text-base text-center mt-1 md:mt-0"
+        <div className="md:col-span-2 space-y-1.5">
+          <Label htmlFor={`product-name-${item.id}`}>Product Name</Label>
+           <Input
+              id={`product-name-${item.id}`}
+              ref={productNameInputRef}
+              placeholder="e.g., Ring, Chain"
+              value={item.name || ''}
+              onChange={(e) => handleProductNameChange(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, 1)}
+              list={datalistId}
+              className="h-11 text-base"
             />
-          </div>
-          {/* Sales Column 6: MC Type */}
-          <div>
-            <Label className="text-xs md:hidden text-muted-foreground">MC Type</Label>
-            <Select
-              value={item.makingChargeType || defaultMakingCharge.type}
-              onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}
-            >
-              <SelectTrigger
-                ref={mcTypeSelectRef}
-                className="text-base h-11 mt-1 md:mt-0"
-                onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 5 : 4)}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="percentage" className="text-base py-2">%</SelectItem>
-                <SelectItem value="fixed" className="text-base py-2">Flat ({currencySymbol})</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {/* Sales Column 7: Making Value */}
-          <div>
-            <Label className="text-xs md:hidden text-muted-foreground">MC</Label>
-            <Input
-              ref={mcValueInputRef}
-              type="number"
-              placeholder="MC"
-              value={item.makingCharge === undefined ? '' : item.makingCharge}
-              onChange={(e) => handleFieldChange('makingCharge', e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 6 : 5)}
-              min="0"
-              step="0.01"
-              className="h-11 text-base text-center mt-1 md:mt-0"
-            />
-          </div>
-        </>
-      )}
-
-      {/* Subtotal */}
-      <div className="text-right self-center">
-        <Label className="text-xs md:hidden text-muted-foreground">Subtotal</Label>
-        <span className="font-semibold text-lg block mt-1 md:mt-0 text-foreground">{currencySymbol}{item.amount?.toFixed(2) || '0.00'}</span>
-        {!isPurchase && (
-            <div className="text-xs text-muted-foreground md:whitespace-nowrap">
-                <span>CGST: {currencySymbol}{(item.itemCgstAmount || 0).toFixed(2)}</span>
-                <span className="ml-2">SGST: {currencySymbol}{(item.itemSgstAmount || 0).toFixed(2)}</span>
+          <datalist id={datalistId}>
+            {productSuggestions.map(p => <option key={p.name} value={p.name} />)}
+          </datalist>
+          {showHsnForSales && (
+            <div className="relative">
+                <Input
+                    ref={hsnCodeInputRef}
+                    placeholder="HSN Code"
+                    value={item.hsnCode || ''}
+                    onChange={(e) => handleFieldChange('hsnCode', e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, 2)}
+                    className="text-sm h-9 pl-12"
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">HSN</span>
             </div>
+          )}
+        </div>
+        
+        <div className="md:col-span-1 space-y-1.5">
+           <Label htmlFor={`qty-${item.id}`}>{`Qty / ${selectedValuableDetails?.unit || 'Wt'}`}</Label>
+           <Input
+              id={`qty-${item.id}`}
+              ref={qtyInputRef}
+              type="number"
+              value={item.weightOrQuantity === undefined ? '' : item.weightOrQuantity}
+              onChange={(e) => handleFieldChange('weightOrQuantity', e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 3 : 2)}
+              min="0"
+              step={selectedValuableDetails?.unit === 'carat' || selectedValuableDetails?.unit === 'ct' ? '0.001' : '0.01'}
+              className="h-11 text-base"
+            />
+        </div>
+
+        {!isPurchase ? (
+             <div className="md:col-span-1 space-y-1.5">
+                <Label htmlFor={`rate-${item.id}`}>Rate ({currencySymbol})</Label>
+                <Input
+                    id={`rate-${item.id}`}
+                    ref={rateInputRef}
+                    type="number"
+                    value={item.rate === undefined ? '' : item.rate}
+                    onChange={(e) => handleFieldChange('rate', e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 4 : 3)}
+                    min="0"
+                    step="0.01"
+                    className="h-11 text-base"
+                />
+            </div>
+        ) : (
+            <div className="md:col-span-1"></div> // Spacer for purchase
         )}
       </div>
 
-      {/* Action Button */}
-      <div className="text-center self-center">
-        <Button variant="ghost" size="icon" onClick={onRemoveItem} className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-10 w-10 opacity-50 md:opacity-0 group-hover:opacity-100 transition-opacity">
-          <Trash2 className="w-5 h-5" />
-           <span className="sr-only">Remove Item</span>
-        </Button>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          {isPurchase ? (
+            <div className="md:col-span-1 space-y-1.5">
+                <Label>Net Calculation</Label>
+                <div className="flex items-center gap-2">
+                   <Select
+                        value={item.purchaseNetType || 'net_percentage'}
+                        onValueChange={(val: 'net_percentage' | 'fixed_net_price') => handleFieldChange('purchaseNetType', val)}
+                    >
+                        <SelectTrigger ref={purchaseNetTypeSelectRef} className="h-11 text-base w-full" onKeyDown={(e) => handleKeyDown(e, 3)}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="net_percentage" className="text-base py-2">Net % Off</SelectItem>
+                            <SelectItem value="fixed_net_price" className="text-base py-2">Fixed Rate</SelectItem>
+                        </SelectContent>
+                    </Select>
+                     {item.purchaseNetType === 'net_percentage' ? (
+                        <Input ref={purchaseNetPercentInputRef} type="number" placeholder="%" value={item.purchaseNetPercentValue === undefined ? '' : item.purchaseNetPercentValue} onChange={(e) => handleFieldChange('purchaseNetPercentValue', e.target.value)} className="h-11 text-base" onKeyDown={(e) => handleKeyDown(e, 4)} />
+                     ) : (
+                        <Input ref={purchaseNetFixedInputRef} type="number" placeholder={`Rate in ${currencySymbol}`} value={item.purchaseNetFixedValue === undefined ? '' : item.purchaseNetFixedValue} onChange={(e) => handleFieldChange('purchaseNetFixedValue', e.target.value)} className="h-11 text-base" onKeyDown={(e) => handleKeyDown(e, 4)} />
+                     )}
+                </div>
+                 {item.valuableId && (
+                     <p className="text-xs text-muted-foreground text-center">Mkt: {currencySymbol}{marketPriceForPurchase.toFixed(2)} / Eff: {currencySymbol}{effectiveRateForPurchaseDisplay.toFixed(2)}</p>
+                )}
+            </div>
+          ) : (
+             <div className="md:col-span-1 space-y-1.5">
+                <Label>Making Charge (MC)</Label>
+                <div className="flex items-center gap-2">
+                    <Select value={item.makingChargeType || defaultMakingCharge.type} onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}>
+                       <SelectTrigger ref={mcTypeSelectRef} className="text-base h-11 w-[100px]" onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 5 : 4)}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="percentage" className="text-base py-2">%</SelectItem>
+                            <SelectItem value="fixed" className="text-base py-2">{currencySymbol}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Input ref={mcValueInputRef} type="number" placeholder="Value" value={item.makingCharge === undefined ? '' : item.makingCharge} onChange={(e) => handleFieldChange('makingCharge', e.target.value)} onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 6 : 5)} className="h-11 text-base" />
+                </div>
+            </div>
+          )}
+
+          <div className="md:col-span-1 hidden md:block"></div>
+
+          <div className="md:col-span-1 text-right space-y-1 bg-muted/30 p-3 rounded-md">
+            <div className="flex justify-between items-baseline">
+                <span className="text-sm font-semibold text-muted-foreground">Subtotal</span>
+                <span className="font-bold text-lg text-foreground">{currencySymbol}{item.amount?.toFixed(2) || '0.00'}</span>
+            </div>
+             {!isPurchase && (
+                <>
+                <div className="flex justify-between items-baseline text-sm">
+                    <span className="text-muted-foreground">CGST</span>
+                    <span className="font-medium">{currencySymbol}{(item.itemCgstAmount || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-baseline text-sm">
+                    <span className="text-muted-foreground">SGST</span>
+                    <span className="font-medium">{currencySymbol}{(item.itemSgstAmount || 0).toFixed(2)}</span>
+                </div>
+                </>
+            )}
+        </div>
       </div>
     </div>
   );

@@ -382,23 +382,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     }
   }, [items.length]);
 
-  const headerGridColsClass = useMemo(() => {
-    if (isPurchase) {
-      // [mat, prod, qty, net type, value, sub, action] -> 7
-      return "md:grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1.5fr_0.5fr]";
-    }
-    if (isSalesBill) {
-      if (settings.enableHsnCode) {
-        // [mat, prod, hsn, qty, rate, mctype, mc, sub, action] -> 9
-        return "md:grid-cols-[1.5fr_2fr_0.75fr_1fr_1fr_1fr_1fr_1.5fr_0.5fr]";
-      }
-      // [mat, prod, qty, rate, mctype, mc, sub, action] -> 8
-      return "md:grid-cols-[1.5fr_2.75fr_1fr_1fr_1fr_1fr_1.5fr_0.5fr]";
-    }
-    return "";
-  }, [isPurchase, isSalesBill, settings.enableHsnCode]);
-
-
   return (
     <Card className="shadow-xl bg-card border-border rounded-lg p-4 sm:p-6 md:p-8">
       <CardHeader className="pb-4 px-1">
@@ -475,27 +458,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0 sm:px-2 md:px-4">
-            <div className={cn("hidden md:grid gap-x-4 py-2 px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b", headerGridColsClass)}>
-              <div className="col-span-1">Material</div>
-              <div className="col-span-1">Product Name</div>
-              {billType === 'sales-bill' && settings.enableHsnCode && <div className="col-span-1 text-center">HSN</div>}
-              <div className="col-span-1 text-center">Qty/Wt</div>
-              {isPurchase ? (
-                  <>
-                      <div className="col-span-1 text-center">Net Type</div>
-                      <div className="col-span-1 text-center">Value</div>
-                  </>
-              ) : (
-                  <>
-                      <div className="col-span-1 text-center">Rate</div>
-                      <div className="col-span-1 text-center">MC Type</div>
-                      <div className="col-span-1 text-center">MC</div>
-                  </>
-              )}
-              <div className="col-span-1 text-right">Subtotal</div>
-              <div className="col-span-1 text-center">Action</div>
-            </div>
-            <div className="space-y-1 mt-1">
+            <div className="space-y-4 mt-2">
               {items.map((item, index) => (
                   <BillItemRow
                   key={item.id || index}
@@ -510,7 +473,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                   defaultPurchaseNetFixedValue={settings.defaultPurchaseItemNetFixedValue}
                   getValuablePrice={(valuableId) => getValuableById(valuableId)?.price || 0}
                   onEnterInLastField={addItem}
-                  focusNextRowFirstElement={focusNextRowFirstElement}
                   rowIndex={index}
                   itemRefs={itemRefs}
                   currencySymbol={settings.currencySymbol}
