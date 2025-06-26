@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Bill, BillItem, BillType, Settings, Valuable } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
@@ -220,7 +220,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         const taxableAmount = item.amount || 0;
         let itemCgst = 0;
         let itemSgst = 0;
-        const includeHsn = billType === 'sales-bill' && !isEstimateMode;
+        const includeHsn = billType === 'sales-bill' && !isEstimateMode && settings.enableHsnCode;
 
 
         if (billType === 'sales-bill' && !isEstimateMode) {
@@ -294,7 +294,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     setTimeout(() => {
       // Auto-save/update HSN codes from bill items
       billDetails.items.forEach(item => {
-        if (item.name && item.name.trim() !== '' && isSalesBill) {
+        if (item.name && item.name.trim() !== '' && isSalesBill && settings.enableHsnCode) {
           addOrUpdateProductSuggestion(item.name.trim(), item.hsnCode || '');
         }
       });
@@ -382,9 +382,21 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     }
   }, [items.length]);
 
-  const headerGridColsClass = isPurchase
-    ? "grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]"
-    : "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.75fr_0.75fr_0.5fr]";
+  const headerGridColsClass = useMemo(() => {
+    if (isPurchase) {
+      // [mat, prod, qty, net type, value, sub, action] -> 7
+      return "md:grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1.5fr_0.5fr]";
+    }
+    if (isSalesBill) {
+      if (settings.enableHsnCode) {
+        // [mat, prod, hsn, qty, rate, mctype, mc, sub, action] -> 9
+        return "md:grid-cols-[1.5fr_2fr_0.75fr_1fr_1fr_1fr_1fr_1.5fr_0.5fr]";
+      }
+      // [mat, prod, qty, rate, mctype, mc, sub, action] -> 8
+      return "md:grid-cols-[1.5fr_2.75fr_1fr_1fr_1fr_1fr_1.5fr_0.5fr]";
+    }
+    return "";
+  }, [isPurchase, isSalesBill, settings.enableHsnCode]);
 
 
   return (
@@ -463,10 +475,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0 sm:px-2 md:px-4">
-            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b`}>
+            <div className={cn("hidden md:grid gap-x-4 py-2 px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b", headerGridColsClass)}>
               <div className="col-span-1">Material</div>
               <div className="col-span-1">Product Name</div>
-              {billType === 'sales-bill' && <div className="col-span-1 text-center">HSN</div>}
+              {billType === 'sales-bill' && settings.enableHsnCode && <div className="col-span-1 text-center">HSN</div>}
               <div className="col-span-1 text-center">Qty/Wt</div>
               {isPurchase ? (
                   <>
@@ -477,16 +489,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                   <>
                       <div className="col-span-1 text-center">Rate</div>
                       <div className="col-span-1 text-center">MC Type</div>
-                      <div className="col-span-1 text-center">Making</div>
+                      <div className="col-span-1 text-center">MC</div>
                   </>
               )}
-              <div className="col-span-1 text-right">Taxable Amt</div>
-               {isSalesBill && (
-                  <>
-                      <div className="col-span-1 text-right">CGST</div>
-                      <div className="col-span-1 text-right">SGST</div>
-                  </>
-               )}
+              <div className="col-span-1 text-right">Subtotal</div>
               <div className="col-span-1 text-center">Action</div>
             </div>
             <div className="space-y-1 mt-1">
@@ -508,6 +514,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                   rowIndex={index}
                   itemRefs={itemRefs}
                   currencySymbol={settings.currencySymbol}
+                  enableHsnCode={settings.enableHsnCode}
                   />
               ))}
             </div>

@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check } from "lucide-react"; 
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check, Wrench } from "lucide-react"; 
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "@/components/ValuableIcon";
@@ -206,6 +206,7 @@ export default function SettingsPage() {
     { id: 'materials', label: 'Materials', icon: Banknote },
     { id: 'products', label: 'Products & HSN', icon: Tag },
     { id: 'billing', label: 'Billing Defaults', icon: Package },
+    { id: 'features', label: 'Features', icon: Wrench },
   ];
 
   return (
@@ -481,7 +482,7 @@ export default function SettingsPage() {
                 <Card className="shadow-lg border-border">
                   <CardHeader>
                       <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
-                          <Tag className="mr-3 h-6 w-6 text-primary"/> Product & HSN Suggestions
+                          <Tag className="mr-3 h-6 w-6 text-primary"/> Product Suggestions {localSettings.enableHsnCode && '& HSN'}
                       </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -494,16 +495,16 @@ export default function SettingsPage() {
                       </div>
                       {localSettings.productSuggestions.length > 0 ? (
                           <div className="max-h-80 overflow-y-auto border rounded-md p-3 space-y-2 bg-muted/30">
-                              <div className="grid grid-cols-[2fr_1fr_auto] gap-x-4 items-center px-3 py-2 font-semibold text-muted-foreground text-sm">
+                              <div className={cn("grid items-center px-3 py-2 font-semibold text-muted-foreground text-sm", localSettings.enableHsnCode ? "grid-cols-[2fr_1fr_auto]" : "grid-cols-[1fr_auto]")}>
                                   <span>Product Name</span>
-                                  <span>HSN Code</span>
+                                  {localSettings.enableHsnCode && <span>HSN Code</span>}
                                   <span className="text-right">Action</span>
                               </div>
                               <Separator/>
                               {localSettings.productSuggestions.map((product) => (
-                                  <div key={product.name} className="grid grid-cols-[2fr_1fr_auto] gap-x-4 items-center p-2 bg-card rounded shadow-sm">
+                                  <div key={product.name} className={cn("grid items-center p-2 bg-card rounded shadow-sm", localSettings.enableHsnCode ? "grid-cols-[2fr_1fr_auto]" : "grid-cols-[1fr_auto]")}>
                                       <span className="text-base font-medium">{product.name}</span>
-                                      <Input value={product.hsnCode} onChange={(e) => handleProductSuggestionHsnChange(product.name, e.target.value)} placeholder="HSN Code" className="h-10 text-sm"/>
+                                      {localSettings.enableHsnCode && <Input value={product.hsnCode} onChange={(e) => handleProductSuggestionHsnChange(product.name, e.target.value)} placeholder="HSN Code" className="h-10 text-sm"/>}
                                       <AlertDialog>
                                           <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10"><Trash2 className="h-5 w-5" /></Button></AlertDialogTrigger>
                                           <AlertDialogContent>
@@ -515,7 +516,7 @@ export default function SettingsPage() {
                               ))}
                           </div>
                       ) : (<p className="text-base text-muted-foreground italic text-center py-4">No custom product names added yet.</p>)}
-                      <p className="text-sm text-muted-foreground mt-3">HSN codes are automatically saved here when you create bills. You can also edit them manually.</p>
+                      {localSettings.enableHsnCode && <p className="text-sm text-muted-foreground mt-3">HSN codes are automatically saved here when you create bills. You can also edit them manually.</p>}
                   </CardContent>
                 </Card>
               )}
@@ -584,6 +585,25 @@ export default function SettingsPage() {
                     </CardContent>
                   </Card>
                 </>
+              )}
+              {activeTab === 'features' && (
+                <Card className="shadow-lg border-border">
+                  <CardHeader>
+                      <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
+                          <Wrench className="mr-3 h-6 w-6 text-primary"/> Feature Toggles
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                      <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
+                          <Checkbox id="enableGstReport" checked={localSettings.enableGstReport} onCheckedChange={(checked) => handleChange('enableGstReport', !!checked)} className="w-5 h-5"/>
+                          <Label htmlFor="enableGstReport" className="text-base font-medium leading-none cursor-pointer">Enable GST Report</Label>
+                      </div>
+                      <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
+                          <Checkbox id="enableHsnCode" checked={localSettings.enableHsnCode} onCheckedChange={(checked) => handleChange('enableHsnCode', !!checked)} className="w-5 h-5"/>
+                          <Label htmlFor="enableHsnCode" className="text-base font-medium leading-none cursor-pointer">Enable HSN Codes for Sales</Label>
+                      </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
         </div>

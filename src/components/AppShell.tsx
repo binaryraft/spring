@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarInset, SidebarFooter, SidebarSeparator, useSidebar } from '@/components/ui/sidebar';
@@ -42,11 +42,17 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
     const menuItems = [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ];
-    const billingItems = [
-        { href: '/sales', label: 'Sales', icon: BadgeIndianRupee, color: 'text-success' },
-        { href: '/purchase', label: 'Purchases', icon: ShoppingBag, color: 'text-destructive' },
-        { href: '/gst-report', label: 'GST Report', icon: FilePieChart },
-    ];
+    
+    const billingItems = useMemo(() => {
+        const items = [
+            { href: '/sales', label: 'Sales', icon: BadgeIndianRupee, color: 'text-success' },
+            { href: '/purchase', label: 'Purchases', icon: ShoppingBag, color: 'text-destructive' },
+        ];
+        if (settings.enableGstReport) {
+          items.push({ href: '/gst-report', label: 'GST Report', icon: FilePieChart });
+        }
+        return items;
+    }, [settings.enableGstReport]);
 
 
     return (

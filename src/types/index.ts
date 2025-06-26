@@ -47,7 +47,9 @@ export interface Settings {
   currencySymbol: string; 
   theme: 'light' | 'dark';
   enableColorBilling: boolean;
-  pdfLogoPosition: PdfLogoPosition; 
+  pdfLogoPosition: PdfLogoPosition;
+  enableGstReport: boolean;
+  enableHsnCode: boolean;
 }
 
 export interface BillItem {
@@ -144,6 +146,8 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'light',
   enableColorBilling: true,
   pdfLogoPosition: 'inline-left', 
+  enableGstReport: true,
+  enableHsnCode: false,
 };
 
 export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = [

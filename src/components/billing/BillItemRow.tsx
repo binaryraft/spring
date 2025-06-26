@@ -26,6 +26,7 @@ interface BillItemRowProps {
   rowIndex: number;
   itemRefs: React.MutableRefObject<Array<Array<HTMLInputElement | HTMLButtonElement | null>>>;
   currencySymbol: string;
+  enableHsnCode: boolean;
 }
 
 const BillItemRow: React.FC<BillItemRowProps> = ({
@@ -43,6 +44,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   rowIndex,
   itemRefs,
   currencySymbol,
+  enableHsnCode,
 }) => {
 
   const materialSelectRef = useRef<HTMLButtonElement>(null);
@@ -61,7 +63,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       materialSelectRef.current,
       productNameInputRef.current,
     ];
-    if (!isPurchase) {
+    if (!isPurchase && enableHsnCode) {
       fields.push(hsnCodeInputRef.current);
     }
     fields.push(qtyInputRef.current);
@@ -77,7 +79,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       fields.push(mcValueInputRef.current);
     }
     itemRefs.current[rowIndex] = fields.filter(Boolean) as Array<HTMLInputElement | HTMLButtonElement>;
-  }, [rowIndex, itemRefs, isPurchase, item.purchaseNetType]);
+  }, [rowIndex, itemRefs, isPurchase, item.purchaseNetType, enableHsnCode]);
 
   const displayableMaterials = useMemo(() => {
     let filtered = availableValuables.filter(v => v.selectedInHeader);
@@ -118,7 +120,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   
   const handleProductNameChange = (newName: string) => {
     const suggestion = productSuggestions.find(p => p.name.toLowerCase() === newName.toLowerCase());
-    if (suggestion) {
+    if (suggestion && enableHsnCode) {
       onItemChange({ name: newName, hsnCode: suggestion.hsnCode });
     } else {
       onItemChange({ name: newName });
@@ -180,11 +182,22 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
     }
   };
 
-  const gridColsClass = isPurchase
-    ? "md:grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]"
-    : "md:grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.75fr_0.75fr_0.5fr]";
+  const showHsnForSales = !isPurchase && enableHsnCode;
 
-  const showHsnForSales = !isPurchase;
+  const gridColsClass = useMemo(() => {
+    if (isPurchase) {
+      // [mat, prod, qty, net type, value, sub, action] -> 7
+      return "md:grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1.5fr_0.5fr]";
+    }
+    // isSalesBill
+    if (showHsnForSales) {
+      // [mat, prod, hsn, qty, rate, mctype, mc, sub, action] -> 9
+      return "md:grid-cols-[1.5fr_2fr_0.75fr_1fr_1fr_1fr_1fr_1.5fr_0.5fr]";
+    }
+    // [mat, prod, qty, rate, mctype, mc, sub, action] -> 8
+    return "md:grid-cols-[1.5fr_2.75fr_1fr_1fr_1fr_1fr_1.5fr_0.5fr]";
+  }, [isPurchase, showHsnForSales]);
+
 
   return (
     <div className={cn('group grid items-start gap-x-4 gap-y-3 p-3 border-b last:border-b-0 hover:bg-muted/50 transition-colors', gridColsClass)}>
@@ -260,7 +273,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           placeholder={`Qty/${selectedValuableDetails?.unit || 'unit'}`}
           value={item.weightOrQuantity === undefined ? '' : item.weightOrQuantity}
           onChange={(e) => handleFieldChange('weightOrQuantity', e.target.value)}
-          onKeyDown={(e) => handleKeyDown(e, isPurchase ? 2 : 3)}
+          onKeyDown={(e) => handleKeyDown(e, isPurchase ? 2 : (showHsnForSales ? 3 : 2))}
           min="0"
           step={selectedValuableDetails?.unit === 'carat' || selectedValuableDetails?.unit === 'ct' ? '0.001' : '0.01'}
           className="h-11 text-base text-center mt-1 md:mt-0"
@@ -339,7 +352,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               placeholder="Rate"
               value={item.rate === undefined ? '' : item.rate}
               onChange={(e) => handleFieldChange('rate', e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, 4)}
+              onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 4 : 3)}
               min="0"
               step="0.01"
               className="h-11 text-base text-center mt-1 md:mt-0"
@@ -355,7 +368,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               <SelectTrigger
                 ref={mcTypeSelectRef}
                 className="text-base h-11 mt-1 md:mt-0"
-                onKeyDown={(e) => handleKeyDown(e, 5)}
+                onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 5 : 4)}
               >
                 <SelectValue />
               </SelectTrigger>
@@ -367,14 +380,14 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           </div>
           {/* Sales Column 7: Making Value */}
           <div>
-            <Label className="text-xs md:hidden text-muted-foreground">Making</Label>
+            <Label className="text-xs md:hidden text-muted-foreground">MC</Label>
             <Input
               ref={mcValueInputRef}
               type="number"
-              placeholder="Making"
+              placeholder="MC"
               value={item.makingCharge === undefined ? '' : item.makingCharge}
               onChange={(e) => handleFieldChange('makingCharge', e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, 6)}
+              onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 6 : 5)}
               min="0"
               step="0.01"
               className="h-11 text-base text-center mt-1 md:mt-0"
@@ -383,26 +396,17 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         </>
       )}
 
-      {/* Taxable Amount */}
+      {/* Subtotal */}
       <div className="text-right self-center">
-        <Label className="text-xs md:hidden text-muted-foreground">Taxable Amount</Label>
+        <Label className="text-xs md:hidden text-muted-foreground">Subtotal</Label>
         <span className="font-semibold text-lg block mt-1 md:mt-0 text-foreground">{currencySymbol}{item.amount?.toFixed(2) || '0.00'}</span>
+        {!isPurchase && (
+            <div className="text-xs text-muted-foreground md:whitespace-nowrap">
+                <span>CGST: {currencySymbol}{(item.itemCgstAmount || 0).toFixed(2)}</span>
+                <span className="ml-2">SGST: {currencySymbol}{(item.itemSgstAmount || 0).toFixed(2)}</span>
+            </div>
+        )}
       </div>
-
-      {/* GST Columns (Sales only) */}
-      {!isPurchase && (
-          <>
-              <div className="text-right self-center">
-                  <Label className="text-xs md:hidden text-muted-foreground">CGST</Label>
-                  <span className="text-base font-medium block mt-1 md:mt-0 text-foreground/80">{currencySymbol}{item.itemCgstAmount?.toFixed(2) || '0.00'}</span>
-              </div>
-              <div className="text-right self-center">
-                  <Label className="text-xs md:hidden text-muted-foreground">SGST</Label>
-                  <span className="text-base font-medium block mt-1 md:mt-0 text-foreground/80">{currencySymbol}{item.itemSgstAmount?.toFixed(2) || '0.00'}</span>
-              </div>
-          </>
-      )}
-
 
       {/* Action Button */}
       <div className="text-center self-center">
