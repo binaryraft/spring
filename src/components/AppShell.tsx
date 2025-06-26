@@ -37,13 +37,13 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                     state === 'expanded' ? 'justify-between' : 'justify-center'
                 )}>
                     <Link href="/dashboard" className={cn("flex items-center gap-3 flex-grow", state === 'collapsed' && 'hidden')}>
-                        <Gem className="h-7 w-7 text-sidebar-primary shrink-0" />
-                        <h2 className="text-xl font-headline text-sidebar-primary font-bold whitespace-nowrap">
-                            Goldsmith
+                        <Gem className="h-8 w-8 text-sidebar-primary shrink-0" />
+                        <h2 className="text-2xl font-headline text-sidebar-primary font-bold whitespace-nowrap">
+                            Goldsmith Buddy
                         </h2>
                     </Link>
                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent">
-                        <PanelLeft className={cn("transition-transform duration-300", state === 'expanded' && "rotate-180")} />
+                        <PanelLeft className={cn("transition-transform duration-300 h-5 w-5", state === 'expanded' && "rotate-180")} />
                         <span className="sr-only">Toggle Sidebar</span>
                     </Button>
                 </SidebarHeader>
@@ -53,8 +53,8 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                         {menuItems.map((item) => (
                             <SidebarMenuItem key={item.href}>
                                 <Link href={item.href} passHref>
-                                    <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label}>
-                                        <item.icon />
+                                    <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label} className="h-12 text-base">
+                                        <item.icon className="h-5 w-5" />
                                         <span>{item.label}</span>
                                     </SidebarMenuButton>
                                 </Link>

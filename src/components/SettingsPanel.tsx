@@ -232,8 +232,8 @@ const SettingsPanel: React.FC = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <SidebarMenuButton tooltip="Settings">
-            <SettingsIcon/>
+        <SidebarMenuButton tooltip="Settings" className="h-12 text-base">
+            <SettingsIcon className="h-5 w-5"/>
             <span>Settings</span>
         </SidebarMenuButton>
       </SheetTrigger>
