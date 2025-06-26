@@ -9,6 +9,7 @@ import { Trash2 } from 'lucide-react';
 import ValuableIcon from '../ValuableIcon';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
+import { Separator } from '../ui/separator';
 
 interface BillItemRowProps {
   item: Partial<BillItem>;
@@ -83,13 +84,11 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   }, [rowIndex, itemRefs, isPurchase, item.purchaseNetType, showHsnForSales]);
 
   const displayableMaterials = useMemo(() => {
-    let filtered = availableValuables.filter(v => v.selectedInHeader);
+    let filtered = availableValuables;
     const currentItemValuable = item.valuableId ? availableValuables.find(v => v.id === item.valuableId) : null;
 
-    if (currentItemValuable && !currentItemValuable.selectedInHeader) {
-      if (!filtered.find(v => v.id === currentItemValuable.id)) {
+    if (currentItemValuable && !filtered.find(v => v.id === currentItemValuable.id)) {
         filtered.push(currentItemValuable);
-      }
     }
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
   }, [availableValuables, item.valuableId]);
@@ -184,13 +183,9 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   };
 
   return (
-    <div className="p-4 border rounded-lg space-y-4 bg-card shadow-sm hover:shadow-md transition-shadow relative group/item">
-      <Button variant="ghost" size="icon" onClick={onRemoveItem} className="absolute top-2 right-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8 opacity-0 group-hover/item:opacity-100 transition-opacity z-10">
-          <Trash2 className="w-4 h-4" />
-          <span className="sr-only">Remove Item</span>
-      </Button>
-
+    <div className="p-4 border rounded-lg space-y-4 bg-card shadow-sm hover:shadow-md transition-shadow">
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
+        {/* Material */}
         <div className="md:col-span-1 space-y-1.5">
           <Label htmlFor={`material-select-${item.id}`}>Material</Label>
           <Select value={item.valuableId || ''} onValueChange={handleValuableSelect}>
@@ -210,6 +205,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           </Select>
         </div>
 
+        {/* Product Name & HSN */}
         <div className="md:col-span-2 space-y-1.5">
           <Label htmlFor={`product-name-${item.id}`}>Product Name</Label>
            <Input
@@ -240,6 +236,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           )}
         </div>
         
+        {/* Quantity */}
         <div className="md:col-span-1 space-y-1.5">
            <Label htmlFor={`qty-${item.id}`}>{`Qty / ${selectedValuableDetails?.unit || 'Wt'}`}</Label>
            <Input
@@ -255,35 +252,43 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
             />
         </div>
 
-        {!isPurchase ? (
-             <div className="md:col-span-1 space-y-1.5">
-                <Label htmlFor={`rate-${item.id}`}>Rate ({currencySymbol})</Label>
-                <Input
-                    id={`rate-${item.id}`}
-                    ref={rateInputRef}
-                    type="number"
-                    value={item.rate === undefined ? '' : item.rate}
-                    onChange={(e) => handleFieldChange('rate', e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 4 : 3)}
-                    min="0"
-                    step="0.01"
-                    className="h-11 text-base"
-                />
-            </div>
-        ) : (
-            <div className="md:col-span-1"></div> // Spacer for purchase
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          {isPurchase ? (
-            <div className="md:col-span-1 space-y-1.5">
-                <Label>Net Calculation</Label>
-                <div className="flex items-center gap-2">
-                   <Select
-                        value={item.purchaseNetType || 'net_percentage'}
-                        onValueChange={(val: 'net_percentage' | 'fixed_net_price') => handleFieldChange('purchaseNetType', val)}
-                    >
+        {/* Rate (Sales) or Net Calc (Purchase) */}
+        <div className="md:col-span-1 space-y-1.5">
+            {!isPurchase ? (
+                 <div className="space-y-1.5">
+                    <Label htmlFor={`rate-${item.id}`}>Rate ({currencySymbol})</Label>
+                    <Input
+                        id={`rate-${item.id}`}
+                        ref={rateInputRef}
+                        type="number"
+                        value={item.rate === undefined ? '' : item.rate}
+                        onChange={(e) => handleFieldChange('rate', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 4 : 3)}
+                        min="0"
+                        step="0.01"
+                        className="h-11 text-base"
+                    />
+                     <div className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground font-semibold w-8">MC</Label>
+                        <Select value={item.makingChargeType || defaultMakingCharge.type} onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}>
+                            <SelectTrigger ref={mcTypeSelectRef} className="text-sm h-9 flex-grow" onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 5 : 4)}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="percentage" className="text-base py-2">%</SelectItem>
+                                <SelectItem value="fixed" className="text-base py-2">{currencySymbol}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Input ref={mcValueInputRef} type="number" placeholder="Value" value={item.makingCharge === undefined ? '' : item.makingCharge} onChange={(e) => handleFieldChange('makingCharge', e.target.value)} onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 6 : 5)} className="h-9 text-sm flex-grow" />
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-1.5">
+                    <Label>Net Calculation</Label>
+                    <Select
+                            value={item.purchaseNetType || 'net_percentage'}
+                            onValueChange={(val: 'net_percentage' | 'fixed_net_price') => handleFieldChange('purchaseNetType', val)}
+                        >
                         <SelectTrigger ref={purchaseNetTypeSelectRef} className="h-11 text-base w-full" onKeyDown={(e) => handleKeyDown(e, 3)}>
                             <SelectValue />
                         </SelectTrigger>
@@ -297,32 +302,17 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                      ) : (
                         <Input ref={purchaseNetFixedInputRef} type="number" placeholder={`Rate in ${currencySymbol}`} value={item.purchaseNetFixedValue === undefined ? '' : item.purchaseNetFixedValue} onChange={(e) => handleFieldChange('purchaseNetFixedValue', e.target.value)} className="h-11 text-base" onKeyDown={(e) => handleKeyDown(e, 4)} />
                      )}
+                     {item.valuableId && (
+                         <p className="text-xs text-muted-foreground text-center pt-1">Mkt: {currencySymbol}{marketPriceForPurchase.toFixed(2)} / Eff: {currencySymbol}{effectiveRateForPurchaseDisplay.toFixed(2)}</p>
+                    )}
                 </div>
-                 {item.valuableId && (
-                     <p className="text-xs text-muted-foreground text-center">Mkt: {currencySymbol}{marketPriceForPurchase.toFixed(2)} / Eff: {currencySymbol}{effectiveRateForPurchaseDisplay.toFixed(2)}</p>
-                )}
-            </div>
-          ) : (
-             <div className="md:col-span-1 space-y-1.5">
-                <Label>Making Charge (MC)</Label>
-                <div className="flex items-center gap-2">
-                    <Select value={item.makingChargeType || defaultMakingCharge.type} onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}>
-                       <SelectTrigger ref={mcTypeSelectRef} className="text-base h-11 w-[100px]" onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 5 : 4)}>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="percentage" className="text-base py-2">%</SelectItem>
-                            <SelectItem value="fixed" className="text-base py-2">{currencySymbol}</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Input ref={mcValueInputRef} type="number" placeholder="Value" value={item.makingCharge === undefined ? '' : item.makingCharge} onChange={(e) => handleFieldChange('makingCharge', e.target.value)} onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 6 : 5)} className="h-11 text-base" />
-                </div>
-            </div>
-          )}
+            )}
+        </div>
+      </div>
 
-          <div className="md:col-span-1 hidden md:block"></div>
-
-          <div className="md:col-span-1 text-right space-y-1 bg-muted/30 p-3 rounded-md">
+      {/* Summary Box */}
+      <div className="flex justify-end mt-4">
+        <div className="space-y-1 bg-muted/30 p-3 rounded-md min-w-[250px] text-right">
             <div className="flex justify-between items-baseline">
                 <span className="text-sm font-semibold text-muted-foreground">Subtotal</span>
                 <span className="font-bold text-lg text-foreground">{currencySymbol}{item.amount?.toFixed(2) || '0.00'}</span>
@@ -330,15 +320,22 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
              {!isPurchase && (
                 <>
                 <div className="flex justify-between items-baseline text-sm">
-                    <span className="text-muted-foreground">CGST</span>
-                    <span className="font-medium">{currencySymbol}{(item.itemCgstAmount || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-baseline text-sm">
                     <span className="text-muted-foreground">SGST</span>
                     <span className="font-medium">{currencySymbol}{(item.itemSgstAmount || 0).toFixed(2)}</span>
                 </div>
+                <div className="flex justify-between items-baseline text-sm">
+                    <span className="text-muted-foreground">CGST</span>
+                    <span className="font-medium">{currencySymbol}{(item.itemCgstAmount || 0).toFixed(2)}</span>
+                </div>
                 </>
             )}
+             <Separator className="my-2 bg-muted-foreground/20"/>
+            <div className="flex justify-end pt-1">
+                 <Button variant="ghost" size="icon" onClick={onRemoveItem} className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive h-8 w-8">
+                      <Trash2 className="w-4 h-4" />
+                      <span className="sr-only">Remove Item</span>
+                  </Button>
+            </div>
         </div>
       </div>
     </div>
