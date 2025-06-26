@@ -5,48 +5,48 @@
 
 @layer base {
   :root {
-    --background: 60 56% 92%; /* #F5F5DC soft beige */
-    --foreground: 40 25% 25%; /* #5D503C dark muted brown */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
-    --card: 60 56% 94%; /* #F7F7EC slightly lighter beige */
-    --card-foreground: 40 25% 25%; /* #5D503C dark muted brown */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
 
-    --popover: 60 56% 94%; /* #F7F7EC slightly lighter beige */
-    --popover-foreground: 40 25% 25%; /* #5D503C dark muted brown */
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 210 40% 98%;
 
-    --primary: 45 69% 52%; /* #D4AF37 deep gold */
-    --primary-foreground: 40 25% 15%; /* #40382A dark brown/black for text on gold */
-
-    --secondary: 39 20% 70%; /* #BCAE9A lighter muted bronze */
-    --secondary-foreground: 40 25% 15%; /* #40382A dark brown/black for text on secondary */
-
-    --muted: 60 50% 88%; /* #EDEAC5 Lighter beige for muted backgrounds */
-    --muted-foreground: 40 25% 45%; /* #7B6F5B Muted brown for text on muted */
-
-    --accent: 39 23% 60%; /* #8C7853 muted bronze */
-    --accent-foreground: 60 56% 95%; /* #F7F7EC very light beige for text on bronze */
-
-    --destructive: 0 84% 60%; /* A clearer, more standard red */
-    --destructive-foreground: 0 0% 100%; /* White text on red */
-    
-    --success: 142 71% 45%; /* A nice green for success/sales */
-    --success-foreground: 0 0% 100%; /* White text on green */
-
-    --border: 45 40% 70%; /* #C9B287 A gold-ish beige for borders */
-    --input: 45 45% 88%; /* #E8DBC5 Lighter gold-ish beige for input backgrounds */
-    --ring: 45 69% 52%; /* #D4AF37 deep gold for focus rings */
-
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+ 
     --radius: 0.5rem;
 
-    /* Sidebar specific colors - can be adjusted or inherited if not distinct */
-    --sidebar-background: 60 56% 90%; /* Slightly darker beige for sidebar e.g. #EFECCA */
-    --sidebar-foreground: 40 25% 20%; /* #534735 */
-    --sidebar-primary: hsl(var(--primary));
-    --sidebar-primary-foreground: hsl(var(--primary-foreground));
-    --sidebar-accent: hsl(var(--accent));
-    --sidebar-accent-foreground: hsl(var(--accent-foreground));
-    --sidebar-border: 45 30% 65%; /* #C1A679 */
-    --sidebar-ring: hsl(var(--ring));
+    /* Sidebar specific colors */
+    --sidebar-background: 222.2 80% 5.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 212.7 26.8% 83.9%;
 
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -54,51 +54,51 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
   }
-
+ 
   .dark {
-    /* Define dark theme variables if needed, for now keeping them generic based on light theme inversion */
-    --background: 40 25% 15%; /* #40382A Dark brown */
-    --foreground: 60 56% 92%; /* #F5F5DC soft beige */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+ 
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+ 
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+ 
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
 
-    --card: 40 25% 18%; /* #4A4231 Slightly lighter dark brown */
-    --card-foreground: 60 56% 92%; /* #F5F5DC soft beige */
-
-    --popover: 40 25% 18%; /* #4A4231 Slightly lighter dark brown */
-    --popover-foreground: 60 56% 92%; /* #F5F5DC soft beige */
-
-    --primary: 45 69% 52%; /* #D4AF37 deep gold */
-    --primary-foreground: 40 25% 15%; /* #40382A dark brown/black for text on gold */
-
-    --secondary: 39 23% 60%; /* #8C7853 muted bronze */
-    --secondary-foreground: 60 56% 95%; /* #F7F7EC very light beige for text on bronze */
-
-    --muted: 40 25% 25%; /* #5D503C Muted dark brown */
-    --muted-foreground: 60 50% 80%; /* #D7D0B9 Lighter beige */
-
-    --accent: 45 50% 65%; /* #C9B287 Lighter gold for accent in dark */
-    --accent-foreground: 40 25% 10%; /* #2C261C Very dark brown */
-
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 100%;
+    --success: 142.1 70.2% 26.3%;
+    --success-foreground: 210 40% 98%;
+ 
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
     
-    --success: 142 71% 35%; /* A slightly darker green for dark mode */
-    --success-foreground: 0 0% 100%;
-
-    --border: 45 40% 40%; /* #7B6A46 Dark gold-ish beige for borders */
-    --input: 45 40% 30%; /* #5C4F35 Darker gold-ish beige for input backgrounds */
-    --ring: 45 69% 52%; /* #D4AF37 deep gold */
-    
-    --sidebar-background: 40 25% 12%; /* #332C21 Very dark brown for sidebar */
-    --sidebar-foreground: 60 56% 85%; /* #E8E2D0 */
-    --sidebar-primary: hsl(var(--primary));
-    --sidebar-primary-foreground: hsl(var(--primary-foreground));
-    --sidebar-accent: hsl(var(--accent));
-    --sidebar-accent-foreground: hsl(var(--accent-foreground));
-    --sidebar-border: 45 30% 35%; /* #68573F */
-    --sidebar-ring: hsl(var(--ring));
+    /* Sidebar specific colors */
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 212.7 26.8% 83.9%;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
