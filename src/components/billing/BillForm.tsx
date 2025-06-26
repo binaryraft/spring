@@ -445,12 +445,12 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         </Card>
         
         <div className={cn("rounded-xl p-4 sm:p-6 shadow-lg", isSalesBill ? "bg-success" : "bg-destructive")}>
-          <h3 className="flex items-center text-xl font-headline text-white mb-4">
+          <h3 className="flex items-center text-xl font-headline text-primary-foreground mb-4">
             <ListOrdered className="mr-3 h-6 w-6"/>
             Items
           </h3>
           <div className="px-0">
-            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-white/80 uppercase tracking-wider border-b border-white/20 bg-black/10 rounded-t-lg`}>
+            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-primary-foreground/80 uppercase tracking-wider border-b border-primary-foreground/20 bg-black/10 rounded-t-lg`}>
               <div className="col-span-1">Material</div>
               <div className="col-span-1">Product Name</div>
               {billType === 'sales-bill' && <div className="col-span-1 text-center">HSN</div>}
@@ -496,7 +496,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 variant="ghost" 
                 size="sm" 
                 onClick={addItem} 
-                className="mt-4 shadow-sm text-base h-10 px-4 border border-white/40 text-white hover:bg-white/10 hover:text-white"
+                className="mt-4 shadow-sm text-base h-10 px-4 border border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Add Item
             </Button>
@@ -604,3 +604,5 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 };
 
 export default BillForm;
+
+    

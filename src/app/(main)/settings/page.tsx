@@ -329,7 +329,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
                  <div className="mb-8 p-5 border rounded-lg bg-background shadow-md space-y-5">
-                    <h4 className="text-lg font-semibold text-accent">{isEditingMaterial ? 'Edit Material' : 'Add New Material'}</h4>
+                    <h4 className="text-lg font-semibold text-muted-foreground">{isEditingMaterial ? 'Edit Material' : 'Add New Material'}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-end">
                         <div>
                             <Label htmlFor="customMaterialName" className="text-base font-medium">Name</Label>
@@ -371,7 +371,7 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
-                <h4 className="text-lg font-semibold mb-4 text-accent">Current Materials List</h4>
+                <h4 className="text-lg font-semibold mb-4 text-muted-foreground">Current Materials List</h4>
                 <div className="space-y-4">
                     {localSettings.valuables.sort((a,b) => a.name.localeCompare(b.name)).map((valuable) => (
                     <div key={valuable.id} className="p-4 border rounded-lg space-y-4 bg-card shadow-sm hover:shadow-md transition-shadow">
@@ -555,5 +555,7 @@ export default function SettingsPage() {
     </div>
   );
 };
+
+    
 
     
