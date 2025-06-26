@@ -126,18 +126,23 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   };
 
   const handleFieldChange = (field: keyof BillItem, value: any) => {
-    let numericValue = value;
+    let processedValue: any = value;
     const numericFields: (keyof BillItem)[] = ['weightOrQuantity', 'rate', 'makingCharge', 'purchaseNetPercentValue', 'purchaseNetFixedValue'];
 
     if (numericFields.includes(field)) {
-      numericValue = parseFloat(value);
-      if (isNaN(numericValue)) {
-        numericValue = field === 'weightOrQuantity' ? 0 : (item[field] as number || 0);
-      }
+        if (value === '') {
+            // Allow clearing the input to make it empty
+            processedValue = undefined;
+        } else {
+            const parsed = parseFloat(value);
+            // Revert to previous value if input is invalid (e.g., "abc")
+            // This prevents the state from becoming NaN and crashing calculations
+            processedValue = isNaN(parsed) ? item[field] : parsed;
+        }
     }
-
-    const updates: Partial<BillItem> = { [field]: numericValue };
-
+    
+    const updates: Partial<BillItem> = { [field]: processedValue };
+    
     if (field === 'purchaseNetType' && isPurchase) {
         updates.purchaseNetPercentValue = value === 'net_percentage' ? (item.purchaseNetPercentValue ?? defaultPurchaseNetPercentage) : undefined;
         updates.purchaseNetFixedValue = value === 'fixed_net_price' ? (item.purchaseNetFixedValue ?? defaultPurchaseNetFixedValue) : undefined;
