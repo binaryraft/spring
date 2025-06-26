@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import type { Bill, BillItem } from '@/types';
@@ -182,7 +183,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                   <p style="margin: 0; font-weight: bold; font-size: 11pt; color: ${color.text};">${bill.customerName || 'N/A'}</p>
                   ${bill.customerAddress ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerAddress}</p>`: ''}
                   ${bill.customerPhone ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerPhone}</p>`: ''}
-                  ${!isViewingEstimate && bill.customerGstin ? `<p style="margin: 4px 0 0 0; font-size: 9pt; font-weight: bold;">GSTIN: ${bill.customerGstin}</p>`: ''}
+                  
                 </td>
                 <td style="width: 40%; padding: 15px; text-align: right; vertical-align: top;">
                   <h2 style="font-family: 'Playfair Display', serif; font-size: 20pt; margin: 0 0 10px 0; color: ${color.text};">${effectiveBillType.toUpperCase()}</h2>

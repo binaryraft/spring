@@ -82,7 +82,6 @@ export interface Bill {
   customerName?: string;
   customerAddress?: string;
   customerPhone?: string;
-  customerGstin?: string;
   items: BillItem[];
   subTotal: number; 
   discount?: number;

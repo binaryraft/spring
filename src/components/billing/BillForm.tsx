@@ -34,7 +34,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [customerGstin, setCustomerGstin] = useState('');
   const [items, setItems] = useState<BillItem[]>([]);
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -46,7 +45,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   // Refs for keyboard navigation
   const customerNameRef = useRef<HTMLInputElement>(null);
   const customerPhoneRef = useRef<HTMLInputElement>(null);
-  const customerGstinRef = useRef<HTMLInputElement>(null);
   const customerAddressRef = useRef<HTMLTextAreaElement>(null);
   const materialSelectTriggerRef = useRef<HTMLButtonElement>(null);
   const productNameRef = useRef<HTMLInputElement>(null);
@@ -75,7 +73,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       setCustomerName(existingBill.customerName || '');
       setCustomerAddress(existingBill.customerAddress || '');
       setCustomerPhone(existingBill.customerPhone || '');
-      setCustomerGstin(existingBill.customerGstin || '');
       setItems(existingBill.items || []);
       setNotes(existingBill.notes || '');
     }
@@ -211,7 +208,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       customerName,
       customerAddress,
       customerPhone,
-      customerGstin,
       items: finalItems,
       subTotal,
       cgstAmount: billCgstAmount,
@@ -248,7 +244,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         date: new Date().toISOString(),
         billNumber: 'ESTIMATE', 
         type: billType,
-        customerName, customerAddress, customerPhone, customerGstin, notes,
+        customerName, customerAddress, customerPhone, notes,
         items: finalItems,
         subTotal,
         totalAmount: subTotal, // No taxes on estimate
@@ -294,20 +290,16 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
               <div>
                 <Label htmlFor="customerName" className="text-base">{isSalesBill ? "Customer" : "Supplier"} Name</Label>
                 <Input id="customerName" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="mt-1.5 h-11 text-base" ref={customerNameRef} onKeyDown={e => handleKeyDown(e, customerPhoneRef)}/>
               </div>
               <div>
                 <Label htmlFor="customerPhone" className="text-base">{isSalesBill ? "Customer" : "Supplier"} Phone</Label>
-                <Input id="customerPhone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="mt-1.5 h-11 text-base" ref={customerPhoneRef} onKeyDown={e => handleKeyDown(e, customerGstinRef)}/>
+                <Input id="customerPhone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="mt-1.5 h-11 text-base" ref={customerPhoneRef} onKeyDown={e => handleKeyDown(e, customerAddressRef)}/>
               </div>
-              <div>
-                <Label htmlFor="customerGstin" className="text-base">{isSalesBill ? "Customer" : "Supplier"} GSTIN</Label>
-                <Input id="customerGstin" value={customerGstin} onChange={(e) => setCustomerGstin(e.target.value.toUpperCase())} className="mt-1.5 h-11 text-base" ref={customerGstinRef} onKeyDown={e => handleKeyDown(e, customerAddressRef)}/>
-              </div>
-              <div className="md:col-span-3">
+              <div className="md:col-span-2">
                 <Label htmlFor="customerAddress" className="text-base">{isSalesBill ? "Customer" : "Supplier"} Address</Label>
                 <Textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className="mt-1.5 text-base" rows={2} ref={customerAddressRef} onKeyDown={e => handleKeyDown(e, materialSelectTriggerRef)}/>
               </div>
