@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +11,7 @@ import GstReportTable from '@/components/reports/GstReportTable';
 import { FilePieChart, Printer } from 'lucide-react';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, getYear, getMonth, setYear, setMonth, format, isWithinInterval } from 'date-fns';
 import type { Bill } from '@/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type PeriodType = 'monthly' | 'yearly' | 'custom';
 
@@ -18,21 +19,29 @@ const GstReportPage = () => {
     const { bills, settings } = useAppContext();
     const [periodType, setPeriodType] = useState<PeriodType>('monthly');
 
-    const currentYear = getYear(new Date());
-    const currentMonth = getMonth(new Date());
+    const [selectedMonth, setSelectedMonth] = useState<number>();
+    const [selectedYear, setSelectedYear] = useState<number>();
+    const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+    const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+    const [isClient, setIsClient] = useState(false);
 
-    const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
-    const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-    const [customStartDate, setCustomStartDate] = useState<Date | undefined>(startOfMonth(new Date()));
-    const [customEndDate, setCustomEndDate] = useState<Date | undefined>(endOfMonth(new Date()));
-    
+    useEffect(() => {
+        const now = new Date();
+        setSelectedMonth(getMonth(now));
+        setSelectedYear(getYear(now));
+        setCustomStartDate(startOfMonth(now));
+        setCustomEndDate(endOfMonth(now));
+        setIsClient(true);
+    }, []);
+
     const years = useMemo(() => {
+        const currentYear = getYear(new Date());
         const uniqueYears = [...new Set(bills.map(b => getYear(new Date(b.date))))];
         if (!uniqueYears.includes(currentYear)) {
             uniqueYears.push(currentYear);
         }
         return uniqueYears.sort((a,b) => b - a);
-    }, [bills, currentYear]);
+    }, [bills]);
 
     const months = Array.from({ length: 12 }, (_, i) => ({
         value: i,
@@ -46,10 +55,12 @@ const GstReportPage = () => {
         let endDate: Date;
 
         if (periodType === 'monthly') {
+            if (selectedMonth === undefined || selectedYear === undefined) return [];
             const date = setYear(setMonth(new Date(), selectedMonth), selectedYear);
             startDate = startOfMonth(date);
             endDate = endOfMonth(date);
         } else if (periodType === 'yearly') {
+            if (selectedYear === undefined) return [];
             const date = setYear(new Date(), selectedYear);
             startDate = startOfYear(date);
             endDate = endOfYear(date);
@@ -68,6 +79,8 @@ const GstReportPage = () => {
     }, [periodType, selectedMonth, selectedYear, customStartDate, customEndDate, salesBills]);
 
     const handlePrint = () => {
+        if (selectedMonth === undefined || selectedYear === undefined) return;
+        
         const reportTitle = periodType === 'monthly' ? `${months.find(m=>m.value === selectedMonth)?.label} ${selectedYear}` :
                             periodType === 'yearly' ? `Year ${selectedYear}` :
                             customStartDate && customEndDate ? `${format(customStartDate, 'PPP')} to ${format(customEndDate, 'PPP')}`:
@@ -148,6 +161,7 @@ const GstReportPage = () => {
     };
     
     const getReportTitle = () => {
+         if (!isClient) return '...';
          switch(periodType) {
             case 'monthly':
                 return `${months.find(m=>m.value === selectedMonth)?.label} ${selectedYear}`;
@@ -161,6 +175,27 @@ const GstReportPage = () => {
             default:
                 return '';
         }
+    }
+
+    if (!isClient) {
+        return (
+            <div className="space-y-8">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <Skeleton className="h-12 w-80" />
+                    <Skeleton className="h-12 w-44" />
+                </div>
+
+                <Card className="shadow-lg border-border">
+                    <CardHeader><CardTitle><Skeleton className="h-8 w-40" /></CardTitle></CardHeader>
+                    <CardContent><Skeleton className="h-28 w-full" /></CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                    <Skeleton className="h-8 w-1/2 mx-auto" />
+                    <Skeleton className="h-80 w-full" />
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -189,7 +224,7 @@ const GstReportPage = () => {
                         
                         <TabsContent value="monthly">
                             <div className="flex items-center gap-4 p-4 border rounded-lg bg-background">
-                                <Select value={String(selectedMonth)} onValueChange={(val) => setSelectedMonth(Number(val))}>
+                                <Select value={selectedMonth !== undefined ? String(selectedMonth) : ''} onValueChange={(val) => setSelectedMonth(Number(val))}>
                                     <SelectTrigger className="w-[180px] text-base h-12">
                                         <SelectValue placeholder="Select Month" />
                                     </SelectTrigger>
@@ -197,7 +232,7 @@ const GstReportPage = () => {
                                         {months.map(m => <SelectItem key={m.value} value={String(m.value)} className="text-base py-2">{m.label}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                                <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+                                <Select value={selectedYear !== undefined ? String(selectedYear) : ''} onValueChange={(val) => setSelectedYear(Number(val))}>
                                     <SelectTrigger className="w-[180px] text-base h-12">
                                         <SelectValue placeholder="Select Year" />
                                     </SelectTrigger>
@@ -210,7 +245,7 @@ const GstReportPage = () => {
 
                         <TabsContent value="yearly">
                              <div className="flex items-center gap-4 p-4 border rounded-lg bg-background">
-                                <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+                                <Select value={selectedYear !== undefined ? String(selectedYear) : ''} onValueChange={(val) => setSelectedYear(Number(val))}>
                                     <SelectTrigger className="w-[180px] text-base h-12">
                                         <SelectValue placeholder="Select Year" />
                                     </SelectTrigger>

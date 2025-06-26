@@ -1,18 +1,24 @@
 
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StatCard from './StatCard';
 import { isToday, isThisMonth, isThisYear } from 'date-fns';
 import { ArrowUpRight, ArrowDownLeft, DollarSign, BarChart } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Period = 'daily' | 'monthly' | 'yearly';
 
 const AccountingSummary: React.FC = () => {
   const { bills, settings } = useAppContext();
   const [period, setPeriod] = useState<Period>('monthly');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const summary = useMemo(() => {
     let periodFilter: (date: Date) => boolean;
@@ -47,6 +53,14 @@ const AccountingSummary: React.FC = () => {
 
   const currency = settings.currencySymbol;
 
+  const StatCardsSkeleton = () => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Skeleton className="h-[120px] w-full" />
+        <Skeleton className="h-[120px] w-full" />
+        <Skeleton className="h-[120px] w-full" />
+    </div>
+  );
+
   return (
     <Card className="shadow-lg border-border">
       <CardHeader>
@@ -63,26 +77,28 @@ const AccountingSummary: React.FC = () => {
             <TabsTrigger value="yearly">Yearly</TabsTrigger>
           </TabsList>
           <TabsContent value={period} className="mt-4">
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard 
-                    title="Total Sales"
-                    value={`${currency}${summary.totalSales.toFixed(2)}`}
-                    icon={ArrowUpRight}
-                    iconColor="text-green-500"
-                />
-                 <StatCard 
-                    title="Total Purchases"
-                    value={`${currency}${summary.totalPurchases.toFixed(2)}`}
-                    icon={ArrowDownLeft}
-                    iconColor="text-red-500"
-                />
-                 <StatCard 
-                    title="Profit"
-                    value={`${currency}${summary.profit.toFixed(2)}`}
-                    icon={DollarSign}
-                    iconColor="text-primary"
-                />
-             </div>
+             {!isClient ? <StatCardsSkeleton /> : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <StatCard 
+                        title="Total Sales"
+                        value={`${currency}${summary.totalSales.toFixed(2)}`}
+                        icon={ArrowUpRight}
+                        iconColor="text-green-500"
+                    />
+                     <StatCard 
+                        title="Total Purchases"
+                        value={`${currency}${summary.totalPurchases.toFixed(2)}`}
+                        icon={ArrowDownLeft}
+                        iconColor="text-red-500"
+                    />
+                     <StatCard 
+                        title="Profit"
+                        value={`${currency}${summary.profit.toFixed(2)}`}
+                        icon={DollarSign}
+                        iconColor="text-primary"
+                    />
+                 </div>
+             )}
           </TabsContent>
         </Tabs>
       </CardContent>

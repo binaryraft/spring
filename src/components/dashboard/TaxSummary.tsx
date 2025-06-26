@@ -1,18 +1,24 @@
 
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StatCard from './StatCard';
 import { isToday, isThisMonth, isThisYear } from 'date-fns';
 import { Landmark } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Period = 'daily' | 'monthly' | 'yearly';
 
 const TaxSummary: React.FC = () => {
   const { bills, settings } = useAppContext();
   const [period, setPeriod] = useState<Period>('monthly');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const summary = useMemo(() => {
     let periodFilter: (date: Date) => boolean;
@@ -41,6 +47,14 @@ const TaxSummary: React.FC = () => {
 
   const currency = settings.currencySymbol;
 
+  const StatCardsSkeleton = () => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Skeleton className="h-[120px] w-full" />
+        <Skeleton className="h-[120px] w-full" />
+        <Skeleton className="h-[120px] w-full" />
+    </div>
+  );
+
   return (
     <Card className="shadow-lg border-border">
       <CardHeader>
@@ -57,26 +71,28 @@ const TaxSummary: React.FC = () => {
             <TabsTrigger value="yearly">Yearly</TabsTrigger>
           </TabsList>
            <TabsContent value={period} className="mt-4">
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard 
-                    title={`CGST (${settings.cgstRate}%)`}
-                    value={`${currency}${summary.totalCgst.toFixed(2)}`}
-                    icon={Landmark}
-                    iconColor="text-accent"
-                />
-                 <StatCard 
-                    title={`SGST (${settings.sgstRate}%)`}
-                    value={`${currency}${summary.totalSgst.toFixed(2)}`}
-                    icon={Landmark}
-                    iconColor="text-accent"
-                />
-                 <StatCard 
-                    title="Total Tax Collected"
-                    value={`${currency}${summary.totalTax.toFixed(2)}`}
-                    icon={Landmark}
-                    iconColor="text-primary"
-                />
-             </div>
+             {!isClient ? <StatCardsSkeleton /> : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <StatCard 
+                        title={`CGST (${settings.cgstRate}%)`}
+                        value={`${currency}${summary.totalCgst.toFixed(2)}`}
+                        icon={Landmark}
+                        iconColor="text-accent"
+                    />
+                     <StatCard 
+                        title={`SGST (${settings.sgstRate}%)`}
+                        value={`${currency}${summary.totalSgst.toFixed(2)}`}
+                        icon={Landmark}
+                        iconColor="text-accent"
+                    />
+                     <StatCard 
+                        title="Total Tax Collected"
+                        value={`${currency}${summary.totalTax.toFixed(2)}`}
+                        icon={Landmark}
+                        iconColor="text-primary"
+                    />
+                 </div>
+             )}
           </TabsContent>
         </Tabs>
       </CardContent>

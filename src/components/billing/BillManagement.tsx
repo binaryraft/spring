@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Bill, BillType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, List } from 'lucide-react';
@@ -10,6 +10,8 @@ import BillViewModal from './BillViewModal';
 import { useAppContext } from '@/contexts/AppContext';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isToday, isThisMonth, isThisYear } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 interface BillManagementProps {
   billType: BillType;
@@ -24,6 +26,11 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
   const [editingBill, setEditingBill] = useState<Bill | undefined>(undefined);
   const [viewingBill, setViewingBill] = useState<Bill | null>(null);
   const [isViewingEstimate, setIsViewingEstimate] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const billTypeLabel = billType === 'sales-bill' ? 'Sell' : 'Purchase';
   const billVariant = billType === 'sales-bill' ? 'success' : 'destructive';
@@ -92,6 +99,26 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
     onCancel: handleShowHistory,
   };
 
+  const HistoryViewSkeleton = () => (
+     <div className="space-y-8">
+        <div className="flex items-center justify-between">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-12 w-52" />
+        </div>
+        <div className="bg-card p-4 sm:p-6 md:p-8 rounded-lg shadow-xl border border-border">
+            <Skeleton className="h-10 w-full mb-6" />
+            <div className="rounded-lg border shadow-md overflow-hidden mt-8">
+                <div className="p-4 space-y-3">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                </div>
+            </div>
+        </div>
+    </div>
+  );
+
   return (
     <div className="w-full">
       {isFormVisible ? (
@@ -102,30 +129,32 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
           {...commonFormProps}
         />
       ) : (
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl lg:text-4xl font-headline text-primary">{billTypeLabel} History</h1>
-                <Button onClick={handleCreateNew} variant={billVariant} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
-                    <PlusCircle className="mr-2.5 h-5 w-5" /> Create New {billTypeLabel}
-                </Button>
+         !isClient ? <HistoryViewSkeleton /> : (
+            <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                    <h1 className="text-3xl lg:text-4xl font-headline text-primary">{billTypeLabel} History</h1>
+                    <Button onClick={handleCreateNew} variant={billVariant} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
+                        <PlusCircle className="mr-2.5 h-5 w-5" /> Create New {billTypeLabel}
+                    </Button>
+                </div>
+                <div className="bg-card p-4 sm:p-6 md:p-8 rounded-lg shadow-xl border border-border">
+                    <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)}>
+                        <TabsList className="grid w-full grid-cols-4 mb-6 bg-primary/10">
+                            <TabsTrigger value="daily">Daily</TabsTrigger>
+                            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                            <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                            <TabsTrigger value="all">All Time</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    <BillHistoryList 
+                      billType={billType} 
+                      bills={filteredBills}
+                      onEditBill={handleEditBill} 
+                      onViewBill={(bill) => handleViewBill(bill, false)} 
+                    />
+                </div>
             </div>
-            <div className="bg-card p-4 sm:p-6 md:p-8 rounded-lg shadow-xl border border-border">
-                <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)}>
-                    <TabsList className="grid w-full grid-cols-4 mb-6 bg-primary/10">
-                        <TabsTrigger value="daily">Daily</TabsTrigger>
-                        <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                        <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                        <TabsTrigger value="all">All Time</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-                <BillHistoryList 
-                  billType={billType} 
-                  bills={filteredBills}
-                  onEditBill={handleEditBill} 
-                  onViewBill={(bill) => handleViewBill(bill, false)} 
-                />
-            </div>
-        </div>
+        )
       )}
 
       <BillViewModal
