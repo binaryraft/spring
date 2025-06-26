@@ -370,15 +370,47 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                         <div>
                             <Label>Rate ({settings.currencySymbol})</Label>
                             <Input type="number" value={currentItem.rate || ''} onChange={(e) => handleItemFormChange('rate', parseFloat(e.target.value))} className="h-11 text-base"/>
-                            <div className="flex items-center gap-2 mt-1">
-                                <Select value={currentItem.makingChargeType} onValueChange={(val) => handleItemFormChange('makingChargeType', val)}>
-                                    <SelectTrigger className="h-9 text-sm w-[150px]"><SelectValue placeholder="MC Type" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="percentage">Percentage</SelectItem>
-                                        <SelectItem value="fixed">Fixed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <Input type="number" placeholder="MC Value" value={currentItem.makingCharge || ''} onChange={(e) => handleItemFormChange('makingCharge', parseFloat(e.target.value))} className="h-9 text-sm" />
+                            <div className="mt-2">
+                                <Label className="text-sm font-medium text-muted-foreground">Making Charge</Label>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className="inline-flex rounded-md shadow-sm" role="group">
+                                        <Button
+                                            onClick={() => handleItemFormChange('makingChargeType', 'percentage')}
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                                "rounded-r-none h-9 px-4 transition-all duration-200",
+                                                currentItem.makingChargeType === 'percentage'
+                                                ? 'bg-yellow-400 text-black font-bold shadow-[0_0_15px_rgba(250,204,21,0.5)] z-10 border-yellow-500'
+                                                : 'bg-background text-muted-foreground'
+                                            )}
+                                        >
+                                            %
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleItemFormChange('makingChargeType', 'fixed')}
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                                "rounded-l-none h-9 px-4 transition-all duration-200 -ml-px",
+                                                currentItem.makingChargeType === 'fixed'
+                                                ? 'bg-green-500 text-white font-bold shadow-[0_0_15px_rgba(34,197,94,0.6)] z-10 border-green-600'
+                                                : 'bg-background text-muted-foreground'
+                                            )}
+                                        >
+                                            {settings.currencySymbol}
+                                        </Button>
+                                    </div>
+                                    <Input 
+                                        type="number" 
+                                        placeholder="MC Value" 
+                                        value={currentItem.makingCharge || ''} 
+                                        onChange={(e) => handleItemFormChange('makingCharge', parseFloat(e.target.value))} 
+                                        className="h-9 text-sm" 
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}
