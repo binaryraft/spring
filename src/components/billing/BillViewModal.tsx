@@ -163,7 +163,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       </style>
     </head>
     <body>
-      <div id="bill-content-for-pdf" style="width: 210mm; min-height: 297mm; margin: 0 auto; background-color: #ffffff; padding: 15mm; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
+      <div id="bill-content-for-pdf" style="width: 794px; height: 1123px; margin: 0 auto; background-color: #ffffff; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
         
         <header>
             <div style="text-align: center; margin-bottom: 25px;">
@@ -292,10 +292,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             useCORS: true,
             logging: false,
             backgroundColor: "#ffffff",
-            width: 794,
-            height: 1123,
-            windowWidth: 794,
-            windowHeight: 1123,
         });
 
         const imgData = canvas.toDataURL('image/png');
