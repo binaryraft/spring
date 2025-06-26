@@ -53,7 +53,7 @@ export default function BillItemPreviewRow({ item, index, onEdit, onDelete, isSa
         <div className="font-bold text-base">{item.name}</div>
         <div className="text-sm text-muted-foreground">{valuable?.name}</div>
       </TableCell>
-      {isSalesBill && settings.enableHsnCode && <TableCell className="text-sm">{item.hsnCode || 'N/A'}</TableCell>}
+      {isSalesBill && settings.enableHsnCode && <TableCell className="text-sm">{item.hsnCode || '-'}</TableCell>}
       <TableCell className="text-right text-sm">{weightDisplay()}</TableCell>
       <TableCell className="text-right text-sm">{settings.currencySymbol}{effectiveRate.toFixed(2)}</TableCell>
       {isSalesBill && <TableCell className="text-right text-sm">{makingChargeDisplay()}</TableCell>}

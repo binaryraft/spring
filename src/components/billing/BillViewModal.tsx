@@ -110,14 +110,14 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       : '';
 
     const showGstColumns = bill.type === 'sales-bill' && !isViewingEstimate;
+    const showHsnColumnInPdf = bill.type === 'sales-bill' && !isViewingEstimate && settings.enableHsnCode;
+    const showMakingChargeColumnInPdf = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
 
     const itemsHtml = bill.items.map((item, index) => {
       const valuableDetails = getValuableById(item.valuableId);
       const effectiveRate = getEffectiveRateForItem(item);
       const taxableAmount = item.amount;
-      const showHsnInPdf = bill.type === 'sales-bill' && !isViewingEstimate && item.hsnCode && settings.enableHsnCode;
-      const showMakingChargeInPdf = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
-
+      
       return `
         <tr style="font-family: 'PT Sans', sans-serif; font-size: 9pt; border-bottom: 1px solid ${color.border};">
           <td style="padding: 8px; text-align: center;">${index + 1}</td>
@@ -125,10 +125,10 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             ${item.name}
             <span style="font-weight: normal; color: ${color.textMuted}; font-size: 8pt;">${valuableDetails ? `(${valuableDetails.name})` : ''}</span>
           </td>
-          ${showHsnInPdf ? `<td style="padding: 8px; text-align: center;">${item.hsnCode || '-'}</td>` : ''}
+          ${showHsnColumnInPdf ? `<td style="padding: 8px; text-align: center;">${item.hsnCode || '-'}</td>` : ''}
           <td style="padding: 8px; text-align: right;">${item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} ${item.unit}</td>
           <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${effectiveRate.toFixed(2)}</td>
-          ${showMakingChargeInPdf ? `<td style="padding: 8px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : pdfCurrencyDisplay + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
+          ${showMakingChargeColumnInPdf ? `<td style="padding: 8px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : pdfCurrencyDisplay + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
           <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${taxableAmount.toFixed(2)}</td>
           ${showGstColumns ? `
             <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${(item.itemCgstAmount || 0).toFixed(2)}</td>
@@ -138,13 +138,10 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       `;
     }).join('');
 
-    const showHsnColInPdfHeader = bill.type === 'sales-bill' && !isViewingEstimate && settings.enableHsnCode;
-    const showMakingChargeColumnInPdf = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
-    
     let tableHeaders = `
       <th style="padding: 10px 8px; text-align: center;">#</th>
       <th style="padding: 10px 8px; text-align: left;">Item</th>
-      ${showHsnColInPdfHeader ? `<th style="padding: 10px 8px; text-align: center;">HSN</th>` : ''}
+      ${showHsnColumnInPdf ? `<th style="padding: 10px 8px; text-align: center;">HSN</th>` : ''}
       <th style="padding: 10px 8px; text-align: right;">Qty/Wt</th>
       <th style="padding: 10px 8px; text-align: right;">Rate</th>
       ${showMakingChargeColumnInPdf ? `<th style="padding: 10px 8px; text-align: right;">MC</th>` : ''}
