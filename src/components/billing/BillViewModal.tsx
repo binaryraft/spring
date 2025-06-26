@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import type { Bill, BillItem } from '@/types';
@@ -103,7 +102,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     };
     
     const pdfCurrencyDisplay = settings.currencySymbol === '₹' ? 'Rs. ' : settings.currencySymbol;
-    const effectiveBillType = isViewingEstimate ? 'Estimate' : (bill.type === 'sales-bill' ? 'Tax Invoice' : 'Purchase Invoice');
+    const effectiveBillType = isViewingEstimate ? 'Estimate' : (bill.type === 'sales-bill' ? 'Sales Bill' : 'Purchase Invoice');
 
     const logoImageHtml = settings.showCompanyLogo && settings.companyLogo
       ? `<img src="${settings.companyLogo}" alt="Logo" style="max-width: 140px; max-height: 70px; object-fit: contain; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;">`
@@ -187,7 +186,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 </td>
                 <td style="width: 40%; padding: 15px; text-align: right; vertical-align: top;">
                   <h2 style="font-family: 'Playfair Display', serif; font-size: 20pt; margin: 0 0 10px 0; color: ${color.text};">${effectiveBillType.toUpperCase()}</h2>
-                  <p style="margin: 0; font-size: 9pt;"><span style="color: ${color.textMuted};">Invoice #</span> ${bill.billNumber || 'N/A'}</p>
+                  <p style="margin: 0; font-size: 9pt;"><span style="color: ${color.textMuted};">Bill #</span> ${bill.billNumber || 'N/A'}</p>
                   <p style="margin: 2px 0 0 0; font-size: 9pt;"><span style="color: ${color.textMuted};">Date:</span> ${format(new Date(bill.date), 'dd MMM, yyyy')}</p>
                 </td>
               </tr>
@@ -321,7 +320,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   
   if (!bill) return null;
 
-  const effectiveBillType = isViewingEstimate ? 'Estimate' : bill.type === 'purchase' ? 'Purchase Invoice' : 'Tax Invoice';
+  const effectiveBillType = isViewingEstimate ? 'Estimate' : bill.type === 'purchase' ? 'Purchase Invoice' : 'Sales Bill';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
