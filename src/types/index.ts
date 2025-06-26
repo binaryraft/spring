@@ -82,6 +82,7 @@ export interface Bill {
   customerName?: string;
   customerAddress?: string;
   customerPhone?: string;
+  customerGstin?: string;
   items: BillItem[];
   subTotal: number; 
   discount?: number;
@@ -147,7 +148,7 @@ export const DEFAULT_SETTINGS: Settings = {
   enableColorBilling: true,
   pdfLogoPosition: 'inline-left', 
   enableGstReport: true,
-  enableHsnCode: false,
+  enableHsnCode: true,
 };
 
 export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = [
@@ -162,5 +163,3 @@ export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = 
     { value: 'custom-gem', label: 'Custom Gem (Specify Color)' },
     { value: 'other', label: 'Other/Generic' },
 ];
-
-    

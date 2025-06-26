@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Bill, BillItem, BillType } from '@/types';
@@ -33,6 +34,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerGstin, setCustomerGstin] = useState('');
   const [items, setItems] = useState<BillItem[]>([]);
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -44,6 +46,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   // Refs for keyboard navigation
   const customerNameRef = useRef<HTMLInputElement>(null);
   const customerPhoneRef = useRef<HTMLInputElement>(null);
+  const customerGstinRef = useRef<HTMLInputElement>(null);
   const customerAddressRef = useRef<HTMLTextAreaElement>(null);
   const materialSelectTriggerRef = useRef<HTMLButtonElement>(null);
   const productNameRef = useRef<HTMLInputElement>(null);
@@ -72,6 +75,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       setCustomerName(existingBill.customerName || '');
       setCustomerAddress(existingBill.customerAddress || '');
       setCustomerPhone(existingBill.customerPhone || '');
+      setCustomerGstin(existingBill.customerGstin || '');
       setItems(existingBill.items || []);
       setNotes(existingBill.notes || '');
     }
@@ -207,6 +211,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       customerName,
       customerAddress,
       customerPhone,
+      customerGstin,
       items: finalItems,
       subTotal,
       cgstAmount: billCgstAmount,
@@ -243,7 +248,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         date: new Date().toISOString(),
         billNumber: 'ESTIMATE', 
         type: billType,
-        customerName, customerAddress, customerPhone, notes,
+        customerName, customerAddress, customerPhone, customerGstin, notes,
         items: finalItems,
         subTotal,
         totalAmount: subTotal, // No taxes on estimate
@@ -296,7 +301,11 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
               </div>
               <div>
                 <Label htmlFor="customerPhone" className="text-base">{isSalesBill ? "Customer" : "Supplier"} Phone</Label>
-                <Input id="customerPhone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="mt-1.5 h-11 text-base" ref={customerPhoneRef} onKeyDown={e => handleKeyDown(e, customerAddressRef)}/>
+                <Input id="customerPhone" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="mt-1.5 h-11 text-base" ref={customerPhoneRef} onKeyDown={e => handleKeyDown(e, customerGstinRef)}/>
+              </div>
+              <div>
+                <Label htmlFor="customerGstin" className="text-base">{isSalesBill ? "Customer" : "Supplier"} GSTIN</Label>
+                <Input id="customerGstin" value={customerGstin} onChange={(e) => setCustomerGstin(e.target.value.toUpperCase())} className="mt-1.5 h-11 text-base" ref={customerGstinRef} onKeyDown={e => handleKeyDown(e, customerAddressRef)}/>
               </div>
               <div className="md:col-span-3">
                 <Label htmlFor="customerAddress" className="text-base">{isSalesBill ? "Customer" : "Supplier"} Address</Label>

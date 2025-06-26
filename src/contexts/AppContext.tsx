@@ -174,8 +174,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [bills, setBills, settings.gstin]);
 
   const updateBill = useCallback((updatedBill: Bill) => {
-    setBills(prev => prev.map(b => b.id === updatedBill.id ? { ...updatedBill, companyGstin: updatedBill.companyGstin || b.companyGstin } : b).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-  }, [setBills]);
+    setBills(prev => prev.map(b => b.id === updatedBill.id ? { ...updatedBill, companyGstin: settings.gstin || undefined, customerGstin: updatedBill.customerGstin || undefined } : b).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  }, [setBills, settings.gstin]);
 
   const deleteBill = useCallback((billId: string) => {
     setBills(prev => prev.filter(b => b.id !== billId));
