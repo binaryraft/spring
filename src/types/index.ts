@@ -125,7 +125,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cgstRate: 1.5, 
   sgstRate: 1.5, 
   productNames: ["Gold Ring", "Silver Chain", "Diamond Pendant", "Gold Bangle", "Bangles", "Rings", "Necklace", "Platinum Band", "Ruby Earrings"],
-  currencySymbol: '₹', 
+  currencySymbol: 'Rs ', 
   availableCurrencies: AVAILABLE_CURRENCIES,
   theme: 'light',
   enableColorBilling: false,

@@ -51,7 +51,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   const company = settings;
   const currency = settings.currencySymbol;
-  const pdfCurrencyDisplay = currency === '₹' ? 'Rs. ' : currency;
 
   let effectiveBillType = '';
   if (isEstimateView) {
@@ -86,6 +85,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
     const companyNameColor = useColor ? primaryColor : defaultTextColor;
     const billTypeHeadingColor = useColor ? primaryColor : defaultTextColor;
+    
+    const pdfCurrencyDisplay = settings.currencySymbol === '₹' ? 'Rs. ' : settings.currencySymbol;
+
 
     const logoImageHtml = company.showCompanyLogo
       ? company.companyLogo
@@ -127,7 +129,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       default:
         companyHeaderHtml = `
           <div class="bill-company-header" style="text-align: center; margin-bottom: 15px;">
-            ${logoImageHtml ? `<div style="margin-bottom: 6px; line-height: 0;">${logoImageHtml}</div>` : ''}
+            ${logoImageHtml ? `<div style="margin-bottom: 6px; line-height: 0; display: inline-block;">${logoImageHtml}</div>` : ''}
             ${getNameAndDetailsHtml('center')}
           </div>
         `;
@@ -368,31 +370,16 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         
         pdf.addImage(imgData, 'PNG', x, y, finalPdfImgWidth, finalPdfImgHeight);
         
-        const pdfDataUri = pdf.output('datauristring');
+        pdf.autoPrint();
+        const pdfBlob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
 
-        if (pdfDataUri.length < 1000) { // Basic check for a very small (likely empty) PDF
-            console.error("Generated PDF data URI is suspiciously small:", pdfDataUri);
-            alert("Error: Generated PDF seems to be empty or very small. Please check console for details.");
-            if (captureWrapper.parentNode === document.body) {
-                document.body.removeChild(captureWrapper);
-            }
-            document.body.classList.remove('print-capture-active');
-            setIsGeneratingPdf(false);
-            return;
+        const newWindow = window.open(pdfUrl, "_blank");
+        if (!newWindow) {
+          alert('Failed to open a new window for printing. Please check your pop-up blocker settings.');
         }
-
-        const newWindow = window.open("", "_blank"); 
-        if (newWindow) {
-            newWindow.document.open();
-            newWindow.document.write(
-                `<html><head><title>Print Bill</title></head><body style="margin:0; padding:0; overflow:hidden;">` +
-                `<iframe width="100%" height="100%" style="border:none;" src="${pdfDataUri}"></iframe>` +
-                `</body></html>`
-            );
-            newWindow.document.close(); 
-        } else {
-            alert('Failed to open a new window for printing. Please check your pop-up blocker settings.');
-        }
+        
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
 
     } catch (error) {
         console.error("Error generating PDF:", error);
@@ -457,7 +444,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                 {company.slogan && <p className="text-lg text-muted-foreground mt-1">{company.slogan}</p>}
                 <p className="text-sm text-muted-foreground mt-1.5">{company.address}</p>
                 <p className="text-sm text-muted-foreground">Phone: {company.phoneNumber}</p>
-                {!isEstimateView && bill.companyGstin && <p className="text-sm text-muted-foreground mt-0.5">GSTIN: {company.companyGstin}</p>}
+                {!isEstimateView && bill.companyGstin && <p className="text-sm text-muted-foreground mt-0.5">GSTIN: {company.gstin}</p>}
             </div>
 
             <h2 className="bill-type-heading text-xl lg:text-2xl font-headline text-center font-semibold my-5 py-2 border-y border-primary/30">{effectiveBillType.toUpperCase()}</h2>
@@ -527,23 +514,23 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                       </td>
                       {showHsnColumnInModal && bill.type === 'sales-bill' && bill.type !== 'purchase' && <td className="py-2 px-2 text-center text-xs">{item.hsnCode || '-'}</td>}
                       <td className="py-2 px-2 text-right text-xs">{item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} {item.unit}</td>
-                      <td className="py-2 px-2 text-right text-xs">{pdfCurrencyDisplay}{effectiveRate.toFixed(2)}</td>
+                      <td className="py-2 px-2 text-right text-xs">{currency}{effectiveRate.toFixed(2)}</td>
                       {showMakingChargeColumn && (
                         <td className="py-2 px-2 text-right text-xs">
                           {item.makingCharge && item.makingCharge > 0 ?
-                           (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : pdfCurrencyDisplay + item.makingCharge.toFixed(2))
+                           (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : currency + item.makingCharge.toFixed(2))
                            : '-'}
                         </td>
                       )}
-                      {bill.type === 'sales-bill' && !isEstimateView && <td className="py-2 px-2 text-right text-xs">{pdfCurrencyDisplay}{taxableAmount.toFixed(2)}</td>}
+                      {bill.type === 'sales-bill' && !isEstimateView && <td className="py-2 px-2 text-right text-xs">{currency}{taxableAmount.toFixed(2)}</td>}
                       
                       {showItemLevelGstColumns && (
                         <>
-                            <td className="py-2 px-2 text-right text-xs">{pdfCurrencyDisplay}{itemCgst.toFixed(2)}</td>
-                            <td className="py-2 px-2 text-right text-xs">{pdfCurrencyDisplay}{itemSgst.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-right text-xs">{currency}{itemCgst.toFixed(2)}</td>
+                            <td className="py-2 px-2 text-right text-xs">{currency}{itemSgst.toFixed(2)}</td>
                         </>
                       )}
-                      <td className="py-2 px-2 text-right font-medium text-xs">{pdfCurrencyDisplay}{lineTotal.toFixed(2)}</td>
+                      <td className="py-2 px-2 text-right font-medium text-xs">{currency}{lineTotal.toFixed(2)}</td>
                     </tr>
                   )})}
                 </tbody>
@@ -562,15 +549,15 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     )}
                 </div>
                 <div className="w-2/5 pl-2.5 text-right space-y-1.5">
-                    <p>Subtotal {(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span className="font-semibold text-base">{pdfCurrencyDisplay}{bill.subTotal.toFixed(2)}</span></p>
+                    <p>Subtotal {(!isEstimateView && bill.type === 'sales-bill') ? '(Taxable Value)' : ''}: <span className="font-semibold text-base">{currency}{bill.subTotal.toFixed(2)}</span></p>
 
-                    {!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 && <p>Total CGST ({settings.cgstRate}%): <span className="font-semibold text-base">{pdfCurrencyDisplay}{(bill.cgstAmount || 0).toFixed(2)}</span></p>}
-                    {!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 && <p>Total SGST ({settings.sgstRate}%): <span className="font-semibold text-base">{pdfCurrencyDisplay}{(bill.sgstAmount || 0).toFixed(2)}</span></p>}
+                    {!isEstimateView && bill.type === 'sales-bill' && (bill.cgstAmount || 0) > 0 && <p>Total CGST ({settings.cgstRate}%): <span className="font-semibold text-base">{currency}{(bill.cgstAmount || 0).toFixed(2)}</span></p>}
+                    {!isEstimateView && bill.type === 'sales-bill' && (bill.sgstAmount || 0) > 0 && <p>Total SGST ({settings.sgstRate}%): <span className="font-semibold text-base">{currency}{(bill.sgstAmount || 0).toFixed(2)}</span></p>}
                     
                     {isEstimateView && bill.type === 'sales-bill' && <p className="text-xs text-muted-foreground">(GST not applicable for estimates)</p>}
 
                     <hr className="my-2 !mt-2.5 !mb-2.5 border-border"/>
-                    <p className="text-lg font-bold">Total: <span className="text-xl">{pdfCurrencyDisplay}{bill.totalAmount.toFixed(2)}</span></p>
+                    <p className="text-lg font-bold">Total: <span className="text-xl">{currency}{bill.totalAmount.toFixed(2)}</span></p>
                 </div>
             </div>
 
