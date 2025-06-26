@@ -120,7 +120,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
             <td style="vertical-align: top; width: 50%;">
               ${logoImageHtml}
             </td>
-            <td style="vertical-align: top; text-align: right; font-size: 8pt; line-height: 1.5;">
+            <td style="vertical-align: top; text-align: center; font-size: 8pt; line-height: 1.5;">
               <h1 style="font-family: 'Playfair Display', serif; font-size: 24pt; margin: 0; color: ${color.primary};">${settings.companyName}</h1>
               ${settings.slogan ? `<p style="margin: 0;">${settings.slogan}</p>` : ''}
               <p style="margin: 4px 0 0 0;">${settings.address}</p>

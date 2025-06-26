@@ -185,7 +185,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   const showHsnForSales = !isPurchase;
 
   return (
-    <div className={cn(`group grid items-start gap-x-4 gap-y-3 p-3 bg-black/10 rounded-md hover:bg-black/20 transition-colors`, gridColsClass)}>
+    <div className={cn('group grid items-start gap-x-4 gap-y-3 p-3 border-b border-primary-foreground/10 last:border-b-0 hover:bg-primary-foreground/5 transition-colors', gridColsClass)}>
       <datalist id={datalistId}>
         {productSuggestions.map(p => <option key={p.name} value={p.name} />)}
       </datalist>
@@ -400,5 +400,3 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 };
 
 export default BillItemRow;
-
-    
