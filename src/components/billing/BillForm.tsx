@@ -12,6 +12,7 @@ import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, Li
 import BillItemRow from './BillItemRow';
 import { v4 as uuidv4 } from 'uuid';
 import { Separator } from '../ui/separator';
+import { cn } from '@/lib/utils';
 
 interface BillFormProps {
   billType: BillType;
@@ -378,7 +379,10 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   return (
     <Card className="shadow-xl border-primary/20 bg-card">
       <CardHeader className="pb-6">
-        <CardTitle className="font-headline text-4xl lg:text-5xl text-primary flex items-center">
+        <CardTitle className={cn(
+            "font-headline text-4xl lg:text-5xl flex items-center",
+            isSalesBill ? 'text-success' : 'text-destructive'
+        )}>
           <Calculator className="mr-4 h-10 w-10 lg:h-12 lg:w-12" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
         </CardTitle>
       </CardHeader>
@@ -489,8 +493,16 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
             />
         </div>
         
-        <div className="p-7 border-2 border-primary/30 rounded-lg bg-primary/5 space-y-4 text-right shadow-md">
-          <h3 className="text-2xl lg:text-3xl font-semibold text-primary mb-5 flex items-center justify-end"><Banknote className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>Totals</h3>
+        <div className={cn(
+          "p-7 border-2 rounded-lg space-y-4 text-right shadow-md",
+          isSalesBill ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5"
+        )}>
+          <h3 className={cn(
+            "text-2xl lg:text-3xl font-semibold mb-5 flex items-center justify-end",
+            isSalesBill ? "text-success" : "text-destructive"
+            )}>
+              <Banknote className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>Totals
+          </h3>
           <div className="text-xl">Subtotal (Taxable Value): <span className="font-semibold text-2xl ml-3">{settings.currencySymbol}{subTotal.toFixed(2)}</span></div>
           {(isSalesBill) && (
             <>
@@ -498,12 +510,21 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
               <div className="text-xl">SGST ({settings.sgstRate}%): <span className="font-semibold text-2xl ml-3">{settings.currencySymbol}{billSgstAmount.toFixed(2)}</span></div>
             </>
           )}
-          <Separator className="my-3 bg-primary/20"/>
-          <div className="text-3xl lg:text-4xl font-bold text-primary">Total: <span className="text-4xl lg:text-5xl ml-3">{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span></div>
+          <Separator className={cn("my-3", isSalesBill ? "bg-success/20" : "bg-destructive/20")} />
+          <div className={cn(
+            "text-3xl lg:text-4xl font-bold",
+            isSalesBill ? "text-success" : "text-destructive"
+          )}>Total: <span className="text-4xl lg:text-5xl ml-3">{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span></div>
         </div>
       </CardContent>
       <CardFooter className="flex justify-between items-start border-t pt-8 mt-8">
-        <Button variant="outline" onClick={onCancel} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto">
+        <Button 
+          variant="outline" 
+          onClick={onCancel} 
+          className={cn(
+            "shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto",
+            "text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive"
+          )}>
           <XCircle className="mr-2.5 h-5 w-5" /> Cancel
         </Button>
         <div className="flex items-start space-x-5">
@@ -524,11 +545,12 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
            <div className="flex flex-col items-center">
                 <Button 
                   onClick={handleSubmit} 
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto w-full"
+                  variant={isSalesBill ? 'success' : 'destructive'}
+                  className="text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto w-full"
                 >
                   <Save className="mr-2.5 h-5 w-5" /> {existingBill ? 'Update' : 'Save'} & Print Bill
                 </Button>
-                <p className="text-lg text-secondary mt-2.5">
+                <p className="text-lg text-secondary-foreground mt-2.5">
                     {settings.currencySymbol}{finalTotalAmount.toFixed(2)}
                 </p>
             </div>

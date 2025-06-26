@@ -32,8 +32,8 @@ const BillHistoryList: React.FC<BillHistoryListProps> = ({ billType, bills, onEd
 
   const getBillTypeIcon = (type: BillType) => {
     switch (type) {
-      case 'purchase': return <ShoppingCart className="h-5 w-5 text-blue-500" />;
-      case 'sales-bill': return <FileCheck className="h-5 w-5 text-green-500" />;
+      case 'purchase': return <ShoppingCart className="h-5 w-5 text-destructive" />;
+      case 'sales-bill': return <FileCheck className="h-5 w-5 text-success" />;
       default: return null;
     }
   };

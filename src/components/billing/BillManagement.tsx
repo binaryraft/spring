@@ -26,6 +26,7 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
   const [isViewingEstimate, setIsViewingEstimate] = useState(false);
 
   const billTypeLabel = billType === 'sales-bill' ? 'Sales' : 'Purchase';
+  const billVariant = billType === 'sales-bill' ? 'success' : 'destructive';
 
   const filteredBills = useMemo(() => {
     const componentBills = bills.filter(bill => bill.type === billType);
@@ -87,7 +88,7 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
 
   const commonFormProps = {
     onSaveAndPrint: handleSaveAndPrintBill,
-    onShowEstimate: handleShowEstimatePreview,
+    onShowEstimate: billType === 'sales-bill' ? handleShowEstimatePreview : undefined,
     onCancel: handleCancelForm,
   };
 
@@ -100,7 +101,7 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
             <ArrowLeft className="mr-2.5 h-5 w-5" /> Back to History
           </Button>
         ) : (
-          <Button onClick={handleCreateNew} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
+          <Button onClick={handleCreateNew} variant={billVariant} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
             <PlusCircle className="mr-2.5 h-5 w-5" /> Create {billTypeLabel} Bill
           </Button>
         )}

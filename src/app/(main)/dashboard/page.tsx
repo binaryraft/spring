@@ -20,12 +20,12 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center space-x-4">
           <Link href="/sales" passHref>
-            <Button size="lg" className="shadow-md hover:shadow-lg transition-shadow h-12 text-base">
+            <Button size="lg" variant="success" className="shadow-md hover:shadow-lg transition-shadow h-12 text-base">
               <Receipt className="mr-2 h-5 w-5" /> Create Sales Bill
             </Button>
           </Link>
           <Link href="/purchase" passHref>
-            <Button size="lg" variant="secondary" className="shadow-md hover:shadow-lg transition-shadow h-12 text-base">
+            <Button size="lg" variant="destructive" className="shadow-md hover:shadow-lg transition-shadow h-12 text-base">
               <ShoppingCart className="mr-2 h-5 w-5" /> Create Purchase
             </Button>
           </Link>

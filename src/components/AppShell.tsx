@@ -44,8 +44,8 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ];
     const billingItems = [
-        { href: '/sales', label: 'Sales', icon: Receipt },
-        { href: '/purchase', label: 'Purchases', icon: ShoppingCart },
+        { href: '/sales', label: 'Sales', icon: Receipt, color: 'text-success' },
+        { href: '/purchase', label: 'Purchases', icon: ShoppingCart, color: 'text-destructive' },
         { href: '/gst-report', label: 'GST Report', icon: FilePieChart },
     ];
 
@@ -88,7 +88,7 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                             <SidebarMenuItem key={item.href}>
                                 <Link href={item.href} passHref>
                                     <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label} className="h-14 text-lg">
-                                        <item.icon className="h-6 w-6" />
+                                        <item.icon className={cn("h-6 w-6", item.color)} />
                                         <span>{item.label}</span>
                                     </SidebarMenuButton>
                                 </Link>
