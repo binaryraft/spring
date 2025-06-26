@@ -3,8 +3,8 @@ import './globals.css';
 import { AppProvider } from "@/contexts/AppContext";
 
 export const metadata: Metadata = {
-  title: 'Goldsmith Buddy',
-  description: 'Manage your gold, silver, and diamond business with ease.',
+  title: 'Spring',
+  description: 'A modern application built with Next.js and Firebase.',
 };
 
 export default function RootLayout({

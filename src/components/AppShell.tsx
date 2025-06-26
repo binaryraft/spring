@@ -52,10 +52,10 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                     "flex items-center p-4 border-b border-sidebar-border",
                     state === 'expanded' ? 'justify-between' : 'justify-center'
                 )}>
-                    <Link href="/dashboard" className={cn("flex items-center gap-3 flex-grow", state === 'collapsed' && 'hidden')}>
+                    <Link href="/dashboard" className={cn("flex items-center gap-3", state === 'collapsed' && 'hidden')}>
                         <Gem className="h-8 w-8 text-sidebar-primary shrink-0" />
                         <h2 className="text-2xl font-headline text-sidebar-primary font-bold whitespace-nowrap">
-                            Goldsmith Buddy
+                            Spring
                         </h2>
                     </Link>
                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent">
