@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
@@ -21,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, LayoutDashboard, FileText as GstinIcon } from "lucide-react"; 
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, FileText as GstinIcon } from "lucide-react"; 
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "@/components/ValuableIcon";
@@ -221,129 +220,136 @@ export default function SettingsPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div>
-                  <Label htmlFor="companyName" className="text-lg">Company Name</Label>
-                  <Input id="companyName" value={localSettings.companyName} onChange={(e) => handleChange('companyName', e.target.value)} className="mt-1.5 text-lg h-12"/>
-                </div>
-                <div>
-                  <Label htmlFor="slogan" className="text-lg">Slogan / Tagline</Label>
-                  <Input id="slogan" value={localSettings.slogan} onChange={(e) => handleChange('slogan', e.target.value)} className="mt-1.5 text-lg h-12"/>
-                </div>
-                <div>
-                  <Label htmlFor="address" className="text-lg">Address</Label>
-                  <Input id="address" value={localSettings.address} onChange={(e) => handleChange('address', e.target.value)} className="mt-1.5 text-lg h-12"/>
-                </div>
-                <div>
-                  <Label htmlFor="phoneNumber" className="text-lg">Phone Number</Label>
-                  <Input id="phoneNumber" value={localSettings.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} className="mt-1.5 text-lg h-12"/>
-                </div>
-                <div>
-                  <Label htmlFor="gstin" className="text-lg">GSTIN</Label>
-                  <Input id="gstin" value={localSettings.gstin || ''} onChange={(e) => handleChange('gstin', e.target.value.toUpperCase())} className="mt-1.5 text-lg h-12" placeholder="Enter company GSTIN"/>
-                </div>
-            </CardContent>
-        </Card>
-
-        <Card className="shadow-lg border-border">
-            <CardHeader>
-                <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
-                    <CreditCard className="mr-3 h-6 w-6 text-primary"/> Currency Settings
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                 <Label htmlFor="currencySymbol" className="text-lg">Currency</Label>
-                  <Select value={localSettings.currencySymbol} onValueChange={handleCurrencyChange}>
-                    <SelectTrigger id="currencySymbol" className="mt-1.5 h-12 text-lg">
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AVAILABLE_CURRENCIES.map((currency) => (
-                        <SelectItem key={currency.code} value={currency.symbol} className="text-lg py-2.5">
-                          {currency.symbol} - {currency.name} ({currency.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                   <p className="text-base text-muted-foreground mt-2 italic">
-                    Selected currency will be used across the application.
-                  </p>
-            </CardContent>
-        </Card>
-
-        <Card className="shadow-lg border-border">
-            <CardHeader>
-                <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
-                    <Paintbrush className="mr-3 h-6 w-6 text-primary"/> Company Logo & Print Options
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                 <div className="flex items-center space-x-3.5 p-3.5 bg-muted/30 rounded-md">
-                    <Checkbox id="showCompanyLogo" checked={localSettings.showCompanyLogo} onCheckedChange={(checked) => handleChange('showCompanyLogo', !!checked)} className="w-5 h-5"/>
-                    <Label htmlFor="showCompanyLogo" className="text-lg font-medium leading-none cursor-pointer">Show company logo on bills & estimates</Label>
-                </div>
-                {localSettings.showCompanyLogo && (
-                    <div className="space-y-4 p-4 border rounded-md">
-                        <Input id="logoUpload" type="file" accept="image/*" onChange={handleLogoUpload} ref={fileInputRef} className="text-lg file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-base file:bg-primary/10 file:text-primary hover:file:bg-primary/20 h-12"/>
-                        {localSettings.companyLogo && (
-                            <div className="mt-2.5 p-3.5 border rounded-md bg-muted/50 inline-flex flex-col items-center shadow-sm">
-                                <Image src={localSettings.companyLogo} alt="Company Logo Preview" width={160} height={160} className="object-contain rounded" />
-                                <Button variant="link" size="sm" onClick={handleRemoveLogo} className="text-destructive hover:text-destructive-foreground hover:bg-destructive mt-2.5 text-base px-3 py-1.5 h-auto">
-                                    <XCircle className="mr-1.5 h-4 w-4" /> Remove Logo
-                                </Button>
-                            </div>
-                        )}
-                        {!localSettings.companyLogo && (<p className="text-base text-muted-foreground mt-1.5 italic">No logo uploaded.</p>)}
-                        <div>
-                            <Label htmlFor="pdfLogoPosition" className="text-lg">PDF Logo Position</Label>
-                            <Select value={localSettings.pdfLogoPosition} onValueChange={(value: PdfLogoPosition) => handleChange('pdfLogoPosition', value)}>
-                                <SelectTrigger id="pdfLogoPosition" className="mt-1.5 h-12 text-lg"><SelectValue placeholder="Select logo position" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="top-center" className="text-lg py-2.5">Top Center</SelectItem>
-                                    <SelectItem value="top-left" className="text-lg py-2.5">Top Left</SelectItem>
-                                    <SelectItem value="inline-left" className="text-lg py-2.5">Inline (Left of Name)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <p className="text-base text-muted-foreground mt-2 italic">Choose where the company logo appears on generated PDF documents.</p>
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="companyName" className="text-base font-medium">Company Name</Label>
+                      <Input id="companyName" value={localSettings.companyName} onChange={(e) => handleChange('companyName', e.target.value)} className="mt-1.5 text-base h-11"/>
                     </div>
-                )}
-                <div className="flex items-center space-x-3.5 p-3.5 bg-muted/30 rounded-md">
-                    <Checkbox id="enableColorBilling" checked={localSettings.enableColorBilling} onCheckedChange={(checked) => handleChange('enableColorBilling', !!checked)} className="w-5 h-5"/>
-                    <Label htmlFor="enableColorBilling" className="text-lg font-medium leading-none cursor-pointer">Enable Colour PDF Bills & Estimates</Label>
+                    <div>
+                      <Label htmlFor="slogan" className="text-base font-medium">Slogan / Tagline</Label>
+                      <Input id="slogan" value={localSettings.slogan} onChange={(e) => handleChange('slogan', e.target.value)} className="mt-1.5 text-base h-11"/>
+                    </div>
                 </div>
-                 <p className="text-base text-muted-foreground -mt-4 italic">When enabled, PDFs will use theme colors. Otherwise, they will be monochrome.</p>
+                <div>
+                  <Label htmlFor="address" className="text-base font-medium">Address</Label>
+                  <Input id="address" value={localSettings.address} onChange={(e) => handleChange('address', e.target.value)} className="mt-1.5 text-base h-11"/>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="phoneNumber" className="text-base font-medium">Phone Number</Label>
+                      <Input id="phoneNumber" value={localSettings.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} className="mt-1.5 text-base h-11"/>
+                    </div>
+                    <div>
+                      <Label htmlFor="gstin" className="text-base font-medium">GSTIN</Label>
+                      <Input id="gstin" value={localSettings.gstin || ''} onChange={(e) => handleChange('gstin', e.target.value.toUpperCase())} className="mt-1.5 text-base h-11" placeholder="Enter company GSTIN"/>
+                    </div>
+                </div>
             </CardContent>
         </Card>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card className="shadow-lg border-border">
+                <CardHeader>
+                    <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
+                        <CreditCard className="mr-3 h-6 w-6 text-primary"/> Currency Settings
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <Label htmlFor="currencySymbol" className="text-base font-medium">Currency</Label>
+                      <Select value={localSettings.currencySymbol} onValueChange={handleCurrencyChange}>
+                        <SelectTrigger id="currencySymbol" className="mt-1.5 h-11 text-base">
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AVAILABLE_CURRENCIES.map((currency) => (
+                            <SelectItem key={currency.code} value={currency.symbol} className="text-base py-2">
+                              {currency.symbol} - {currency.name} ({currency.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                       <p className="text-sm text-muted-foreground mt-2 italic">
+                        Selected currency will be used across the application.
+                      </p>
+                </CardContent>
+            </Card>
+
+            <Card className="shadow-lg border-border">
+                <CardHeader>
+                    <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
+                        <Paintbrush className="mr-3 h-6 w-6 text-primary"/> Print & Appearance
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                     <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
+                        <Checkbox id="showCompanyLogo" checked={localSettings.showCompanyLogo} onCheckedChange={(checked) => handleChange('showCompanyLogo', !!checked)} className="w-5 h-5"/>
+                        <Label htmlFor="showCompanyLogo" className="text-base font-medium leading-none cursor-pointer">Show company logo on PDFs</Label>
+                    </div>
+                    {localSettings.showCompanyLogo && (
+                         <div className="space-y-4">
+                            <div>
+                                <Label htmlFor="pdfLogoPosition" className="text-base font-medium">PDF Logo Position</Label>
+                                <Select value={localSettings.pdfLogoPosition} onValueChange={(value: PdfLogoPosition) => handleChange('pdfLogoPosition', value)}>
+                                    <SelectTrigger id="pdfLogoPosition" className="mt-1.5 h-11 text-base"><SelectValue placeholder="Select logo position" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="top-center" className="text-base py-2">Top Center</SelectItem>
+                                        <SelectItem value="top-left" className="text-base py-2">Top Left</SelectItem>
+                                        <SelectItem value="inline-left" className="text-base py-2">Inline (Left of Name)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <Input id="logoUpload" type="file" accept="image/*" onChange={handleLogoUpload} ref={fileInputRef} className="text-base file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:bg-primary/10 file:text-primary hover:file:bg-primary/20 h-11 flex-grow"/>
+                                {localSettings.companyLogo && (
+                                    <Button variant="link" size="sm" onClick={handleRemoveLogo} className="text-destructive hover:text-destructive-foreground hover:bg-destructive text-sm px-3 py-1.5 h-auto">
+                                        <XCircle className="mr-1.5 h-4 w-4" /> Remove
+                                    </Button>
+                                )}
+                            </div>
+                             {localSettings.companyLogo && (
+                                <div className="mt-2.5 p-3 border rounded-md bg-muted/50 inline-block shadow-sm">
+                                    <Image src={localSettings.companyLogo} alt="Company Logo Preview" width={120} height={120} className="object-contain rounded" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
+                        <Checkbox id="enableColorBilling" checked={localSettings.enableColorBilling} onCheckedChange={(checked) => handleChange('enableColorBilling', !!checked)} className="w-5 h-5"/>
+                        <Label htmlFor="enableColorBilling" className="text-base font-medium leading-none cursor-pointer">Enable Colour PDF Bills & Estimates</Label>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+        
         <Card id="manage-materials-card" className="shadow-lg border-border">
             <CardHeader>
                 <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
-                    <Banknote className="mr-3 h-6 w-6 text-primary"/> Manage All Materials
+                    <Banknote className="mr-3 h-6 w-6 text-primary"/> Manage Materials
                 </CardTitle>
             </CardHeader>
             <CardContent>
                  <div className="mb-8 p-5 border rounded-lg bg-background shadow-md space-y-5">
-                    <h4 className="text-xl font-semibold text-accent">{isEditingMaterial ? 'Edit Material' : 'Add New Material'}</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <h4 className="text-lg font-semibold text-accent">{isEditingMaterial ? 'Edit Material' : 'Add New Material'}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-end">
                         <div>
-                            <Label htmlFor="customMaterialName" className="text-lg">Name</Label>
-                            <Input id="customMaterialName" value={customMaterialForm.name} onChange={e => handleCustomMaterialFormChange('name', e.target.value)} className="mt-1.5 h-12 text-lg" placeholder="e.g., Emerald, Platinum Bar" />
+                            <Label htmlFor="customMaterialName" className="text-base font-medium">Name</Label>
+                            <Input id="customMaterialName" value={customMaterialForm.name} onChange={e => handleCustomMaterialFormChange('name', e.target.value)} className="mt-1.5 h-11 text-base" placeholder="e.g., Emerald, Platinum Bar" />
                         </div>
                         <div>
-                            <Label htmlFor="customMaterialPrice" className="text-lg">Price ({settings.currencySymbol})</Label>
-                            <Input id="customMaterialPrice" type="number" value={customMaterialForm.price} onChange={e => handleCustomMaterialFormChange('price', parseFloat(e.target.value) || 0)} className="mt-1.5 h-12 text-lg" min="0" />
+                            <Label htmlFor="customMaterialPrice" className="text-base font-medium">Price ({settings.currencySymbol})</Label>
+                            <Input id="customMaterialPrice" type="number" value={customMaterialForm.price} onChange={e => handleCustomMaterialFormChange('price', parseFloat(e.target.value) || 0)} className="mt-1.5 h-11 text-base" min="0" />
                         </div>
                         <div>
-                            <Label htmlFor="customMaterialUnit" className="text-lg">Unit</Label>
-                            <Input id="customMaterialUnit" value={customMaterialForm.unit} onChange={e => handleCustomMaterialFormChange('unit', e.target.value)} className="mt-1.5 h-12 text-lg" placeholder="e.g., gram, carat, piece" />
+                            <Label htmlFor="customMaterialUnit" className="text-base font-medium">Unit</Label>
+                            <Input id="customMaterialUnit" value={customMaterialForm.unit} onChange={e => handleCustomMaterialFormChange('unit', e.target.value)} className="mt-1.5 h-11 text-base" placeholder="e.g., gram, carat" />
                         </div>
                         <div>
-                            <Label htmlFor="customMaterialIcon" className="text-lg">Icon</Label>
+                            <Label htmlFor="customMaterialIcon" className="text-base font-medium">Icon</Label>
                             <Select value={customMaterialForm.icon} onValueChange={val => handleCustomMaterialFormChange('icon', val as Valuable['icon'])}>
-                                <SelectTrigger className="mt-1.5 h-12 text-lg"> <SelectValue placeholder="Select icon" /></SelectTrigger>
+                                <SelectTrigger className="mt-1.5 h-11 text-base"> <SelectValue placeholder="Select icon" /></SelectTrigger>
                                 <SelectContent>
                                     {AVAILABLE_ICONS.map(icon => (
-                                        <SelectItem key={icon.value} value={icon.value} className="text-lg py-2.5 flex items-center">
+                                        <SelectItem key={icon.value} value={icon.value} className="text-base py-2 flex items-center">
                                            <ValuableIcon valuableType={icon.value} className="w-5 h-5 mr-3" color={icon.value === 'custom-gem' ? customMaterialForm.iconColor : undefined} /> {icon.label}
                                         </SelectItem>
                                     ))}
@@ -352,70 +358,70 @@ export default function SettingsPage() {
                         </div>
                         {customMaterialForm.icon === 'custom-gem' && (
                              <div>
-                                <Label htmlFor="customMaterialIconColor" className="text-lg flex items-center"><Palette className="w-5 h-5 mr-2"/>Icon Color</Label>
-                                <Input id="customMaterialIconColor" type="color" value={customMaterialForm.iconColor || '#808080'} onChange={e => handleCustomMaterialFormChange('iconColor', e.target.value)} className="mt-1.5 h-12 text-lg w-full"/>
+                                <Label htmlFor="customMaterialIconColor" className="text-base font-medium flex items-center"><Palette className="w-4 h-4 mr-2"/>Icon Color</Label>
+                                <Input id="customMaterialIconColor" type="color" value={customMaterialForm.iconColor || '#808080'} onChange={e => handleCustomMaterialFormChange('iconColor', e.target.value)} className="mt-1.5 h-11 text-base w-full"/>
                             </div>
                         )}
-                    </div>
-                    <div className="flex justify-end space-x-3 pt-3">
-                        {isEditingMaterial && <Button variant="outline" onClick={resetCustomMaterialForm} className="text-lg px-5 py-2.5 h-auto">Cancel Edit</Button>}
-                        <Button onClick={handleSaveCustomMaterial} className="text-lg px-5 py-2.5 h-auto shadow-md hover:shadow-lg">
-                            <Save className="mr-2 h-5 w-5" /> {isEditingMaterial ? 'Update Material' : 'Add Material'}
-                        </Button>
+                         <div className="flex justify-end space-x-3 pt-3 lg:col-start-3">
+                            {isEditingMaterial && <Button variant="outline" onClick={resetCustomMaterialForm} className="text-base px-5 py-2.5 h-11">Cancel Edit</Button>}
+                            <Button onClick={handleSaveCustomMaterial} className="text-base px-5 py-2.5 h-11 shadow-md hover:shadow-lg">
+                                <Save className="mr-2 h-4 w-4" /> {isEditingMaterial ? 'Update' : 'Add'}
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
-                <h4 className="text-xl font-semibold mb-4 text-accent">Current Materials List</h4>
-                <div className="space-y-5">
+                <h4 className="text-lg font-semibold mb-4 text-accent">Current Materials List</h4>
+                <div className="space-y-4">
                     {localSettings.valuables.sort((a,b) => a.name.localeCompare(b.name)).map((valuable) => (
-                    <div key={valuable.id} className="p-5 border rounded-lg space-y-5 bg-card shadow-md hover:shadow-lg transition-shadow">
+                    <div key={valuable.id} className="p-4 border rounded-lg space-y-4 bg-card shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-8 h-8 mr-4 text-primary" />
+                            <div className="flex items-center gap-3">
+                                <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-7 h-7 text-primary" />
                                 {valuable.isDefault ? 
-                                    <span className="text-xl font-semibold mr-2">{valuable.name}</span> :
-                                    <Input value={valuable.name} onChange={(e) => handleLocalValuableChange(valuable.id, 'name', e.target.value)} className="text-xl font-semibold mr-2 w-auto inline-flex h-11 bg-transparent border-0 focus:ring-1 focus:ring-primary"/>
+                                    <span className="text-lg font-semibold">{valuable.name}</span> :
+                                    <Input value={valuable.name} onChange={(e) => handleLocalValuableChange(valuable.id, 'name', e.target.value)} className="text-lg font-semibold mr-2 w-auto inline-flex h-10 bg-transparent border-0 focus:ring-1 focus:ring-primary"/>
                                 }
                             </div>
                             <div className="flex items-center space-x-3">
                                 <Checkbox id={`select-${valuable.id}`} checked={valuable.selectedInHeader} onCheckedChange={() => { toggleValuableInHeader(valuable.id); handleLocalValuableChange(valuable.id, 'selectedInHeader', !valuable.selectedInHeader);}} className="w-5 h-5"/>
-                                <Label htmlFor={`select-${valuable.id}`} className="text-base cursor-pointer">Show in Header</Label>
+                                <Label htmlFor={`select-${valuable.id}`} className="text-sm font-medium cursor-pointer">Show in Header</Label>
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                             <div>
-                                <Label htmlFor={`price-${valuable.id}`} className="text-lg">Market Price ({settings.currencySymbol})</Label>
-                                <Input id={`price-${valuable.id}`} type="number" value={valuable.price} onChange={(e) => handleLocalValuableChange(valuable.id, 'price', parseFloat(e.target.value))} className="mt-1.5 h-12 text-lg" min="0"/>
+                                <Label htmlFor={`price-${valuable.id}`} className="text-sm font-medium">Market Price ({settings.currencySymbol})</Label>
+                                <Input id={`price-${valuable.id}`} type="number" value={valuable.price} onChange={(e) => handleLocalValuableChange(valuable.id, 'price', parseFloat(e.target.value))} className="mt-1.5 h-11 text-base" min="0"/>
                             </div>
                             <div>
-                                <Label htmlFor={`unit-${valuable.id}`} className="text-lg">Unit</Label>
-                                <Input id={`unit-${valuable.id}`} value={valuable.unit} onChange={(e) => handleLocalValuableChange(valuable.id, 'unit', e.target.value)} className="mt-1.5 h-12 text-lg" disabled={valuable.isDefault && ['gold', 'silver', 'diamond', 'platinum'].includes(valuable.icon)}/>
+                                <Label htmlFor={`unit-${valuable.id}`} className="text-sm font-medium">Unit</Label>
+                                <Input id={`unit-${valuable.id}`} value={valuable.unit} onChange={(e) => handleLocalValuableChange(valuable.id, 'unit', e.target.value)} className="mt-1.5 h-11 text-base" disabled={valuable.isDefault && ['gold', 'silver', 'diamond', 'platinum'].includes(valuable.icon)}/>
                             </div>
                              {!valuable.isDefault && (
                                 <>
                                 <div>
-                                    <Label htmlFor={`icon-select-${valuable.id}`} className="text-lg">Icon</Label>
+                                    <Label htmlFor={`icon-select-${valuable.id}`} className="text-sm font-medium">Icon</Label>
                                     <Select value={valuable.icon} onValueChange={(newIcon) => handleLocalValuableChange(valuable.id, 'icon', newIcon)}>
-                                        <SelectTrigger id={`icon-select-${valuable.id}`} className="mt-1.5 h-12 text-lg"><SelectValue placeholder="Select icon" /></SelectTrigger>
+                                        <SelectTrigger id={`icon-select-${valuable.id}`} className="mt-1.5 h-11 text-base"><SelectValue placeholder="Select icon" /></SelectTrigger>
                                         <SelectContent>
-                                            {AVAILABLE_ICONS.map(iconOpt => (<SelectItem key={iconOpt.value} value={iconOpt.value} className="text-lg py-2.5 flex items-center"><ValuableIcon valuableType={iconOpt.value} className="w-5 h-5 mr-3" color={iconOpt.value === 'custom-gem' ? valuable.iconColor : undefined} /> {iconOpt.label}</SelectItem>))}
+                                            {AVAILABLE_ICONS.map(iconOpt => (<SelectItem key={iconOpt.value} value={iconOpt.value} className="text-base py-2 flex items-center"><ValuableIcon valuableType={iconOpt.value} className="w-5 h-5 mr-3" color={iconOpt.value === 'custom-gem' ? valuable.iconColor : undefined} /> {iconOpt.label}</SelectItem>))}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 {valuable.icon === 'custom-gem' && (
                                     <div>
-                                        <Label htmlFor={`icon-color-${valuable.id}`} className="text-lg flex items-center"><Palette className="w-5 h-5 mr-2"/>Icon Color</Label>
-                                        <Input id={`icon-color-${valuable.id}`} type="color" value={valuable.iconColor || '#808080'} onChange={(e) => handleLocalValuableChange(valuable.id, 'iconColor', e.target.value)} className="mt-1.5 h-12 text-lg w-full"/>
+                                        <Label htmlFor={`icon-color-${valuable.id}`} className="text-sm font-medium flex items-center"><Palette className="w-4 h-4 mr-2"/>Icon Color</Label>
+                                        <Input id={`icon-color-${valuable.id}`} type="color" value={valuable.iconColor || '#808080'} onChange={(e) => handleLocalValuableChange(valuable.id, 'iconColor', e.target.value)} className="mt-1.5 h-11 text-base w-full"/>
                                     </div>
                                 )}
                                 </>
                             )}
                         </div>
                         {!valuable.isDefault && (
-                            <div className="flex justify-end space-x-2.5 pt-2">
-                                <Button variant="outline" size="sm" onClick={() => handleEditValuable(valuable)} className="text-base px-3 py-1.5 h-auto"><Edit3 className="mr-2 h-4 w-4"/> Edit in Form</Button>
+                            <div className="flex justify-end space-x-2.5 pt-2 border-t mt-3">
+                                <Button variant="outline" size="sm" onClick={() => handleEditValuable(valuable)} className="text-sm px-3 py-1.5 h-auto"><Edit3 className="mr-1.5 h-4 w-4"/> Edit in Form</Button>
                                 <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="destructive" size="sm" className="text-base px-3 py-1.5 h-auto"><Trash2 className="mr-2 h-4 w-4"/> Delete</Button></AlertDialogTrigger>
+                                    <AlertDialogTrigger asChild><Button variant="destructive" size="sm" className="text-sm px-3 py-1.5 h-auto"><Trash2 className="mr-1.5 h-4 w-4"/> Delete</Button></AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
                                             <AlertDialogTitle className="text-xl">Confirm Deletion</AlertDialogTitle>
@@ -438,28 +444,29 @@ export default function SettingsPage() {
         <Card className="shadow-lg border-border">
             <CardHeader>
                 <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
-                    <Tag className="mr-3 h-6 w-6 text-primary"/> Product Name & HSN Suggestions
+                    <Tag className="mr-3 h-6 w-6 text-primary"/> Product & HSN Suggestions
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4 mb-5">
-                    <Label htmlFor="newProductName" className="font-medium text-lg">Add New Product Suggestion</Label>
+                    <Label htmlFor="newProductName" className="font-medium text-base">Add New Product Suggestion</Label>
                     <div className="flex space-x-2.5">
-                        <Input id="newProductName" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} placeholder="e.g., Ring, Bangle, Earring" className="h-12 text-lg"/>
-                        <Button onClick={handleAddProductSuggestion} size="default" className="h-12 shadow hover:shadow-md transition-shadow text-lg px-5"><PlusCircle className="mr-2 h-5 w-5" /> Add</Button>
+                        <Input id="newProductName" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} placeholder="e.g., Ring, Bangle, Earring" className="h-11 text-base"/>
+                        <Button onClick={handleAddProductSuggestion} size="default" className="h-11 shadow hover:shadow-md transition-shadow text-base px-5"><PlusCircle className="mr-2 h-4 w-4" /> Add</Button>
                     </div>
                 </div>
                 {localSettings.productSuggestions.length > 0 ? (
-                    <div className="max-h-80 overflow-y-auto border rounded-md p-4 space-y-3 bg-muted/30">
-                        <div className="grid grid-cols-[2fr_1fr_auto] gap-x-4 items-center px-3 py-2 font-semibold text-muted-foreground">
+                    <div className="max-h-80 overflow-y-auto border rounded-md p-3 space-y-2 bg-muted/30">
+                        <div className="grid grid-cols-[2fr_1fr_auto] gap-x-4 items-center px-3 py-2 font-semibold text-muted-foreground text-sm">
                             <span>Product Name</span>
                             <span>HSN Code</span>
                             <span className="text-right">Action</span>
                         </div>
+                        <Separator/>
                         {localSettings.productSuggestions.map((product) => (
-                            <div key={product.name} className="grid grid-cols-[2fr_1fr_auto] gap-x-4 items-center p-3 bg-card rounded shadow-sm">
-                                <span className="text-lg font-medium">{product.name}</span>
-                                <Input value={product.hsnCode} onChange={(e) => handleProductSuggestionHsnChange(product.name, e.target.value)} placeholder="HSN Code" className="h-11 text-base"/>
+                            <div key={product.name} className="grid grid-cols-[2fr_1fr_auto] gap-x-4 items-center p-2 bg-card rounded shadow-sm">
+                                <span className="text-base font-medium">{product.name}</span>
+                                <Input value={product.hsnCode} onChange={(e) => handleProductSuggestionHsnChange(product.name, e.target.value)} placeholder="HSN Code" className="h-10 text-sm"/>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10"><Trash2 className="h-5 w-5" /></Button></AlertDialogTrigger>
                                     <AlertDialogContent>
@@ -470,8 +477,8 @@ export default function SettingsPage() {
                             </div>
                         ))}
                     </div>
-                ) : (<p className="text-lg text-muted-foreground italic">No custom product names added yet.</p>)}
-                <p className="text-base text-muted-foreground mt-3">HSN codes are automatically saved here when you create bills. You can also edit them manually.</p>
+                ) : (<p className="text-base text-muted-foreground italic text-center py-4">No custom product names added yet.</p>)}
+                <p className="text-sm text-muted-foreground mt-3">HSN codes are automatically saved here when you create bills. You can also edit them manually.</p>
             </CardContent>
         </Card>
         
@@ -484,18 +491,18 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                        <Label htmlFor="defaultMakingChargeType" className="text-lg">Type</Label>
+                        <Label htmlFor="defaultMakingChargeType" className="text-base font-medium">Type</Label>
                         <Select value={localSettings.defaultMakingCharge?.type || 'percentage'} onValueChange={(value: 'percentage' | 'fixed') => handleNestedChange('defaultMakingCharge', 'type', value)}>
-                            <SelectTrigger id="defaultMakingChargeType" className="mt-1.5 h-12 text-lg"><SelectValue placeholder="Select type" /></SelectTrigger>
+                            <SelectTrigger id="defaultMakingChargeType" className="mt-1.5 h-11 text-base"><SelectValue placeholder="Select type" /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="percentage" className="text-lg py-2.5">Percentage (%)</SelectItem>
-                                <SelectItem value="fixed" className="text-lg py-2.5">Fixed Amount ({settings.currencySymbol})</SelectItem>
+                                <SelectItem value="percentage" className="text-base py-2">Percentage (%)</SelectItem>
+                                <SelectItem value="fixed" className="text-base py-2">Fixed Amount ({settings.currencySymbol})</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <div>
-                        <Label htmlFor="defaultMakingChargeValue" className="text-lg">Value</Label>
-                        <Input id="defaultMakingChargeValue" type="number" value={localSettings.defaultMakingCharge?.value || 0} onChange={(e) => handleNestedChange('defaultMakingCharge', 'value', parseFloat(e.target.value))} className="mt-1.5 h-12 text-lg" min="0"/>
+                        <Label htmlFor="defaultMakingChargeValue" className="text-base font-medium">Value</Label>
+                        <Input id="defaultMakingChargeValue" type="number" value={localSettings.defaultMakingCharge?.value || 0} onChange={(e) => handleNestedChange('defaultMakingCharge', 'value', parseFloat(e.target.value))} className="mt-1.5 h-11 text-base" min="0"/>
                     </div>
                 </CardContent>
             </Card>
@@ -508,12 +515,12 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                        <Label htmlFor="cgstRate" className="text-lg">CGST Rate (%)</Label>
-                        <Input id="cgstRate" type="number" value={localSettings.cgstRate} onChange={(e) => handleChange('cgstRate', parseFloat(e.target.value))} className="mt-1.5 h-12 text-lg" min="0"/>
+                        <Label htmlFor="cgstRate" className="text-base font-medium">CGST Rate (%)</Label>
+                        <Input id="cgstRate" type="number" value={localSettings.cgstRate} onChange={(e) => handleChange('cgstRate', parseFloat(e.target.value))} className="mt-1.5 h-11 text-base" min="0"/>
                     </div>
                     <div>
-                        <Label htmlFor="sgstRate" className="text-lg">SGST Rate (%)</Label>
-                        <Input id="sgstRate" type="number" value={localSettings.sgstRate} onChange={(e) => handleChange('sgstRate', parseFloat(e.target.value))} className="mt-1.5 h-12 text-lg" min="0"/>
+                        <Label htmlFor="sgstRate" className="text-base font-medium">SGST Rate (%)</Label>
+                        <Input id="sgstRate" type="number" value={localSettings.sgstRate} onChange={(e) => handleChange('sgstRate', parseFloat(e.target.value))} className="mt-1.5 h-11 text-base" min="0"/>
                     </div>
                 </CardContent>
             </Card>
@@ -525,16 +532,16 @@ export default function SettingsPage() {
                     <Package className="mr-3 h-6 w-6 text-primary"/> Default Purchase Item Setup
                 </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                  <div>
-                  <Label htmlFor="defaultPurchaseItemNetPercentage" className="text-lg">Default Net % Off Market</Label>
-                  <Input id="defaultPurchaseItemNetPercentage" type="number" value={localSettings.defaultPurchaseItemNetPercentage} onChange={(e) => handleChange('defaultPurchaseItemNetPercentage', parseFloat(e.target.value))} placeholder="e.g., 10 for 10% deduction" className="mt-1.5 h-12 text-lg" min="0"/>
-                   <p className="text-base text-muted-foreground mt-2 italic">Applied if 'Net % Off Market' is chosen for a new purchase item.</p>
+                  <Label htmlFor="defaultPurchaseItemNetPercentage" className="text-base font-medium">Default Net % Off Market</Label>
+                  <Input id="defaultPurchaseItemNetPercentage" type="number" value={localSettings.defaultPurchaseItemNetPercentage} onChange={(e) => handleChange('defaultPurchaseItemNetPercentage', parseFloat(e.target.value))} placeholder="e.g., 10 for 10% deduction" className="mt-1.5 h-11 text-base" min="0"/>
+                   <p className="text-sm text-muted-foreground mt-2 italic">Applied if 'Net % Off Market' is chosen for a new purchase item.</p>
                 </div>
                 <div>
-                  <Label htmlFor="defaultPurchaseItemNetFixedValue" className="text-lg">Default Fixed Net Rate ({settings.currencySymbol})</Label>
-                  <Input id="defaultPurchaseItemNetFixedValue" type="number" value={localSettings.defaultPurchaseItemNetFixedValue} onChange={(e) => handleChange('defaultPurchaseItemNetFixedValue', parseFloat(e.target.value))} placeholder="e.g., 4500" className="mt-1.5 h-12 text-lg" min="0"/>
-                   <p className="text-base text-muted-foreground mt-2 italic">Applied if 'Fixed Net Rate' is chosen for a new purchase item.</p>
+                  <Label htmlFor="defaultPurchaseItemNetFixedValue" className="text-base font-medium">Default Fixed Net Rate ({settings.currencySymbol})</Label>
+                  <Input id="defaultPurchaseItemNetFixedValue" type="number" value={localSettings.defaultPurchaseItemNetFixedValue} onChange={(e) => handleChange('defaultPurchaseItemNetFixedValue', parseFloat(e.target.value))} placeholder="e.g., 4500" className="mt-1.5 h-11 text-base" min="0"/>
+                   <p className="text-sm text-muted-foreground mt-2 italic">Applied if 'Fixed Net Rate' is chosen for a new purchase item.</p>
                 </div>
             </CardContent>
         </Card>
@@ -548,3 +555,5 @@ export default function SettingsPage() {
     </div>
   );
 };
+
+    

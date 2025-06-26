@@ -105,21 +105,12 @@
   }
   body {
     @apply bg-background text-foreground font-body;
-    font-size: 1.05rem; /* Increased base font size from 1rem (16px default) to approx 17px */
-    line-height: 1.6; /* Improved line spacing for readability */
+    font-size: 1rem;
+    line-height: 1.6;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }
-  /* Increased heading sizes */
-  h1 { @apply text-4xl lg:text-5xl; }
-  h2 { @apply text-3xl lg:text-4xl; }
-  h3 { @apply text-2xl lg:text-3xl; }
-  h4 { @apply text-xl lg:text-2xl; }
-
-  /* Increase default text size for common elements if needed via Tailwind's extend or here */
-  .text-sm { @apply text-base; } /* Make default 'sm' effectively 'base' */
-  .text-xs { @apply text-sm; } /* Make default 'xs' effectively 'sm' */
 
 }
 
@@ -130,3 +121,5 @@
     print-color-adjust: exact !important;
   }
 }
+
+    
