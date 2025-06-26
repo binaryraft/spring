@@ -25,7 +25,7 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
   const [viewingBill, setViewingBill] = useState<Bill | null>(null);
   const [isViewingEstimate, setIsViewingEstimate] = useState(false);
 
-  const billTypeLabel = billType === 'sales-bill' ? 'Sales' : 'Purchase';
+  const billTypeLabel = billType === 'sales-bill' ? 'Sell' : 'Purchase';
   const billVariant = billType === 'sales-bill' ? 'success' : 'destructive';
 
   const filteredBills = useMemo(() => {
@@ -93,53 +93,46 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
   };
 
   return (
-    <div className="w-full space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl lg:text-4xl font-headline text-primary">{billTypeLabel} Management</h1>
-        {isFormVisible ? (
-          <Button variant="outline" onClick={handleShowHistory} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
-            <List className="mr-2.5 h-5 w-5" /> View History
-          </Button>
-        ) : (
-          <Button onClick={handleCreateNew} variant={billVariant} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
-            <PlusCircle className="mr-2.5 h-5 w-5" /> Create {billTypeLabel} Bill
-          </Button>
-        )}
-      </div>
-
-      <div className="bg-card p-4 sm:p-6 md:p-8 rounded-lg shadow-xl border border-border">
-        {isFormVisible ? (
-          <BillForm
-            key={editingBill ? editingBill.id : 'new-bill'}
-            billType={billType}
-            existingBill={editingBill}
-            {...commonFormProps}
-          />
-        ) : (
-          <>
-            <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)}>
-                <TabsList className="grid w-full grid-cols-4 mb-6 bg-primary/10">
-                    <TabsTrigger value="daily">Daily</TabsTrigger>
-                    <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                    <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                    <TabsTrigger value="all">All Time</TabsTrigger>
-                </TabsList>
-            </Tabs>
-            <BillHistoryList 
-              billType={billType} 
-              bills={filteredBills}
-              onEditBill={handleEditBill} 
-              onViewBill={(bill) => handleViewBill(bill, false)} 
-            />
-          </>
-        )}
-      </div>
+    <div className="w-full">
+      {isFormVisible ? (
+        <BillForm
+          key={editingBill ? editingBill.id : 'new-bill'}
+          billType={billType}
+          existingBill={editingBill}
+          {...commonFormProps}
+        />
+      ) : (
+        <div className="space-y-8">
+            <div className="flex items-center justify-between">
+                <h1 className="text-3xl lg:text-4xl font-headline text-primary">{billTypeLabel} History</h1>
+                <Button onClick={handleCreateNew} variant={billVariant} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
+                    <PlusCircle className="mr-2.5 h-5 w-5" /> Create New {billTypeLabel}
+                </Button>
+            </div>
+            <div className="bg-card p-4 sm:p-6 md:p-8 rounded-lg shadow-xl border border-border">
+                <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)}>
+                    <TabsList className="grid w-full grid-cols-4 mb-6 bg-primary/10">
+                        <TabsTrigger value="daily">Daily</TabsTrigger>
+                        <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                        <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                        <TabsTrigger value="all">All Time</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                <BillHistoryList 
+                  billType={billType} 
+                  bills={filteredBills}
+                  onEditBill={handleEditBill} 
+                  onViewBill={(bill) => handleViewBill(bill, false)} 
+                />
+            </div>
+        </div>
+      )}
 
       <BillViewModal
         bill={viewingBill}
         isOpen={!!viewingBill}
         onClose={() => setViewingBill(null)}
-        isEstimateView={isViewingEstimate}
+        isViewingEstimate={isViewingEstimate}
       />
     </div>
   );

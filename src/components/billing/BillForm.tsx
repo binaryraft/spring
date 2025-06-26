@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, ListOrdered, StickyNote, Banknote } from 'lucide-react';
+import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, ListOrdered, StickyNote, Banknote, List } from 'lucide-react';
 import BillItemRow from './BillItemRow';
 import { v4 as uuidv4 } from 'uuid';
 import { Separator } from '../ui/separator';
@@ -345,8 +345,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
   const billTypeLabel = () => {
     switch(billType) {
-      case 'purchase': return 'Purchase Bill';
-      case 'sales-bill': return 'Sales Bill';
+      case 'purchase': return 'Purchase';
+      case 'sales-bill': return 'Sell';
       default: return 'Bill';
     }
   };
@@ -377,14 +377,21 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
 
   return (
-    <Card className="shadow-none border-none bg-transparent">
+    <Card className="shadow-xl bg-card border-border rounded-lg p-4 sm:p-6 md:p-8">
       <CardHeader className="pb-4 px-1">
-        <CardTitle className={cn(
-            "font-headline text-3xl lg:text-4xl flex items-center",
-            isSalesBill ? 'text-success' : 'text-destructive'
-        )}>
-          <Calculator className="mr-3 h-8 w-8 lg:h-9 lg:w-9" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+            <CardTitle className={cn(
+                "font-headline text-3xl lg:text-4xl flex items-center",
+                isSalesBill ? 'text-success' : 'text-destructive'
+            )}>
+              <Calculator className="mr-3 h-8 w-8 lg:h-9 lg:w-9" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
+            </CardTitle>
+             {!existingBill && (
+                <Button variant="outline" onClick={onCancel} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
+                    <List className="mr-2.5 h-5 w-5" /> View History
+                </Button>
+            )}
+        </div>
       </CardHeader>
       <CardContent className="pt-2 px-0 space-y-6">
         <Card className={cn("border", isSalesBill ? "border-success/50 bg-success/5" : "border-destructive/50 bg-destructive/5")}>
@@ -560,15 +567,17 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </Card>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between border-t pt-6 mt-6 px-1">
-        <Button 
-          variant="outline"
-          size="lg"
-          onClick={onCancel} 
-          className="h-12 text-base"
-        >
-          <XCircle className="mr-2 h-5 w-5" /> Cancel
-        </Button>
+      <CardFooter className="flex justify-end space-x-4 border-t pt-6 mt-6 px-1">
+        {existingBill && (
+            <Button 
+                variant="outline"
+                size="lg"
+                onClick={onCancel} 
+                className="h-12 text-base"
+            >
+                <XCircle className="mr-2 h-5 w-5" /> Cancel
+            </Button>
+        )}
         <div className="flex items-center space-x-4">
           {onShowEstimate && isSalesBill && ( 
             <Button 
