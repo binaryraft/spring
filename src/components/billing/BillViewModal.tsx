@@ -58,7 +58,6 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       textLight: '#FFFFFF',
       border: useColor ? '#EAE3D8' : '#CCCCCC',
       headerBg: useColor ? '#FAF7F2' : '#F5F5F5',
-      totalBg: useColor ? '#B58B5D' : '#333333'
     };
     
     const pdfCurrencyDisplay = settings.currencySymbol === '₹' ? 'Rs. ' : settings.currencySymbol;
@@ -132,7 +131,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
-            <td style="width: 60%; padding: 15px; vertical-align: top;">
+            <td style="width: 60%; vertical-align: top;">
               <p style="margin: 0 0 5px 0; font-size: 9pt; color: #777;">BILL TO</p>
               <p style="margin: 0; font-weight: bold; font-size: 11pt; color: ${color.text};">${bill.customerName || 'N/A'}</p>
               ${bill.customerAddress ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerAddress}</p>`: ''}
@@ -179,9 +178,9 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
                     <td style="padding: 6px 0; text-align: right;">${pdfCurrencyDisplay}${(bill.sgstAmount || 0).toFixed(2)}</td>
                   </tr>
                 ` : ''}
-                <tr style="font-family: 'PT Sans', sans-serif; font-weight: bold; font-size: 14pt; color: ${color.textLight}; background-color: ${color.totalBg};">
-                  <td style="padding: 12px 10px;">GRAND TOTAL</td>
-                  <td style="padding: 12px 10px; text-align: right;">${pdfCurrencyDisplay}${bill.totalAmount.toFixed(2)}</td>
+                <tr style="font-family: 'PT Sans', sans-serif; font-weight: bold;">
+                  <td style="padding: 12px 10px; border-top: 2px solid ${color.primary}; font-size: 14pt; color: ${color.primary};">GRAND TOTAL</td>
+                  <td style="padding: 12px 10px; text-align: right; border-top: 2px solid ${color.primary}; font-size: 14pt; color: ${color.primary};">${pdfCurrencyDisplay}${bill.totalAmount.toFixed(2)}</td>
                 </tr>
               </table>
             </td>
@@ -298,5 +297,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
+
+    
 
     

@@ -185,7 +185,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
   const gridColsClass = isPurchase
     ? "md:grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]"
-    : "md:grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]";
+    : "md:grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.75fr_0.75fr_0.5fr]";
 
   const showHsnForSales = !isPurchase;
 
@@ -386,12 +386,26 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         </>
       )}
 
-      {/* Last common columns */}
       {/* Taxable Amount */}
       <div className="text-right self-center">
         <Label className="text-xs md:hidden text-muted-foreground">Taxable Amount</Label>
         <span className="font-semibold text-lg block mt-1 md:mt-0 text-foreground">{currencySymbol}{item.amount?.toFixed(2) || '0.00'}</span>
       </div>
+
+      {/* GST Columns (Sales only) */}
+      {!isPurchase && (
+          <>
+              <div className="text-right self-center">
+                  <Label className="text-xs md:hidden text-muted-foreground">CGST</Label>
+                  <span className="text-base block mt-1 md:mt-0 text-muted-foreground">{currencySymbol}{item.itemCgstAmount?.toFixed(2) || '0.00'}</span>
+              </div>
+              <div className="text-right self-center">
+                  <Label className="text-xs md:hidden text-muted-foreground">SGST</Label>
+                  <span className="text-base block mt-1 md:mt-0 text-muted-foreground">{currencySymbol}{item.itemSgstAmount?.toFixed(2) || '0.00'}</span>
+              </div>
+          </>
+      )}
+
 
       {/* Action Button */}
       <div className="text-center self-center">
@@ -405,5 +419,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 };
 
 export default BillItemRow;
+
+    
 
     
