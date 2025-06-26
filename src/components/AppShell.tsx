@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarInset, SidebarFooter, SidebarSeparator, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Receipt, ShoppingCart, Settings, Moon, Sun, PanelLeft, Gem, FilePieChart } from 'lucide-react';
+import { LayoutDashboard, Settings, Moon, Sun, PanelLeft, Gem, FilePieChart, BadgeIndianRupee, ShoppingBag } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
 
@@ -43,8 +43,8 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ];
     const billingItems = [
-        { href: '/sales', label: 'Sales', icon: Receipt, color: 'text-success' },
-        { href: '/purchase', label: 'Purchases', icon: ShoppingCart, color: 'text-destructive' },
+        { href: '/sales', label: 'Sales', icon: BadgeIndianRupee, color: 'text-success' },
+        { href: '/purchase', label: 'Purchases', icon: ShoppingBag, color: 'text-destructive' },
         { href: '/gst-report', label: 'GST Report', icon: FilePieChart },
     ];
 
@@ -87,7 +87,7 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                             <SidebarMenuItem key={item.href}>
                                 <Link href={item.href} passHref>
                                     <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label} className="h-14 text-lg">
-                                        <item.icon className={cn("h-6 w-6", item.color)} />
+                                        <item.icon className={cn("h-7 w-7", item.color)} />
                                         <span>{item.label}</span>
                                     </SidebarMenuButton>
                                 </Link>
