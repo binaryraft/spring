@@ -52,21 +52,27 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const qtyWtRef = useRef<HTMLInputElement>(null);
   const addItemButtonRef = useRef<HTMLButtonElement>(null);
 
-  const getBlankItem = useCallback((): Partial<BillItem> => ({
-    id: uuidv4(),
-    name: '',
-    hsnCode: '',
-    weightOrQuantity: 1,
-    unit: settings.valuables[0]?.unit || 'gram',
-    amount: 0,
-    itemCgstAmount: 0,
-    itemSgstAmount: 0,
-    makingChargeType: isSalesBill ? settings.defaultMakingCharge.type : undefined,
-    makingCharge: isSalesBill ? settings.defaultMakingCharge.value : undefined,
-    purchaseNetType: !isSalesBill ? 'net_percentage' : undefined,
-    purchaseNetPercentValue: !isSalesBill ? settings.defaultPurchaseItemNetPercentage : undefined,
-    purchaseNetFixedValue: !isSalesBill ? settings.defaultPurchaseItemNetFixedValue : undefined,
-  }), [settings, isSalesBill]);
+  const getBlankItem = useCallback((): Partial<BillItem> => {
+    const defaultValuable = settings.valuables.find(v => v.id === 'gold-bis');
+
+    return {
+      id: uuidv4(),
+      name: '',
+      hsnCode: '',
+      weightOrQuantity: 1,
+      unit: defaultValuable?.unit || settings.valuables[0]?.unit || 'gram',
+      valuableId: defaultValuable?.id,
+      rate: (isSalesBill && defaultValuable) ? defaultValuable.price : undefined,
+      amount: 0,
+      itemCgstAmount: 0,
+      itemSgstAmount: 0,
+      makingChargeType: isSalesBill ? settings.defaultMakingCharge.type : undefined,
+      makingCharge: isSalesBill ? settings.defaultMakingCharge.value : undefined,
+      purchaseNetType: !isSalesBill ? 'net_percentage' : undefined,
+      purchaseNetPercentValue: !isSalesBill ? settings.defaultPurchaseItemNetPercentage : undefined,
+      purchaseNetFixedValue: !isSalesBill ? settings.defaultPurchaseItemNetFixedValue : undefined,
+    };
+  }, [settings, isSalesBill]);
 
   useEffect(() => {
     if (existingBill) {
