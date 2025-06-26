@@ -131,12 +131,9 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
     if (numericFields.includes(field)) {
         if (value === '') {
-            // Allow clearing the input to make it empty
             processedValue = undefined;
         } else {
             const parsed = parseFloat(value);
-            // Revert to previous value if input is invalid (e.g., "abc")
-            // This prevents the state from becoming NaN and crashing calculations
             processedValue = isNaN(parsed) ? item[field] : parsed;
         }
     }
@@ -397,11 +394,11 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           <>
               <div className="text-right self-center">
                   <Label className="text-xs md:hidden text-muted-foreground">CGST</Label>
-                  <span className="text-base block mt-1 md:mt-0 text-muted-foreground">{currencySymbol}{item.itemCgstAmount?.toFixed(2) || '0.00'}</span>
+                  <span className="text-base font-medium block mt-1 md:mt-0 text-foreground/80">{currencySymbol}{item.itemCgstAmount?.toFixed(2) || '0.00'}</span>
               </div>
               <div className="text-right self-center">
                   <Label className="text-xs md:hidden text-muted-foreground">SGST</Label>
-                  <span className="text-base block mt-1 md:mt-0 text-muted-foreground">{currencySymbol}{item.itemSgstAmount?.toFixed(2) || '0.00'}</span>
+                  <span className="text-base font-medium block mt-1 md:mt-0 text-foreground/80">{currencySymbol}{item.itemSgstAmount?.toFixed(2) || '0.00'}</span>
               </div>
           </>
       )}
@@ -419,7 +416,3 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 };
 
 export default BillItemRow;
-
-    
-
-    

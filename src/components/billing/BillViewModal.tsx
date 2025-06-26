@@ -64,7 +64,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     const effectiveBillType = isViewingEstimate ? 'Estimate' : (bill.type === 'purchase' ? 'Purchase Invoice' : 'Sales Invoice');
 
     const logoImageHtml = settings.showCompanyLogo && settings.companyLogo
-      ? `<img src="${settings.companyLogo}" alt="Logo" style="max-width: 120px; max-height: 50px; object-fit: contain;">`
+      ? `<img src="${settings.companyLogo}" alt="Logo" style="max-width: 140px; max-height: 70px; object-fit: contain; margin-bottom: 10px;">`
       : '';
 
     const itemsHtml = bill.items.map((item, index) => {
@@ -114,20 +114,14 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     <body>
       <div id="bill-content-for-pdf" style="width: 210mm; min-height: 297mm; margin: 0 auto; background-color: #ffffff; padding: 15mm; box-sizing: border-box; font-size: 10pt;">
         
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-          <tr>
-            <td style="vertical-align: top; width: 50%;">
-              ${logoImageHtml}
-            </td>
-            <td style="vertical-align: top; text-align: center; font-size: 8pt; line-height: 1.5;">
-              <h1 style="font-family: 'Playfair Display', serif; font-size: 24pt; margin: 0; color: ${color.primary};">${settings.companyName}</h1>
-              ${settings.slogan ? `<p style="margin: 0;">${settings.slogan}</p>` : ''}
-              <p style="margin: 4px 0 0 0;">${settings.address}</p>
-              <p style="margin: 0;">${settings.phoneNumber}</p>
-              ${!isViewingEstimate && settings.gstin ? `<p style="margin: 0;">GSTIN: ${settings.gstin}</p>` : ''}
-            </td>
-          </tr>
-        </table>
+        <div style="text-align: center; margin-bottom: 25px;">
+            ${logoImageHtml}
+            <h1 style="font-family: 'Playfair Display', serif; font-size: 26pt; margin: 0; color: ${color.primary};">${settings.companyName}</h1>
+            ${settings.slogan ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${settings.slogan}</p>` : ''}
+            <p style="margin: 6px 0 0 0; font-size: 9pt;">${settings.address}</p>
+            <p style="margin: 2px 0 0 0; font-size: 9pt;">${settings.phoneNumber}</p>
+            ${!isViewingEstimate && settings.gstin ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">GSTIN: ${settings.gstin}</p>` : ''}
+        </div>
 
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
@@ -297,7 +291,3 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
-
-    
-
-    
