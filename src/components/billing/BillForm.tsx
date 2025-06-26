@@ -377,183 +377,198 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
 
   return (
-    <Card className="shadow-xl border-primary/20 bg-card">
-      <CardHeader className="pb-6">
+    <Card className="shadow-none border-none bg-transparent">
+      <CardHeader className="pb-4 px-1">
         <CardTitle className={cn(
-            "font-headline text-4xl lg:text-5xl flex items-center",
+            "font-headline text-3xl lg:text-4xl flex items-center",
             isSalesBill ? 'text-success' : 'text-destructive'
         )}>
-          <Calculator className="mr-4 h-10 w-10 lg:h-12 lg:w-12" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
+          <Calculator className="mr-3 h-8 w-8 lg:h-9 lg:w-9" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel()}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-10 pt-2">
-        <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
-            <h3 className="text-2xl lg:text-3xl font-semibold text-accent mb-6 flex items-center">
-                {isPurchase ? <ShoppingBag className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/> : <Users className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>}
-                {isPurchase ? "Supplier" : "Customer"} Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-7 gap-y-6">
+      <CardContent className="pt-2 px-0 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-xl font-headline">
+              {isPurchase ? <ShoppingBag className="mr-3 h-6 w-6"/> : <Users className="mr-3 h-6 w-6"/>}
+              {isPurchase ? "Supplier" : "Customer"} Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
                 <div>
-                <Label htmlFor="customerName" className="text-lg">{isPurchase ? "Supplier" : "Customer"} Name</Label>
-                <Input
-                    id="customerName"
-                    ref={customerNameRef}
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    onKeyDown={(e) => handleCustomerKeyDown(e, customerPhoneRef)}
-                    className="mt-2 h-12 text-lg"
-                />
+                  <Label htmlFor="customerName" className="text-base">{isPurchase ? "Supplier" : "Customer"} Name</Label>
+                  <Input
+                      id="customerName"
+                      ref={customerNameRef}
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      onKeyDown={(e) => handleCustomerKeyDown(e, customerPhoneRef)}
+                      className="mt-1.5 h-11 text-base"
+                  />
                 </div>
                 <div>
-                <Label htmlFor="customerPhone" className="text-lg">{isPurchase ? "Supplier" : "Customer"} Phone</Label>
-                <Input
-                    id="customerPhone"
-                    ref={customerPhoneRef}
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    onKeyDown={(e) => handleCustomerKeyDown(e, customerAddressRef)}
-                    className="mt-2 h-12 text-lg"
-                />
+                  <Label htmlFor="customerPhone" className="text-base">{isPurchase ? "Supplier" : "Customer"} Phone</Label>
+                  <Input
+                      id="customerPhone"
+                      ref={customerPhoneRef}
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      onKeyDown={(e) => handleCustomerKeyDown(e, customerAddressRef)}
+                      className="mt-1.5 h-11 text-base"
+                  />
                 </div>
                 <div className="md:col-span-3">
-                <Label htmlFor="customerAddress" className="text-lg">{isPurchase ? "Supplier" : "Customer"} Address</Label>
-                <Textarea
-                    id="customerAddress"
-                    ref={customerAddressRef}
-                    value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
-                    onKeyDown={(e) => handleCustomerKeyDown(e)} 
-                    className="mt-2 text-lg"
-                    rows={3}
-                />
+                  <Label htmlFor="customerAddress" className="text-base">{isPurchase ? "Supplier" : "Customer"} Address</Label>
+                  <Textarea
+                      id="customerAddress"
+                      ref={customerAddressRef}
+                      value={customerAddress}
+                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      onKeyDown={(e) => handleCustomerKeyDown(e)} 
+                      className="mt-1.5 text-base"
+                      rows={2}
+                  />
                 </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
         
-
-        <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
-          <h3 className="text-2xl lg:text-3xl font-semibold text-accent mb-6 flex items-center"><ListOrdered className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>Items</h3>
-           <div className={`py-3.5 px-4 grid ${headerGridColsClass} gap-3 text-base font-semibold text-muted-foreground uppercase tracking-wider mt-2 bg-muted/50 rounded-t-md border-x border-t`}>
-            <div className="col-span-1">Material</div>
-            <div className="col-span-1">Product Name</div>
-            {billType === 'sales-bill' && <div className="col-span-1 text-center">HSN</div>}
-            <div className="col-span-1 text-center">Qty/Wt</div>
-            {isPurchase ? (
-                <>
-                    <div className="col-span-1 text-center">Net Type</div>
-                    <div className="col-span-1 text-center">Value</div>
-                </>
-            ) : (
-                 <>
-                    <div className="col-span-1 text-center">Rate</div>
-                    <div className="col-span-1 text-center">MC Type</div>
-                    <div className="col-span-1 text-center">Making</div>
-                 </>
-            )}
-            <div className="col-span-1 text-right">Taxable Amt</div>
-            <div className="col-span-1 text-center">Action</div>
-          </div>
-          <div className="border rounded-b-md">
-            {items.map((item, index) => (
-                <BillItemRow
-                key={item.id || index}
-                item={item}
-                onItemChange={(updatedFields) => handleItemChange(index, updatedFields)}
-                onRemoveItem={() => removeItem(index)}
-                availableValuables={settings.valuables}
-                productSuggestions={settings.productSuggestions}
-                isPurchase={isPurchase}
-                defaultMakingCharge={settings.defaultMakingCharge}
-                defaultPurchaseNetPercentage={settings.defaultPurchaseItemNetPercentage}
-                defaultPurchaseNetFixedValue={settings.defaultPurchaseItemNetFixedValue}
-                getValuablePrice={(valuableId) => getValuableById(valuableId)?.price || 0}
-                onEnterInLastField={addItem}
-                focusNextRowFirstElement={focusNextRowFirstElement}
-                rowIndex={index}
-                itemRefs={itemRefs}
-                currencySymbol={settings.currencySymbol}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-xl font-headline"><ListOrdered className="mr-3 h-6 w-6"/>Items</CardTitle>
+          </CardHeader>
+          <CardContent className="px-3 sm:px-6">
+            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b`}>
+              <div className="col-span-1">Material</div>
+              <div className="col-span-1">Product Name</div>
+              {billType === 'sales-bill' && <div className="col-span-1 text-center">HSN</div>}
+              <div className="col-span-1 text-center">Qty/Wt</div>
+              {isPurchase ? (
+                  <>
+                      <div className="col-span-1 text-center">Net Type</div>
+                      <div className="col-span-1 text-center">Value</div>
+                  </>
+              ) : (
+                  <>
+                      <div className="col-span-1 text-center">Rate</div>
+                      <div className="col-span-1 text-center">MC Type</div>
+                      <div className="col-span-1 text-center">Making</div>
+                  </>
+              )}
+              <div className="col-span-1 text-right">Taxable Amt</div>
+              <div className="col-span-1 text-center">Action</div>
+            </div>
+            <div className="divide-y">
+              {items.map((item, index) => (
+                  <BillItemRow
+                  key={item.id || index}
+                  item={item}
+                  onItemChange={(updatedFields) => handleItemChange(index, updatedFields)}
+                  onRemoveItem={() => removeItem(index)}
+                  availableValuables={settings.valuables}
+                  productSuggestions={settings.productSuggestions}
+                  isPurchase={isPurchase}
+                  defaultMakingCharge={settings.defaultMakingCharge}
+                  defaultPurchaseNetPercentage={settings.defaultPurchaseItemNetPercentage}
+                  defaultPurchaseNetFixedValue={settings.defaultPurchaseItemNetFixedValue}
+                  getValuablePrice={(valuableId) => getValuableById(valuableId)?.price || 0}
+                  onEnterInLastField={addItem}
+                  focusNextRowFirstElement={focusNextRowFirstElement}
+                  rowIndex={index}
+                  itemRefs={itemRefs}
+                  currencySymbol={settings.currencySymbol}
+                  />
+              ))}
+            </div>
+            <Button variant="outline" size="sm" onClick={addItem} className="mt-4 shadow-sm text-base h-10 px-4">
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Item
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <Card className="lg:col-span-3">
+              <CardHeader>
+                  <CardTitle className="flex items-center text-xl font-headline"><StickyNote className="mr-3 h-6 w-6"/>Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                    id="notes"
+                    ref={notesRef}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="text-base"
+                    rows={6}
+                    placeholder="Add any notes for the bill here..."
                 />
-            ))}
-          </div>
-          <Button variant="outline" size="default" onClick={addItem} className="mt-6 shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto">
-            <PlusCircle className="mr-2.5 h-5 w-5" /> Add Item
-          </Button>
-        </div>
-        
-        <div className="p-6 border border-border rounded-lg bg-background shadow-sm">
-            <h3 className="text-2xl lg:text-3xl font-semibold text-accent mb-5 flex items-center"><StickyNote className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>Notes</h3>
-            <Textarea
-                id="notes"
-                ref={notesRef}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="shadow-sm text-lg"
-                rows={4}
-                placeholder="Any additional notes for the bill..."
-            />
-        </div>
-        
-        <div className={cn(
-          "p-7 border-2 rounded-lg space-y-4 text-right shadow-md",
-          isSalesBill ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5"
-        )}>
-          <h3 className={cn(
-            "text-2xl lg:text-3xl font-semibold mb-5 flex items-center justify-end",
-            isSalesBill ? "text-success" : "text-destructive"
-            )}>
-              <Banknote className="mr-3 h-7 w-7 lg:h-8 lg:w-8"/>Totals
-          </h3>
-          <div className="text-xl">Subtotal (Taxable Value): <span className="font-semibold text-2xl ml-3">{settings.currencySymbol}{subTotal.toFixed(2)}</span></div>
-          {(isSalesBill) && (
-            <>
-              <div className="text-xl">CGST ({settings.cgstRate}%): <span className="font-semibold text-2xl ml-3">{settings.currencySymbol}{billCgstAmount.toFixed(2)}</span></div>
-              <div className="text-xl">SGST ({settings.sgstRate}%): <span className="font-semibold text-2xl ml-3">{settings.currencySymbol}{billSgstAmount.toFixed(2)}</span></div>
-            </>
-          )}
-          <Separator className={cn("my-3", isSalesBill ? "bg-success/20" : "bg-destructive/20")} />
-          <div className={cn(
-            "text-3xl lg:text-4xl font-bold",
-            isSalesBill ? "text-success" : "text-destructive"
-          )}>Total: <span className="text-4xl lg:text-5xl ml-3">{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span></div>
+              </CardContent>
+          </Card>
+          
+          <Card className={cn(
+            "lg:col-span-2 bg-muted/40",
+            isSalesBill ? "border-success/30" : "border-destructive/30"
+          )}>
+            <CardHeader>
+                <CardTitle className="flex items-center text-xl font-headline"><Banknote className="mr-3 h-6 w-6"/>Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-base">
+                <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="font-medium">{settings.currencySymbol}{subTotal.toFixed(2)}</span>
+                </div>
+                 {(isSalesBill) && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">CGST ({settings.cgstRate}%)</span>
+                      <span className="font-medium">{settings.currencySymbol}{billCgstAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">SGST ({settings.sgstRate}%)</span>
+                      <span className="font-medium">{settings.currencySymbol}{billSgstAmount.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+                <Separator className="my-2" />
+                <div className={cn(
+                  "flex justify-between items-center text-2xl font-bold",
+                  isSalesBill ? "text-success" : "text-destructive"
+                )}>
+                  <span>TOTAL</span>
+                  <span>{settings.currencySymbol}{finalTotalAmount.toFixed(2)}</span>
+                </div>
+            </CardContent>
+          </Card>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between items-start border-t pt-8 mt-8">
+      <CardFooter className="flex justify-between border-t pt-6 mt-6 px-1">
         <Button 
-          variant="outline" 
+          variant="outline"
+          size="lg"
           onClick={onCancel} 
-          className={cn(
-            "shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto",
-            "text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive"
-          )}>
-          <XCircle className="mr-2.5 h-5 w-5" /> Cancel
+          className="h-12 text-base"
+        >
+          <XCircle className="mr-2 h-5 w-5" /> Cancel
         </Button>
-        <div className="flex items-start space-x-5">
-          {onShowEstimate && ( 
-            <div className="flex flex-col items-center">
-                <Button 
-                  variant="outline" 
-                  onClick={handleShowEstimate} 
-                  className="text-accent border-accent hover:bg-accent/10 hover:text-accent shadow hover:shadow-md transition-shadow text-lg px-6 py-3 h-auto w-full"
-                >
-                  <FileText className="mr-2.5 h-5 w-5" /> Create Estimate
-                </Button>
-                <p className="text-lg text-foreground mt-2.5"> 
-                    {settings.currencySymbol}{subTotal.toFixed(2)}
-                </p>
-            </div>
+        <div className="flex items-center space-x-4">
+          {onShowEstimate && isSalesBill && ( 
+            <Button 
+              variant="outline"
+              size="lg"
+              onClick={handleShowEstimate} 
+              className="h-12 text-base text-primary border-primary/50 hover:bg-primary/10"
+            >
+              <FileText className="mr-2.5 h-5 w-5" /> Create Estimate
+            </Button>
           )}
-           <div className="flex flex-col items-center">
-                <Button 
-                  onClick={handleSubmit} 
-                  variant={isSalesBill ? 'success' : 'destructive'}
-                  className="text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto w-full"
-                >
-                  <Save className="mr-2.5 h-5 w-5" /> {existingBill ? 'Update' : 'Save'} & Print Bill
-                </Button>
-                <p className="text-lg text-secondary-foreground mt-2.5">
-                    {settings.currencySymbol}{finalTotalAmount.toFixed(2)}
-                </p>
-            </div>
+           <Button 
+              onClick={handleSubmit} 
+              variant={isSalesBill ? 'success' : 'destructive'}
+              size="lg"
+              className="h-12 text-base"
+            >
+              <Save className="mr-2.5 h-5 w-5" /> {existingBill ? 'Update' : 'Save'} & Print Bill
+            </Button>
         </div>
       </CardFooter>
     </Card>

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Trash2 } from 'lucide-react';
 import ValuableIcon from '../ValuableIcon';
 import { cn } from '@/lib/utils';
+import { Label } from '../ui/label';
 
 interface BillItemRowProps {
   item: Partial<BillItem>;
@@ -178,26 +179,27 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   };
 
   const gridColsClass = isPurchase
-    ? "grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]"
-    : "grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]";
+    ? "md:grid-cols-[1.5fr_2fr_1fr_1.5fr_1fr_1fr_0.5fr]"
+    : "md:grid-cols-[1.5fr_2fr_1fr_1fr_1fr_1fr_1fr_1fr_0.5fr]";
 
   const showHsnForSales = !isPurchase;
 
   return (
-    <div className={cn(`grid items-start p-3.5 border-b last:border-b-0 hover:bg-muted/50 transition-colors`, gridColsClass)}>
+    <div className={cn(`group grid items-start gap-x-4 gap-y-3 py-4 hover:bg-muted/50 transition-colors px-3`, gridColsClass)}>
       <datalist id={datalistId}>
         {productSuggestions.map(p => <option key={p.name} value={p.name} />)}
       </datalist>
 
       {/* Column 1: Material */}
-      <div>
+      <div className="w-full">
+        <Label className="text-xs md:hidden">Material</Label>
         <Select
           value={item.valuableId || ''}
           onValueChange={handleValuableSelect}
         >
           <SelectTrigger
             ref={materialSelectRef}
-            className="h-12 text-base"
+            className="h-11 text-base w-full mt-1 md:mt-0"
             onKeyDown={(e) => handleKeyDown(e, 0)}
           >
             <SelectValue placeholder="Material" />
@@ -220,6 +222,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
       {/* Column 2: Product Name */}
       <div>
+        <Label className="text-xs md:hidden">Product Name</Label>
         <Input
           ref={productNameInputRef}
           placeholder="Product Name"
@@ -227,26 +230,28 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           onChange={(e) => handleProductNameChange(e.target.value)}
           onKeyDown={(e) => handleKeyDown(e, 1)}
           list={datalistId}
-          className="h-12 text-base"
+          className="h-11 text-base mt-1 md:mt-0"
         />
       </div>
 
       {/* Column 3: HSN Code (Sales Only) */}
       {showHsnForSales && (
         <div>
+          <Label className="text-xs md:hidden">HSN</Label>
           <Input
             ref={hsnCodeInputRef}
             placeholder="HSN"
             value={item.hsnCode || ''}
             onChange={(e) => handleFieldChange('hsnCode', e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, 2)}
-            className="h-12 text-base text-center"
+            className="h-11 text-base text-center mt-1 md:mt-0"
           />
         </div>
       )}
 
       {/* Column 4 (Sales) / 3 (Purchase): Qty/Wt */}
       <div>
+        <Label className="text-xs md:hidden">{`Qty/${selectedValuableDetails?.unit || 'unit'}`}</Label>
         <Input
           ref={qtyInputRef}
           type="number"
@@ -256,7 +261,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           onKeyDown={(e) => handleKeyDown(e, isPurchase ? 2 : 3)}
           min="0"
           step={selectedValuableDetails?.unit === 'carat' || selectedValuableDetails?.unit === 'ct' ? '0.001' : '0.01'}
-          className="h-12 text-base text-center"
+          className="h-11 text-base text-center mt-1 md:mt-0"
         />
       </div>
 
@@ -265,20 +270,21 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         <>
           {/* Purchase Column 4: Net Type */}
           <div className="flex flex-col space-y-1">
+             <Label className="text-xs md:hidden">Net Type</Label>
             <Select
               value={item.purchaseNetType || 'net_percentage'}
               onValueChange={(val: 'net_percentage' | 'fixed_net_price') => handleFieldChange('purchaseNetType', val)}
             >
               <SelectTrigger
                 ref={purchaseNetTypeSelectRef}
-                className="h-12 text-sm"
+                className="h-11 text-base mt-1 md:mt-0"
                 onKeyDown={(e) => handleKeyDown(e, 3)}
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="net_percentage" className="text-sm py-2">Net % Off Market</SelectItem>
-                <SelectItem value="fixed_net_price" className="text-sm py-2">Fixed Net Rate ({currencySymbol})</SelectItem>
+                <SelectItem value="net_percentage" className="text-base py-2">Net % Off Market</SelectItem>
+                <SelectItem value="fixed_net_price" className="text-base py-2">Fixed Net Rate ({currencySymbol})</SelectItem>
               </SelectContent>
             </Select>
             {item.purchaseNetType === 'net_percentage' && selectedValuableDetails && (
@@ -288,6 +294,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
           {/* Purchase Column 5: Value Input (Percentage or Fixed) */}
           <div className="flex flex-col space-y-1">
+             <Label className="text-xs md:hidden">Value</Label>
             {item.purchaseNetType === 'net_percentage' && (
               <Input
                 ref={purchaseNetPercentInputRef}
@@ -295,7 +302,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                 placeholder="%"
                 value={item.purchaseNetPercentValue === undefined ? '' : item.purchaseNetPercentValue}
                 onChange={(e) => handleFieldChange('purchaseNetPercentValue', e.target.value)}
-                className="h-12 text-base text-center"
+                className="h-11 text-base text-center mt-1 md:mt-0"
                 min="0"
                 step="0.01"
                 onKeyDown={(e) => handleKeyDown(e, 4)}
@@ -308,7 +315,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                 placeholder="Net Rate"
                 value={item.purchaseNetFixedValue === undefined ? '' : item.purchaseNetFixedValue}
                 onChange={(e) => handleFieldChange('purchaseNetFixedValue', e.target.value)}
-                className="h-12 text-base text-center"
+                className="h-11 text-base text-center mt-1 md:mt-0"
                 min="0"
                 step="0.01"
                 onKeyDown={(e) => handleKeyDown(e, 4)}
@@ -323,6 +330,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         <>
           {/* Sales Column 5: Rate */}
           <div>
+            <Label className="text-xs md:hidden">Rate</Label>
             <Input
               ref={rateInputRef}
               type="number"
@@ -332,30 +340,32 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               onKeyDown={(e) => handleKeyDown(e, 4)}
               min="0"
               step="0.01"
-              className="h-12 text-base text-center"
+              className="h-11 text-base text-center mt-1 md:mt-0"
             />
           </div>
           {/* Sales Column 6: MC Type */}
           <div>
+            <Label className="text-xs md:hidden">MC Type</Label>
             <Select
               value={item.makingChargeType || defaultMakingCharge.type}
               onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}
             >
               <SelectTrigger
                 ref={mcTypeSelectRef}
-                className="text-sm px-1.5 h-12"
+                className="text-base h-11 mt-1 md:mt-0"
                 onKeyDown={(e) => handleKeyDown(e, 5)}
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="percentage" className="text-sm py-2">%</SelectItem>
-                <SelectItem value="fixed" className="text-sm py-2">Flat ({currencySymbol})</SelectItem>
+                <SelectItem value="percentage" className="text-base py-2">%</SelectItem>
+                <SelectItem value="fixed" className="text-base py-2">Flat ({currencySymbol})</SelectItem>
               </SelectContent>
             </Select>
           </div>
           {/* Sales Column 7: Making Value */}
           <div>
+            <Label className="text-xs md:hidden">Making</Label>
             <Input
               ref={mcValueInputRef}
               type="number"
@@ -365,7 +375,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               onKeyDown={(e) => handleKeyDown(e, 6)}
               min="0"
               step="0.01"
-              className="h-12 text-base text-center"
+              className="h-11 text-base text-center mt-1 md:mt-0"
             />
           </div>
         </>
@@ -374,13 +384,15 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       {/* Last common columns */}
       {/* Taxable Amount */}
       <div className="text-right self-center">
-        <span className="font-medium text-lg">{currencySymbol}{item.amount?.toFixed(2) || '0.00'}</span>
+        <Label className="text-xs md:hidden">Taxable Amount</Label>
+        <span className="font-medium text-lg block mt-1 md:mt-0">{currencySymbol}{item.amount?.toFixed(2) || '0.00'}</span>
       </div>
 
       {/* Action Button */}
       <div className="text-center self-center">
-        <Button variant="ghost" size="icon" onClick={onRemoveItem} className="text-destructive hover:text-destructive/80 h-11 w-11">
+        <Button variant="ghost" size="icon" onClick={onRemoveItem} className="text-destructive hover:bg-destructive/10 h-10 w-10 opacity-50 md:opacity-0 group-hover:opacity-100 transition-opacity">
           <Trash2 className="w-5 h-5" />
+           <span className="sr-only">Remove Item</span>
         </Button>
       </div>
     </div>
