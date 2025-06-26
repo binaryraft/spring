@@ -36,10 +36,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useLocalStorage<Settings>('goldsmith-settings', {
-    ...DEFAULT_SETTINGS,
-    availableCurrencies: AVAILABLE_CURRENCIES, 
-  });
+  const [settings, setSettings] = useLocalStorage<Settings>('goldsmith-settings', DEFAULT_SETTINGS);
   const [bills, setBills] = useLocalStorage<Bill[]>('goldsmith-bills', []);
 
   const updateSettings = useCallback((newSettings: Partial<Settings>) => {
@@ -157,10 +154,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addBill = useCallback((billData: Omit<Bill, 'id' | 'date' | 'billNumber' | 'companyGstin'>): Bill => {
     const prefix = billData.type === 'sales-bill' ? 'S' : 'P';
     const typeSpecificBills = bills.filter(b => b.type === billData.type);
-    const nextBillNumber = (typeSpecificBills.length > 0 
-        ? Math.max(...typeSpecificBills.map(b => parseInt(b.billNumber?.split('-').pop() || '0', 10))) + 1 
-        : 1
-    ).toString().padStart(4, '0');
+    
+    const billNumbers = typeSpecificBills
+        .map(b => parseInt(b.billNumber?.split('-').pop() || '0', 10))
+        .filter(num => !isNaN(num));
+
+    const nextBillNumberVal = (billNumbers.length > 0 ? Math.max(...billNumbers) + 1 : 1);
+    const nextBillNumber = nextBillNumberVal.toString().padStart(4, '0');
 
     const newBill: Bill = {
       ...billData,

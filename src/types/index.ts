@@ -44,7 +44,6 @@ export interface Settings {
   sgstRate: number; 
   productSuggestions: ProductSuggestion[]; 
   currencySymbol: string; 
-  availableCurrencies: CurrencyDefinition[];
   theme: 'light' | 'dark';
   enableColorBilling: boolean;
   pdfLogoPosition: PdfLogoPosition; 
@@ -107,7 +106,7 @@ export const DEFAULT_VALUABLES: Valuable[] = [
 ];
 
 export const AVAILABLE_CURRENCIES: CurrencyDefinition[] = [
-  { symbol: 'Rs ', code: 'INR', name: 'Indian Rupee' },
+  { symbol: '₹', code: 'INR', name: 'Indian Rupee' },
   { symbol: '$', code: 'USD', name: 'US Dollar' },
   { symbol: '€', code: 'EUR', name: 'Euro' },
   { symbol: '£', code: 'GBP', name: 'British Pound' },
@@ -140,8 +139,7 @@ export const DEFAULT_SETTINGS: Settings = {
     { name: "Platinum Band", hsnCode: "7114" },
     { name: "Ruby Earrings", hsnCode: "7113" }
   ],
-  currencySymbol: 'Rs ', 
-  availableCurrencies: AVAILABLE_CURRENCIES,
+  currencySymbol: '₹', 
   theme: 'light',
   enableColorBilling: true,
   pdfLogoPosition: 'inline-left', 
