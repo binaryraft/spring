@@ -52,7 +52,6 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   const hsnCodeInputRef = useRef<HTMLInputElement>(null);
   const qtyInputRef = useRef<HTMLInputElement>(null);
   const rateInputRef = useRef<HTMLInputElement>(null);
-  const mcTypeSelectRef = useRef<HTMLButtonElement>(null);
   const mcValueInputRef = useRef<HTMLInputElement>(null);
   const purchaseNetTypeSelectRef = useRef<HTMLButtonElement>(null);
   const purchaseNetPercentInputRef = useRef<HTMLInputElement>(null);
@@ -77,7 +76,6 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       );
     } else {
       fields.push(rateInputRef.current);
-      fields.push(mcTypeSelectRef.current);
       fields.push(mcValueInputRef.current);
     }
     itemRefs.current[rowIndex] = fields.filter(Boolean);
@@ -268,18 +266,45 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
                         step="0.01"
                         className="h-11 text-base"
                     />
-                     <div className="flex items-center gap-2">
-                        <Label className="text-xs text-muted-foreground font-semibold w-8">MC</Label>
-                        <Select value={item.makingChargeType || defaultMakingCharge.type} onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}>
-                            <SelectTrigger ref={mcTypeSelectRef} className="text-sm h-9 flex-grow" onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 5 : 4)}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="percentage" className="text-base py-2">%</SelectItem>
-                                <SelectItem value="fixed" className="text-base py-2">{currencySymbol}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Input ref={mcValueInputRef} type="number" placeholder="Value" value={item.makingCharge === undefined ? '' : item.makingCharge} onChange={(e) => handleFieldChange('makingCharge', e.target.value)} onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 6 : 5)} className="h-9 text-sm flex-grow" />
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground font-semibold shrink-0 w-8">MC</Label>
+                      <div className="flex-grow flex items-center gap-2">
+                        <div className="flex rounded-md shadow-sm">
+                          <button
+                            type="button"
+                            onClick={() => handleFieldChange('makingChargeType', 'percentage')}
+                            className={cn(
+                                'px-4 py-1.5 rounded-l-md text-base font-bold transition-all duration-200 border border-input',
+                                item.makingChargeType === 'percentage'
+                                    ? 'bg-yellow-400 text-yellow-950 shadow-[0_0_8px_rgba(250,204,21,0.7)]'
+                                    : 'bg-background text-yellow-600 dark:text-yellow-400 hover:bg-yellow-400/10'
+                            )}
+                          >
+                            %
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleFieldChange('makingChargeType', 'fixed')}
+                            className={cn(
+                                'px-4 py-1.5 rounded-r-md text-base font-bold transition-all duration-200 border-y border-r border-input',
+                                 item.makingChargeType === 'fixed'
+                                    ? 'bg-green-500 text-white shadow-[0_0_8px_rgba(34,197,94,0.7)]'
+                                    : 'bg-background text-green-600 dark:text-green-400 hover:bg-green-400/10'
+                            )}
+                          >
+                            {currencySymbol}
+                          </button>
+                        </div>
+                        <Input 
+                            ref={mcValueInputRef} 
+                            type="number" 
+                            placeholder="Value" 
+                            value={item.makingCharge === undefined ? '' : item.makingCharge} 
+                            onChange={(e) => handleFieldChange('makingCharge', e.target.value)} 
+                            onKeyDown={(e) => handleKeyDown(e, showHsnForSales ? 5 : 4)}
+                            className="h-9 text-sm w-full" 
+                        />
+                      </div>
                     </div>
                 </div>
             ) : (
