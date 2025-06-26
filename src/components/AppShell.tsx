@@ -1,16 +1,18 @@
-
 "use client";
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarInset, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarInset, SidebarFooter, SidebarSeparator, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Receipt, ShoppingCart, Settings, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, Receipt, ShoppingCart, Settings, Moon, Sun, PanelLeft } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import SettingsPanel from '@/components/SettingsPanel';
+import { cn } from '@/lib/utils';
 
-const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// This new component can use the useSidebar hook
+const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { settings, toggleTheme } = useAppContext();
+    const { state, toggleSidebar } = useSidebar();
     const pathname = usePathname();
 
     useEffect(() => {
@@ -28,11 +30,18 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     ];
 
     return (
-        <SidebarProvider>
-            <Sidebar>
-                <SidebarHeader className='p-4'>
-                    <h2 className="text-2xl font-headline text-sidebar-primary font-bold">Goldsmith</h2>
+        <>
+            <Sidebar collapsible="icon">
+                <SidebarHeader className="flex items-center justify-between p-2 pr-3">
+                    <Link href="/dashboard" className={cn("flex-grow overflow-hidden", state === 'collapsed' && 'hidden')}>
+                        <h2 className="text-2xl font-headline text-sidebar-primary font-bold whitespace-nowrap">Goldsmith</h2>
+                    </Link>
+                    <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent">
+                        <PanelLeft className={cn("transition-transform duration-300", state === 'expanded' && "rotate-180")} />
+                        <span className="sr-only">Toggle Sidebar</span>
+                    </Button>
                 </SidebarHeader>
+
                 <SidebarContent>
                     <SidebarMenu>
                         {menuItems.map((item) => (
@@ -47,11 +56,14 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         ))}
                     </SidebarMenu>
                 </SidebarContent>
+
                 <SidebarFooter>
                     <SidebarSeparator />
-                    <div className="p-2">
-                        <SettingsPanel />
-                    </div>
+                    <SidebarMenu>
+                       <SidebarMenuItem>
+                            <SettingsPanel />
+                        </SidebarMenuItem>
+                    </SidebarMenu>
                 </SidebarFooter>
             </Sidebar>
 
@@ -73,6 +85,15 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     {children}
                 </main>
             </SidebarInset>
+        </>
+    );
+};
+
+// The main AppShell component now just sets up the provider
+const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    return (
+        <SidebarProvider>
+            <AppShellContent>{children}</AppShellContent>
         </SidebarProvider>
     );
 };

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { SidebarMenuButton } from "@/components/ui/sidebar";
 import {
   Sheet,
   SheetContent,
@@ -231,10 +232,10 @@ const SettingsPanel: React.FC = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="shadow-lg hover:shadow-xl transition-shadow bg-card hover:bg-muted">
-          <SettingsIcon className="h-6 w-6" />
-          <span className="sr-only">Open Settings</span>
-        </Button>
+        <SidebarMenuButton tooltip="Settings">
+            <SettingsIcon/>
+            <span>Settings</span>
+        </SidebarMenuButton>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex flex-col">
         <SheetHeader className="pb-6 border-b">
