@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarInset, SidebarFooter, SidebarSeparator, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Receipt, ShoppingCart, Settings, Moon, Sun, PanelLeft } from 'lucide-react';
+import { LayoutDashboard, Receipt, ShoppingCart, Settings, Moon, Sun, PanelLeft, Gem } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import SettingsPanel from '@/components/SettingsPanel';
 import { cn } from '@/lib/utils';
@@ -32,9 +32,15 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
     return (
         <>
             <Sidebar collapsible="icon">
-                <SidebarHeader className="flex items-center justify-between p-2 pr-3">
-                    <Link href="/dashboard" className={cn("flex-grow overflow-hidden", state === 'collapsed' && 'hidden')}>
-                        <h2 className="text-2xl font-headline text-sidebar-primary font-bold whitespace-nowrap">Goldsmith</h2>
+                <SidebarHeader className={cn(
+                    "flex items-center p-4 border-b border-sidebar-border",
+                    state === 'expanded' ? 'justify-between' : 'justify-center'
+                )}>
+                    <Link href="/dashboard" className={cn("flex items-center gap-3 flex-grow", state === 'collapsed' && 'hidden')}>
+                        <Gem className="h-7 w-7 text-sidebar-primary shrink-0" />
+                        <h2 className="text-xl font-headline text-sidebar-primary font-bold whitespace-nowrap">
+                            Goldsmith
+                        </h2>
                     </Link>
                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden md:flex text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent">
                         <PanelLeft className={cn("transition-transform duration-300", state === 'expanded' && "rotate-180")} />
