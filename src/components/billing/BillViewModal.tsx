@@ -130,7 +130,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </tr>
         </table>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; background-color: ${color.headerBg}; border: 1px solid ${color.border};">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <tr>
             <td style="width: 60%; padding: 15px; vertical-align: top;">
               <p style="margin: 0 0 5px 0; font-size: 9pt; color: #777;">BILL TO</p>
@@ -298,3 +298,5 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 };
 
 export default BillViewModal;
+
+    
