@@ -437,13 +437,13 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </CardContent>
         </Card>
         
-        <div className={cn("dark rounded-xl p-4 sm:p-6 shadow-lg", isSalesBill ? "bg-success" : "bg-destructive")}>
+        <div className={cn("rounded-xl p-4 sm:p-6 shadow-lg", isSalesBill ? "bg-success" : "bg-destructive")}>
           <h3 className="flex items-center text-xl font-headline text-primary-foreground mb-4">
             <ListOrdered className="mr-3 h-6 w-6"/>
             Items
           </h3>
           <div className="px-0">
-            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b border-white/20 bg-black/10 rounded-t-lg`}>
+            <div className={`hidden md:grid ${headerGridColsClass} gap-x-4 py-2 px-3 text-sm font-semibold text-primary-foreground/80 uppercase tracking-wider border-b border-white/20 bg-black/10 rounded-t-lg`}>
               <div className="col-span-1">Material</div>
               <div className="col-span-1">Product Name</div>
               {billType === 'sales-bill' && <div className="col-span-1 text-center">HSN</div>}
@@ -463,7 +463,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
               <div className="col-span-1 text-right">Taxable Amt</div>
               <div className="col-span-1 text-center">Action</div>
             </div>
-            <div className="divide-y divide-white/20">
+            <div className="space-y-2 mt-2">
               {items.map((item, index) => (
                   <BillItemRow
                   key={item.id || index}

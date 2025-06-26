@@ -185,14 +185,14 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
   const showHsnForSales = !isPurchase;
 
   return (
-    <div className={cn(`group grid items-start gap-x-4 gap-y-3 py-4 hover:bg-white/5 transition-colors px-3`, gridColsClass)}>
+    <div className={cn(`group grid items-start gap-x-4 gap-y-3 p-3 bg-black/10 rounded-md hover:bg-black/20 transition-colors`, gridColsClass)}>
       <datalist id={datalistId}>
         {productSuggestions.map(p => <option key={p.name} value={p.name} />)}
       </datalist>
 
       {/* Column 1: Material */}
       <div className="w-full">
-        <Label className="text-xs md:hidden">Material</Label>
+        <Label className="text-xs md:hidden text-primary-foreground/80">Material</Label>
         <Select
           value={item.valuableId || ''}
           onValueChange={handleValuableSelect}
@@ -222,7 +222,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
       {/* Column 2: Product Name */}
       <div>
-        <Label className="text-xs md:hidden">Product Name</Label>
+        <Label className="text-xs md:hidden text-primary-foreground/80">Product Name</Label>
         <Input
           ref={productNameInputRef}
           placeholder="Product Name"
@@ -237,7 +237,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       {/* Column 3: HSN Code (Sales Only) */}
       {showHsnForSales && (
         <div>
-          <Label className="text-xs md:hidden">HSN</Label>
+          <Label className="text-xs md:hidden text-primary-foreground/80">HSN</Label>
           <Input
             ref={hsnCodeInputRef}
             placeholder="HSN"
@@ -251,7 +251,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
       {/* Column 4 (Sales) / 3 (Purchase): Qty/Wt */}
       <div>
-        <Label className="text-xs md:hidden">{`Qty/${selectedValuableDetails?.unit || 'unit'}`}</Label>
+        <Label className="text-xs md:hidden text-primary-foreground/80">{`Qty/${selectedValuableDetails?.unit || 'unit'}`}</Label>
         <Input
           ref={qtyInputRef}
           type="number"
@@ -270,7 +270,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         <>
           {/* Purchase Column 4: Net Type */}
           <div className="flex flex-col space-y-1">
-             <Label className="text-xs md:hidden">Net Type</Label>
+             <Label className="text-xs md:hidden text-primary-foreground/80">Net Type</Label>
             <Select
               value={item.purchaseNetType || 'net_percentage'}
               onValueChange={(val: 'net_percentage' | 'fixed_net_price') => handleFieldChange('purchaseNetType', val)}
@@ -288,13 +288,13 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               </SelectContent>
             </Select>
             {item.purchaseNetType === 'net_percentage' && selectedValuableDetails && (
-                <p className="text-xs text-muted-foreground text-center">Mkt: {currencySymbol}{marketPriceForPurchase.toFixed(2)}</p>
+                <p className="text-xs text-primary-foreground/60 text-center">Mkt: {currencySymbol}{marketPriceForPurchase.toFixed(2)}</p>
             )}
           </div>
 
           {/* Purchase Column 5: Value Input (Percentage or Fixed) */}
           <div className="flex flex-col space-y-1">
-             <Label className="text-xs md:hidden">Value</Label>
+             <Label className="text-xs md:hidden text-primary-foreground/80">Value</Label>
             {item.purchaseNetType === 'net_percentage' && (
               <Input
                 ref={purchaseNetPercentInputRef}
@@ -322,7 +322,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
               />
             )}
             {(item.purchaseNetType === 'net_percentage' || item.purchaseNetType === 'fixed_net_price') && item.valuableId && (
-                 <p className="text-xs text-muted-foreground text-center">Eff: {currencySymbol}{effectiveRateForPurchaseDisplay.toFixed(2)}</p>
+                 <p className="text-xs text-primary-foreground/60 text-center">Eff: {currencySymbol}{effectiveRateForPurchaseDisplay.toFixed(2)}</p>
             )}
           </div>
         </>
@@ -330,7 +330,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         <>
           {/* Sales Column 5: Rate */}
           <div>
-            <Label className="text-xs md:hidden">Rate</Label>
+            <Label className="text-xs md:hidden text-primary-foreground/80">Rate</Label>
             <Input
               ref={rateInputRef}
               type="number"
@@ -345,7 +345,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           </div>
           {/* Sales Column 6: MC Type */}
           <div>
-            <Label className="text-xs md:hidden">MC Type</Label>
+            <Label className="text-xs md:hidden text-primary-foreground/80">MC Type</Label>
             <Select
               value={item.makingChargeType || defaultMakingCharge.type}
               onValueChange={(val: 'percentage' | 'fixed') => onItemChange({ ...item, makingChargeType: val })}
@@ -365,7 +365,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
           </div>
           {/* Sales Column 7: Making Value */}
           <div>
-            <Label className="text-xs md:hidden">Making</Label>
+            <Label className="text-xs md:hidden text-primary-foreground/80">Making</Label>
             <Input
               ref={mcValueInputRef}
               type="number"
@@ -384,8 +384,8 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
       {/* Last common columns */}
       {/* Taxable Amount */}
       <div className="text-right self-center">
-        <Label className="text-xs md:hidden">Taxable Amount</Label>
-        <span className="font-medium text-lg block mt-1 md:mt-0">{currencySymbol}{item.amount?.toFixed(2) || '0.00'}</span>
+        <Label className="text-xs md:hidden text-primary-foreground/80">Taxable Amount</Label>
+        <span className="font-medium text-lg block mt-1 md:mt-0 text-primary-foreground">{currencySymbol}{item.amount?.toFixed(2) || '0.00'}</span>
       </div>
 
       {/* Action Button */}
