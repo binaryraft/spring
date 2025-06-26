@@ -128,7 +128,7 @@ const GstReportPage = () => {
                                 <th style="border: 1px solid #ddd; padding: 6px;">Bill No.</th>
                                 <th style="border: 1px solid #ddd; padding: 6px;">Date</th>
                                 <th style="border: 1px solid #ddd; padding: 6px;">Customer</th>
-                                <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">Taxable Amount</th>
+                                <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">Cost</th>
                                 <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">CGST (${settings.cgstRate}%)</th>
                                 <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">SGST (${settings.sgstRate}%)</th>
                                 <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">Total Tax</th>

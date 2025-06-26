@@ -147,8 +147,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       ${showHsnColInPdfHeader ? `<th style="padding: 10px 8px; text-align: center;">HSN</th>` : ''}
       <th style="padding: 10px 8px; text-align: right;">Qty/Wt</th>
       <th style="padding: 10px 8px; text-align: right;">Rate</th>
-      ${showMakingChargeColumnInPdf ? `<th style="padding: 10px 8px; text-align: right;">Making</th>` : ''}
-      <th style="padding: 10px 8px; text-align: right;">Taxable Amt</th>
+      ${showMakingChargeColumnInPdf ? `<th style="padding: 10px 8px; text-align: right;">MC</th>` : ''}
+      <th style="padding: 10px 8px; text-align: right;">Cost</th>
       ${showGstColumns ? `
         <th style="padding: 10px 8px; text-align: right;">CGST (${settings.cgstRate}%)</th>
         <th style="padding: 10px 8px; text-align: right;">SGST (${settings.sgstRate}%)</th>

@@ -33,7 +33,7 @@ const GstReportTable: React.FC<GstReportTableProps> = ({ bills }) => {
             <TableHead className="text-base">Bill No.</TableHead>
             <TableHead className="text-base">Date</TableHead>
             <TableHead className="text-base">Customer</TableHead>
-            <TableHead className="text-right text-base">Taxable Amount</TableHead>
+            <TableHead className="text-right text-base">Cost</TableHead>
             <TableHead className="text-right text-base">CGST (${settings.cgstRate}%)</TableHead>
             <TableHead className="text-right text-base">SGST (${settings.sgstRate}%)</TableHead>
             <TableHead className="text-right text-base">Total Tax</TableHead>

@@ -321,8 +321,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                                 {isSalesBill && settings.enableHsnCode && <TableHead>HSN</TableHead>}
                                 <TableHead className="text-right">Qty/Wt</TableHead>
                                 <TableHead className="text-right">Rate</TableHead>
-                                {isSalesBill && <TableHead className="text-right">Making Charge</TableHead>}
-                                <TableHead className="text-right">Subtotal</TableHead>
+                                {isSalesBill && <TableHead className="text-right">MC</TableHead>}
+                                <TableHead className="text-right">Cost</TableHead>
                                 <TableHead className="w-[120px] text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -396,7 +396,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                             <Label>Rate ({settings.currencySymbol})</Label>
                             <Input type="number" value={currentItem.rate || ''} onChange={(e) => handleItemFormChange('rate', parseFloat(e.target.value))} className="h-11 text-base"/>
                             <div className="mt-2">
-                                <Label className="text-sm font-medium text-muted-foreground">Making Charge</Label>
+                                <Label className="text-sm font-medium text-muted-foreground">MC</Label>
                                 <div className="flex items-center gap-2 mt-1">
                                     <div className="inline-flex rounded-md shadow-sm" role="group">
                                         <Button
@@ -430,7 +430,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                                     </div>
                                     <Input 
                                         type="number" 
-                                        placeholder="MC Value" 
+                                        placeholder="Value" 
                                         value={currentItem.makingCharge || ''} 
                                         onChange={(e) => handleItemFormChange('makingCharge', parseFloat(e.target.value))} 
                                         className="h-9 text-sm w-full" 
