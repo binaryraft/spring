@@ -1,4 +1,3 @@
-
 "use client";
 import { useAppContext } from "@/contexts/AppContext";
 import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition, PdfLogoPosition, ProductSuggestion } from "@/types";
@@ -232,8 +231,8 @@ const SettingsPanel: React.FC = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <SidebarMenuButton tooltip="Settings" className="h-12 text-base">
-            <SettingsIcon className="h-5 w-5"/>
+        <SidebarMenuButton tooltip="Settings" className="h-14 text-lg">
+            <SettingsIcon className="h-6 w-6"/>
             <span>Settings</span>
         </SidebarMenuButton>
       </SheetTrigger>

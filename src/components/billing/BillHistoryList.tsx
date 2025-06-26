@@ -1,4 +1,3 @@
-
 "use client";
 import React from 'react';
 import type { Bill, BillType } from '@/types';
@@ -22,14 +21,13 @@ import { format } from 'date-fns';
 
 interface BillHistoryListProps {
   billType: BillType;
+  bills: Bill[];
   onEditBill: (bill: Bill) => void; 
   onViewBill: (bill: Bill) => void; 
 }
 
-const BillHistoryList: React.FC<BillHistoryListProps> = ({ billType, onEditBill, onViewBill }) => {
-  const { settings, bills, deleteBill } = useAppContext();
-
-  const filteredBills = bills.filter(bill => bill.type === billType).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const BillHistoryList: React.FC<BillHistoryListProps> = ({ billType, bills, onEditBill, onViewBill }) => {
+  const { settings, deleteBill } = useAppContext();
 
   const getBillTypeIcon = (type: BillType) => {
     switch (type) {
@@ -39,8 +37,8 @@ const BillHistoryList: React.FC<BillHistoryListProps> = ({ billType, onEditBill,
     }
   };
   
-  if (filteredBills.length === 0) {
-    return <p className="text-muted-foreground p-6 text-center text-lg">No {billType === 'purchase' ? 'purchases' : 'sales'} found.</p>;
+  if (bills.length === 0) {
+    return <p className="text-muted-foreground p-6 text-center text-lg">No {billType === 'purchase' ? 'purchases' : 'sales'} found for the selected period.</p>;
   }
 
   return (
@@ -61,7 +59,7 @@ const BillHistoryList: React.FC<BillHistoryListProps> = ({ billType, onEditBill,
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredBills.map((bill) => (
+            {bills.map((bill) => (
               <TableRow key={bill.id} className="text-base hover:bg-primary/5">
                 <TableCell className="pl-4 py-3">{getBillTypeIcon(bill.type)}</TableCell>
                 <TableCell className="font-medium py-3">{bill.billNumber || 'N/A'}</TableCell>

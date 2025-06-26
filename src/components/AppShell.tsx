@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarInset, SidebarFooter, SidebarSeparator, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Receipt, ShoppingCart, Settings, Moon, Sun, PanelLeft, Gem } from 'lucide-react';
+import { LayoutDashboard, Receipt, ShoppingCart, Settings, Moon, Sun, PanelLeft, Gem, FilePieChart } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import SettingsPanel from '@/components/SettingsPanel';
 import { cn } from '@/lib/utils';
@@ -41,9 +41,13 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
     const menuItems = [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ];
+    const billingItems = [
         { href: '/sales', label: 'Sales', icon: Receipt },
         { href: '/purchase', label: 'Purchases', icon: ShoppingCart },
+        { href: '/gst-report', label: 'GST Report', icon: FilePieChart },
     ];
+
 
     return (
         <>
@@ -69,8 +73,21 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                         {menuItems.map((item) => (
                             <SidebarMenuItem key={item.href}>
                                 <Link href={item.href} passHref>
-                                    <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label} className="h-12 text-base">
-                                        <item.icon className="h-5 w-5" />
+                                    <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label} className="h-14 text-lg">
+                                        <item.icon className="h-6 w-6" />
+                                        <span>{item.label}</span>
+                                    </SidebarMenuButton>
+                                </Link>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
+                    <SidebarSeparator/>
+                    <SidebarMenu>
+                        {billingItems.map((item) => (
+                            <SidebarMenuItem key={item.href}>
+                                <Link href={item.href} passHref>
+                                    <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label} className="h-14 text-lg">
+                                        <item.icon className="h-6 w-6" />
                                         <span>{item.label}</span>
                                     </SidebarMenuButton>
                                 </Link>

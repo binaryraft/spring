@@ -1,24 +1,57 @@
-
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { Bill, BillType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, ArrowLeft } from 'lucide-react';
 import BillForm from './BillForm';
 import BillHistoryList from './BillHistoryList';
 import BillViewModal from './BillViewModal';
+import { useAppContext } from '@/contexts/AppContext';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { isToday, isThisMonth, isThisYear } from 'date-fns';
 
 interface BillManagementProps {
   billType: BillType;
 }
 
+type Period = 'daily' | 'monthly' | 'yearly' | 'all';
+
 const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
+  const { bills } = useAppContext();
+  const [period, setPeriod] = useState<Period>('daily');
   const [showForm, setShowForm] = useState(false);
   const [editingBill, setEditingBill] = useState<Bill | undefined>(undefined);
   const [viewingBill, setViewingBill] = useState<Bill | null>(null);
   const [isViewingEstimate, setIsViewingEstimate] = useState(false);
 
   const billTypeLabel = billType === 'sales-bill' ? 'Sales' : 'Purchase';
+
+  const filteredBills = useMemo(() => {
+    const componentBills = bills.filter(bill => bill.type === billType);
+
+    if (period === 'all') {
+        return componentBills.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+
+    let periodFilter: (date: Date) => boolean;
+    switch (period) {
+        case 'daily':
+            periodFilter = (date) => isToday(date);
+            break;
+        case 'monthly':
+            periodFilter = (date) => isThisMonth(date);
+            break;
+        case 'yearly':
+            periodFilter = (date) => isThisYear(date);
+            break;
+        default:
+            periodFilter = () => true;
+    }
+    return componentBills
+        .filter(bill => periodFilter(new Date(bill.date)))
+        .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [bills, billType, period]);
+
 
   const handleSaveAndPrintBill = (savedBill: Bill) => {
     setEditingBill(undefined);
@@ -81,11 +114,22 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
             {...commonFormProps}
           />
         ) : (
-          <BillHistoryList 
-            billType={billType} 
-            onEditBill={handleEditBill} 
-            onViewBill={(bill) => handleViewBill(bill, false)} 
-          />
+          <>
+            <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)}>
+                <TabsList className="grid w-full grid-cols-4 mb-6 bg-primary/10">
+                    <TabsTrigger value="daily">Daily</TabsTrigger>
+                    <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                    <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                    <TabsTrigger value="all">All Time</TabsTrigger>
+                </TabsList>
+            </Tabs>
+            <BillHistoryList 
+              billType={billType} 
+              bills={filteredBills}
+              onEditBill={handleEditBill} 
+              onViewBill={(bill) => handleViewBill(bill, false)} 
+            />
+          </>
         )}
       </div>
 
