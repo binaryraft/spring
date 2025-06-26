@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface AppContextType {
   settings: Settings;
-  updateSettings: (newSettings: Partial<Settings>) => void;
+  updateSettings: (newSettings: Settings) => void;
   updateValuablePrice: (valuableId: string, newPrice: number) => void;
   toggleValuableInHeader: (valuableId: string) => void;
   
@@ -39,8 +39,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [settings, setSettings] = useLocalStorage<Settings>('goldsmith-settings', DEFAULT_SETTINGS);
   const [bills, setBills] = useLocalStorage<Bill[]>('goldsmith-bills', []);
 
-  const updateSettings = useCallback((newSettings: Partial<Settings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+  const updateSettings = useCallback((newSettings: Settings) => {
+    setSettings(newSettings);
   }, [setSettings]);
 
   const updateValuablePrice = useCallback((valuableId: string, newPrice: number) => {

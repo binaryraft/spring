@@ -29,7 +29,8 @@ import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from 'uuid';
 
 export default function SettingsPage() {
-  const { settings, updateSettings, toggleValuableInHeader, addOrUpdateProductSuggestion, removeProductSuggestion, setCompanyLogo, toggleShowCompanyLogo, updateCurrencySymbol, addValuable, updateValuableData, removeValuable: removeValuableFromContext, toggleEnableColorBilling, updatePdfLogoPosition } = useAppContext();
+  const { settings, updateSettings } = useAppContext();
+  
   const [localSettings, setLocalSettings] = useState<Settings>(() => JSON.parse(JSON.stringify(settings))); 
   const [newProductName, setNewProductName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,10 +49,7 @@ export default function SettingsPage() {
   };
   
   const handleCurrencyChange = (symbol: string) => {
-    const selectedCurrency = AVAILABLE_CURRENCIES.find(c => c.symbol === symbol);
-    if (selectedCurrency) {
-      setLocalSettings(prev => ({ ...prev, currencySymbol: selectedCurrency.symbol }));
-    }
+    setLocalSettings(prev => ({ ...prev, currencySymbol: symbol }));
   };
 
   const handleNestedChange = (parentField: keyof Settings, nestedField: string, value: any) => {
@@ -107,14 +105,14 @@ export default function SettingsPage() {
     if (file && file.type.startsWith("image/")) { 
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCompanyLogo(reader.result as string);
+        handleChange('companyLogo', reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleRemoveLogo = () => {
-    setCompanyLogo(undefined);
+    handleChange('companyLogo', undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = ""; 
     }
@@ -127,21 +125,33 @@ export default function SettingsPage() {
   const handleSaveCustomMaterial = () => {
     if (!customMaterialForm.name.trim() || !customMaterialForm.unit.trim() || customMaterialForm.price < 0) return;
 
-    const materialToSave: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'> = {
+    const materialToSave: Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault' | 'price'> & { price: number } = {
       ...customMaterialForm,
       price: Number(customMaterialForm.price) || 0,
       iconColor: customMaterialForm.icon === 'custom-gem' ? (customMaterialForm.iconColor || '#808080') : undefined,
     };
     
     const materialNameExists = (name: string, currentId?: string) => 
-        settings.valuables.some(v => v.id !== currentId && v.name.toLowerCase() === name.trim().toLowerCase());
+        localSettings.valuables.some(v => v.id !== currentId && v.name.toLowerCase() === name.trim().toLowerCase());
 
     if (isEditingMaterial) {
       if (materialNameExists(materialToSave.name, isEditingMaterial.id)) return;
-      updateValuableData(isEditingMaterial.id, materialToSave);
+      setLocalSettings(prev => ({
+        ...prev,
+        valuables: prev.valuables.map(v => v.id === isEditingMaterial.id ? { ...v, ...materialToSave } : v).sort((a, b) => a.name.localeCompare(b.name)),
+      }));
     } else {
       if (materialNameExists(materialToSave.name)) return;
-      addValuable(materialToSave);
+      const newFullValuable: Valuable = {
+        ...materialToSave,
+        id: uuidv4(),
+        selectedInHeader: false,
+        isDefault: false,
+      };
+      setLocalSettings(prev => ({
+        ...prev,
+        valuables: [...prev.valuables, newFullValuable].sort((a, b) => a.name.localeCompare(b.name)),
+      }));
     }
     resetCustomMaterialForm();
   };
@@ -165,9 +175,12 @@ export default function SettingsPage() {
   };
   
   const handleDeleteValuable = (valuableId: string) => {
-    const valuableToRemove = settings.valuables.find(v => v.id === valuableId);
+    const valuableToRemove = localSettings.valuables.find(v => v.id === valuableId);
     if (valuableToRemove?.isDefault) return;
-    removeValuableFromContext(valuableId);
+    setLocalSettings(prev => ({
+      ...prev,
+      valuables: prev.valuables.filter(v => v.id !== valuableId),
+    }));
     if (isEditingMaterial && isEditingMaterial.id === valuableId) {
         resetCustomMaterialForm();
     }
@@ -175,30 +188,6 @@ export default function SettingsPage() {
 
   const handleSaveAllSettings = () => {
     updateSettings(localSettings);
-    localSettings.productSuggestions.forEach(p => addOrUpdateProductSuggestion(p.name, p.hsnCode));
-    settings.productSuggestions.forEach(oldP => {
-        if (!localSettings.productSuggestions.some(newP => newP.name === oldP.name)) {
-            removeProductSuggestion(oldP.name);
-        }
-    });
-    updateCurrencySymbol(localSettings.currencySymbol);
-    toggleEnableColorBilling(localSettings.enableColorBilling); 
-    updatePdfLogoPosition(localSettings.pdfLogoPosition);
-    localSettings.valuables.forEach(val => {
-      const originalValInContext = settings.valuables.find(v => v.id === val.id);
-      if (originalValInContext && JSON.stringify(val) !== JSON.stringify(originalValInContext)) {
-        const { id, isDefault, ...updatableDataFromLocal } = val;
-        let dataToUpdateInContext: Partial<Omit<Valuable, 'id' | 'isDefault'>> = {
-            price: Number(updatableDataFromLocal.price) || 0,
-            unit: updatableDataFromLocal.unit,
-            selectedInHeader: updatableDataFromLocal.selectedInHeader,
-        };
-        if (!isDefault) { 
-            dataToUpdateInContext = {...dataToUpdateInContext, name: updatableDataFromLocal.name, icon: updatableDataFromLocal.icon, iconColor: updatableDataFromLocal.iconColor };
-        }
-        updateValuableData(id, dataToUpdateInContext);
-      }
-    });
   };
 
   return (
@@ -336,7 +325,7 @@ export default function SettingsPage() {
                             <Input id="customMaterialName" value={customMaterialForm.name} onChange={e => handleCustomMaterialFormChange('name', e.target.value)} className="mt-1.5 h-11 text-base" placeholder="e.g., Emerald, Platinum Bar" />
                         </div>
                         <div>
-                            <Label htmlFor="customMaterialPrice" className="text-base font-medium">Price ({settings.currencySymbol})</Label>
+                            <Label htmlFor="customMaterialPrice" className="text-base font-medium">Price ({localSettings.currencySymbol})</Label>
                             <Input id="customMaterialPrice" type="number" value={customMaterialForm.price} onChange={e => handleCustomMaterialFormChange('price', parseFloat(e.target.value) || 0)} className="mt-1.5 h-11 text-base" min="0" />
                         </div>
                         <div>
@@ -384,13 +373,13 @@ export default function SettingsPage() {
                                 }
                             </div>
                             <div className="flex items-center space-x-3">
-                                <Checkbox id={`select-${valuable.id}`} checked={valuable.selectedInHeader} onCheckedChange={() => { toggleValuableInHeader(valuable.id); handleLocalValuableChange(valuable.id, 'selectedInHeader', !valuable.selectedInHeader);}} className="w-5 h-5"/>
+                                <Checkbox id={`select-${valuable.id}`} checked={valuable.selectedInHeader} onCheckedChange={(checked) => handleLocalValuableChange(valuable.id, 'selectedInHeader', !!checked)} className="w-5 h-5"/>
                                 <Label htmlFor={`select-${valuable.id}`} className="text-sm font-medium cursor-pointer">Show in Header</Label>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                             <div>
-                                <Label htmlFor={`price-${valuable.id}`} className="text-sm font-medium">Market Price ({settings.currencySymbol})</Label>
+                                <Label htmlFor={`price-${valuable.id}`} className="text-sm font-medium">Market Price ({localSettings.currencySymbol})</Label>
                                 <Input id={`price-${valuable.id}`} type="number" value={valuable.price} onChange={(e) => handleLocalValuableChange(valuable.id, 'price', parseFloat(e.target.value))} className="mt-1.5 h-11 text-base" min="0"/>
                             </div>
                             <div>
@@ -496,7 +485,7 @@ export default function SettingsPage() {
                             <SelectTrigger id="defaultMakingChargeType" className="mt-1.5 h-11 text-base"><SelectValue placeholder="Select type" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="percentage" className="text-base py-2">Percentage (%)</SelectItem>
-                                <SelectItem value="fixed" className="text-base py-2">Fixed Amount ({settings.currencySymbol})</SelectItem>
+                                <SelectItem value="fixed" className="text-base py-2">Fixed Amount ({localSettings.currencySymbol})</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -539,7 +528,7 @@ export default function SettingsPage() {
                    <p className="text-sm text-muted-foreground mt-2 italic">Applied if 'Net % Off Market' is chosen for a new purchase item.</p>
                 </div>
                 <div>
-                  <Label htmlFor="defaultPurchaseItemNetFixedValue" className="text-base font-medium">Default Fixed Net Rate ({settings.currencySymbol})</Label>
+                  <Label htmlFor="defaultPurchaseItemNetFixedValue" className="text-base font-medium">Default Fixed Net Rate ({localSettings.currencySymbol})</Label>
                   <Input id="defaultPurchaseItemNetFixedValue" type="number" value={localSettings.defaultPurchaseItemNetFixedValue} onChange={(e) => handleChange('defaultPurchaseItemNetFixedValue', parseFloat(e.target.value))} placeholder="e.g., 4500" className="mt-1.5 h-11 text-base" min="0"/>
                    <p className="text-sm text-muted-foreground mt-2 italic">Applied if 'Fixed Net Rate' is chosen for a new purchase item.</p>
                 </div>
@@ -555,7 +544,3 @@ export default function SettingsPage() {
     </div>
   );
 };
-
-    
-
-    
