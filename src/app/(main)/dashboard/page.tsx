@@ -25,12 +25,12 @@ export default function DashboardPage() {
             </div>
             <div className="flex-shrink-0 flex items-center space-x-4">
                 <Link href="/sales" passHref>
-                    <Button size="lg" className="shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 h-14 text-lg rounded-lg px-8 bg-success hover:bg-success/90 text-success-foreground border-2 border-success-foreground/30">
+                    <Button size="lg" className="shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95 h-14 text-lg rounded-lg px-8 bg-success hover:bg-success/90 text-success-foreground border-2 border-success-foreground/30">
                         <Receipt className="mr-3 h-6 w-6" /> Create Sale
                     </Button>
                 </Link>
                 <Link href="/purchase" passHref>
-                    <Button size="lg" className="shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 h-14 text-lg rounded-lg px-8 bg-destructive hover:bg-destructive/90 text-destructive-foreground border-2 border-destructive-foreground/30">
+                    <Button size="lg" className="shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95 h-14 text-lg rounded-lg px-8 bg-destructive hover:bg-destructive/90 text-destructive-foreground border-2 border-destructive-foreground/30">
                         <ShoppingCart className="mr-3 h-6 w-6" /> Create Purchase
                     </Button>
                 </Link>

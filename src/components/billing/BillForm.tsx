@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, ListOrdered, StickyNote, Banknote, List } from 'lucide-react';
+import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, ListOrdered, StickyNote, Banknote, List, Loader2, Check } from 'lucide-react';
 import BillItemRow from './BillItemRow';
 import { v4 as uuidv4 } from 'uuid';
 import { Separator } from '../ui/separator';
@@ -30,6 +30,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const [customerPhone, setCustomerPhone] = useState('');
   const [items, setItems] = useState<Partial<BillItem>[]>([]);
   const [notes, setNotes] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
 
   const isSalesBill = billType === 'sales-bill';
   const isPurchase = billType === 'purchase';
@@ -286,22 +288,33 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       return;
     }
 
-    // Auto-save/update HSN codes from bill items
-    billDetails.items.forEach(item => {
-      if (item.name && item.name.trim() !== '' && isSalesBill) {
-        addOrUpdateProductSuggestion(item.name.trim(), item.hsnCode || '');
-      }
-    });
+    setIsSaving(true);
+    
+    // Simulate async operation for visual feedback
+    setTimeout(() => {
+      // Auto-save/update HSN codes from bill items
+      billDetails.items.forEach(item => {
+        if (item.name && item.name.trim() !== '' && isSalesBill) {
+          addOrUpdateProductSuggestion(item.name.trim(), item.hsnCode || '');
+        }
+      });
 
-    let savedBill;
-    if (existingBill) {
-      savedBill = { ...existingBill, ...billDetails };
-      updateBill(savedBill);
-    } else {
-      savedBill = addBill(billDetails);
-    }
-    onSaveAndPrint(savedBill);
+      let savedBill;
+      if (existingBill) {
+        savedBill = { ...existingBill, ...billDetails };
+        updateBill(savedBill);
+      } else {
+        savedBill = addBill(billDetails);
+      }
+      onSaveAndPrint(savedBill);
+      
+      // The component will likely unmount or be hidden, but we reset state just in case
+      if (existingBill) {
+        setIsSaving(false);
+      }
+    }, 700);
   };
+
 
   const handleShowEstimate = () => {
     if (onShowEstimate) {
@@ -575,6 +588,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 size="lg"
                 onClick={onCancel} 
                 className="h-12 text-base"
+                disabled={isSaving}
             >
                 <XCircle className="mr-2 h-5 w-5" /> Cancel
             </Button>
@@ -585,6 +599,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
               variant="outline"
               size="lg"
               onClick={handleShowEstimate} 
+              disabled={isSaving}
               className="h-12 text-base border-2 border-primary text-primary hover:bg-primary/10 hover:text-primary"
             >
               <FileText className="mr-2.5 h-5 w-5" /> Create Estimate
@@ -594,9 +609,15 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
               onClick={handleSubmit} 
               variant={isSalesBill ? 'success' : 'destructive'}
               size="lg"
-              className="h-12 text-base"
+              className="h-12 text-base w-48"
+              disabled={isSaving}
             >
-              <Save className="mr-2.5 h-5 w-5" /> {existingBill ? 'Update' : 'Save'} & Print Bill
+              {isSaving ? (
+                <Loader2 className="mr-2.5 h-5 w-5 animate-spin" />
+              ) : (
+                <Save className="mr-2.5 h-5 w-5" />
+              )}
+              {isSaving ? 'Saving...' : `${existingBill ? 'Update' : 'Save'} & Print`}
             </Button>
         </div>
       </CardFooter>

@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ValuableIcon from "./ValuableIcon";
 import { Button } from "@/components/ui/button";
-import { Edit3, Save, XCircle, TrendingUp, AlertTriangle } from "lucide-react";
+import { Edit3, Save, X, Check, TrendingUp, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { isToday } from 'date-fns';
+import { isToday, formatDistanceToNow } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const EditableHeader: React.FC = () => {
@@ -62,20 +62,27 @@ const EditableHeader: React.FC = () => {
           return (
           <div key={valuable.id} className="relative group flex flex-col items-center justify-between p-4 rounded-xl bg-gradient-to-br from-background to-muted/50 shadow-lg border border-primary/10 hover:shadow-primary/20 hover:-translate-y-1 transition-all duration-300">
             
-            {!isPriceUpdatedToday && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="absolute top-2 left-2 text-yellow-500 cursor-help">
-                        <AlertTriangle className="h-5 w-5" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Price not updated today.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute top-2 left-2 cursor-help">
+                    {isPriceUpdatedToday ? (
+                      <Check className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {valuable.lastUpdated 
+                      ? `Last updated ${formatDistanceToNow(new Date(valuable.lastUpdated), { addSuffix: true })}`
+                      : "Price has never been updated."}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
 
             <div className="flex flex-col items-center text-center">
                 <Label htmlFor={`price-display-${valuable.id}`} className="flex items-center text-xl font-headline text-foreground">
@@ -101,11 +108,13 @@ const EditableHeader: React.FC = () => {
                   />
                 </div>
                 <div className="flex justify-around space-x-2">
-                  <Button onClick={handleSavePrice} size="sm" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground text-base h-10">
-                    <Save className="mr-2 h-4 w-4" /> Save
+                  <Button onClick={handleSavePrice} size="icon" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-10 w-10">
+                    <Check className="h-5 w-5" />
+                    <span className="sr-only">Save</span>
                   </Button>
-                  <Button onClick={handleCancelEdit} variant="outline" size="sm" className="flex-1 text-base h-10">
-                    <XCircle className="mr-2 h-4 w-4" /> Cancel
+                  <Button onClick={handleCancelEdit} variant="outline" size="icon" className="flex-1 h-10 w-10">
+                    <X className="h-5 w-5" />
+                    <span className="sr-only">Cancel</span>
                   </Button>
                 </div>
               </div>
