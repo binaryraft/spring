@@ -105,15 +105,13 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
             <Skeleton className="h-10 w-48" />
             <Skeleton className="h-12 w-52" />
         </div>
-        <div className="bg-card p-4 sm:p-6 md:p-8 rounded-lg shadow-xl border border-border">
-            <Skeleton className="h-10 w-full mb-6" />
-            <div className="rounded-lg border shadow-md overflow-hidden mt-8">
-                <div className="p-4 space-y-3">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                </div>
+        <Skeleton className="h-10 w-full mb-6" />
+        <div className="rounded-lg border shadow-md overflow-hidden mt-8">
+            <div className="p-4 space-y-3">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
             </div>
         </div>
     </div>
@@ -137,22 +135,20 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
                         <PlusCircle className="mr-2.5 h-5 w-5" /> Create New {billTypeLabel}
                     </Button>
                 </div>
-                <div className="bg-card p-4 sm:p-6 md:p-8 rounded-lg shadow-xl border border-border">
-                    <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)}>
-                        <TabsList className="grid w-full grid-cols-4 mb-6 bg-primary/10">
-                            <TabsTrigger value="daily">Daily</TabsTrigger>
-                            <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                            <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                            <TabsTrigger value="all">All Time</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                    <BillHistoryList 
-                      billType={billType} 
-                      bills={filteredBills}
-                      onEditBill={handleEditBill} 
-                      onViewBill={(bill) => handleViewBill(bill, false)} 
-                    />
-                </div>
+                <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)}>
+                    <TabsList className="grid w-full grid-cols-4 mb-6 bg-primary/10">
+                        <TabsTrigger value="daily">Daily</TabsTrigger>
+                        <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                        <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                        <TabsTrigger value="all">All Time</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                <BillHistoryList 
+                  billType={billType} 
+                  bills={filteredBills}
+                  onEditBill={handleEditBill} 
+                  onViewBill={(bill) => handleViewBill(bill, false)} 
+                />
             </div>
         )
       )}
