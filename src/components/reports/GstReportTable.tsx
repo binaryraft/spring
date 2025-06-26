@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Bill } from '@/types';
@@ -33,8 +34,8 @@ const GstReportTable: React.FC<GstReportTableProps> = ({ bills }) => {
             <TableHead className="text-base">Date</TableHead>
             <TableHead className="text-base">Customer</TableHead>
             <TableHead className="text-right text-base">Taxable Amount</TableHead>
-            <TableHead className="text-right text-base">CGST ({settings.cgstRate}%)</TableHead>
-            <TableHead className="text-right text-base">SGST ({settings.sgstRate}%)</TableHead>
+            <TableHead className="text-right text-base">CGST (${settings.cgstRate}%)</TableHead>
+            <TableHead className="text-right text-base">SGST (${settings.sgstRate}%)</TableHead>
             <TableHead className="text-right text-base">Total Tax</TableHead>
           </TableRow>
         </TableHeader>

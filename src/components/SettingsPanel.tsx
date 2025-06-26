@@ -1,3 +1,4 @@
+
 "use client";
 import { useAppContext } from "@/contexts/AppContext";
 import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition, PdfLogoPosition, ProductSuggestion } from "@/types";
