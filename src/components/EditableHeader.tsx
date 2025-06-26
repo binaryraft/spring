@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ValuableIcon from "./ValuableIcon";
 import { Button } from "@/components/ui/button";
-import { Edit3, Save, XCircle } from "lucide-react";
+import { Edit3, Save, XCircle, TrendingUp } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 const EditableHeader: React.FC = () => {
   const { settings, updateValuablePrice } = useAppContext();
@@ -41,27 +42,31 @@ const EditableHeader: React.FC = () => {
 
   if (activeValuables.length === 0) {
     return (
-      <div className="p-6 text-center text-muted-foreground text-lg bg-card rounded-lg shadow-md">
-        No market prices selected for display. Configure in Settings.
-      </div>
+      <Card className="p-6 text-center text-muted-foreground text-lg shadow-lg border-border">
+        No market prices selected for display. You can enable them in Settings.
+      </Card>
     );
   }
   
   return (
-    <div className="mt-8 p-6 rounded-lg bg-card border border-border shadow-xl">
-      <h3 className="text-3xl lg:text-4xl font-semibold text-center mb-10 text-primary">
+    <Card className="p-6 sm:p-8 rounded-2xl shadow-xl border-border">
+      <h3 className="text-3xl font-bold text-center mb-10 text-primary flex items-center justify-center gap-3">
+        <TrendingUp className="w-8 h-8"/>
         Live Market Prices
       </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-8 gap-y-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {activeValuables.map((valuable) => (
-          <div key={valuable.id} className="flex flex-col items-center space-y-3 p-4 rounded-lg bg-background shadow-md border border-primary/20 hover:shadow-lg transition-shadow">
-            <Label htmlFor={`price-display-${valuable.id}`} className="flex items-center text-xl font-headline text-foreground text-center">
-              <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-7 h-7 mr-3" />
-              {valuable.name}
-            </Label>
+          <div key={valuable.id} className="relative group flex flex-col items-center justify-between p-4 rounded-xl bg-gradient-to-br from-background to-muted/50 shadow-lg border border-primary/10 hover:shadow-primary/20 hover:-translate-y-1 transition-all duration-300">
+            <div className="flex flex-col items-center text-center">
+                <Label htmlFor={`price-display-${valuable.id}`} className="flex items-center text-xl font-headline text-foreground">
+                    <ValuableIcon valuableType={valuable.icon} color={valuable.iconColor} className="w-7 h-7 mr-3" />
+                    {valuable.name}
+                </Label>
+                <p className="text-base text-muted-foreground mt-1">per {valuable.unit}</p>
+            </div>
             
             {editingValuableId === valuable.id ? (
-              <div className="w-full space-y-3">
+              <div className="w-full space-y-3 mt-4">
                 <div className="flex items-center">
                    <span className="mr-1.5 text-lg text-muted-foreground">{settings.currencySymbol}</span>
                   <Input
@@ -85,21 +90,20 @@ const EditableHeader: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-center w-full group">
+              <div className="flex items-center justify-center w-full group mt-4">
                 <span id={`price-display-${valuable.id}`} className="text-3xl font-bold text-primary group-hover:text-primary/80 transition-colors">
                   {settings.currencySymbol}{valuable.price.toFixed(2)}
                 </span>
-                <Button variant="ghost" size="icon" onClick={() => handleEditClick(valuable)} className="ml-3 opacity-50 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" onClick={() => handleEditClick(valuable)} className="ml-3 opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2">
                   <Edit3 className="h-5 w-5 text-muted-foreground" />
                   <span className="sr-only">Edit price for {valuable.name}</span>
                 </Button>
               </div>
             )}
-            <p className="text-base text-muted-foreground text-center">per {valuable.unit}</p>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 };
 

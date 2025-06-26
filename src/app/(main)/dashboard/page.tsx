@@ -10,31 +10,36 @@ import TaxSummary from '@/components/dashboard/TaxSummary';
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl lg:text-4xl font-headline text-primary">Dashboard</h1>
-          <p className="text-lg text-muted-foreground mt-1">
-            Welcome! Here's an overview of your business.
-          </p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Link href="/sales" passHref>
-            <Button size="lg" variant="success" className="shadow-md hover:shadow-lg transition-shadow h-12 text-base">
-              <Receipt className="mr-2 h-5 w-5" /> Create Sales Bill
-            </Button>
-          </Link>
-          <Link href="/purchase" passHref>
-            <Button size="lg" variant="destructive" className="shadow-md hover:shadow-lg transition-shadow h-12 text-base">
-              <ShoppingCart className="mr-2 h-5 w-5" /> Create Purchase
-            </Button>
-          </Link>
+    <div className="space-y-12">
+      {/* Header Section */}
+      <div className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-8 shadow-2xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="text-center md:text-left">
+                <h1 className="text-4xl lg:text-5xl font-bold font-headline tracking-tight">Dashboard</h1>
+                <p className="text-xl text-primary-foreground/80 mt-2">
+                    Welcome back! Here's a snapshot of your business.
+                </p>
+            </div>
+            <div className="flex-shrink-0 flex items-center space-x-4">
+                <Link href="/sales" passHref>
+                    <Button size="lg" className="shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 h-14 text-lg rounded-lg px-8 bg-success hover:bg-success/90 text-success-foreground border-2 border-success-foreground/30">
+                        <Receipt className="mr-3 h-6 w-6" /> Create Sale
+                    </Button>
+                </Link>
+                <Link href="/purchase" passHref>
+                    <Button size="lg" className="shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 h-14 text-lg rounded-lg px-8 bg-destructive hover:bg-destructive/90 text-destructive-foreground border-2 border-destructive-foreground/30">
+                        <ShoppingCart className="mr-3 h-6 w-6" /> Create Purchase
+                    </Button>
+                </Link>
+            </div>
         </div>
       </div>
       
+      {/* Live Market Prices */}
       <EditableHeader />
       
-      <div className="space-y-8 mt-12">
+      {/* Summaries Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <AccountingSummary />
         <TaxSummary />
       </div>
