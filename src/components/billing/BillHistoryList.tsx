@@ -68,15 +68,15 @@ const BillHistoryList: React.FC<BillHistoryListProps> = ({ billType, bills, onEd
                 <TableCell className="py-3">{bill.customerName || 'N/A'}</TableCell>
                 <TableCell className="text-right py-3">{settings.currencySymbol}{bill.totalAmount.toFixed(2)}</TableCell>
                 <TableCell className="text-center space-x-1.5 py-3 pr-4">
-                  <Button variant="ghost" size="icon" onClick={() => onViewBill(bill)} title="View Bill" className="hover:bg-accent/20">
+                  <Button variant="ghost" size="icon" onClick={() => onViewBill(bill)} title="View Bill" className="hover:bg-accent">
                     <Eye className="h-5 w-5" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onEditBill(bill)} title="Edit Bill" className="hover:bg-accent/20">
-                    <Edit3 className="h-5 w-5 text-accent" />
+                  <Button variant="ghost" size="icon" onClick={() => onEditBill(bill)} title="Edit Bill" className="hover:bg-accent">
+                    <Edit3 className="h-5 w-5 text-primary" />
                   </Button>
                    <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" title="Delete Bill" className="hover:bg-destructive/20">
+                      <Button variant="ghost" size="icon" title="Delete Bill" className="hover:bg-destructive/10">
                         <Trash2 className="h-5 w-5 text-destructive" />
                       </Button>
                     </AlertDialogTrigger>

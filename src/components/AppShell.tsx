@@ -74,7 +74,7 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                             <SidebarMenuItem key={item.href}>
                                 <Link href={item.href} passHref>
                                     <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label} className="h-14 text-lg">
-                                        <item.icon className="h-6 w-6" />
+                                        <item.icon className="h-7 w-7" />
                                         <span>{item.label}</span>
                                     </SidebarMenuButton>
                                 </Link>
@@ -87,7 +87,7 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                             <SidebarMenuItem key={item.href}>
                                 <Link href={item.href} passHref>
                                     <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label} className="h-14 text-lg">
-                                        <item.icon className={cn("h-7 w-7", item.color)} />
+                                        <item.icon className={cn("h-8 w-8", item.color)} />
                                         <span>{item.label}</span>
                                     </SidebarMenuButton>
                                 </Link>
@@ -102,7 +102,7 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
                        <SidebarMenuItem>
                             <Link href="/settings" passHref>
                                 <SidebarMenuButton isActive={pathname === '/settings'} tooltip="Settings" className="h-14 text-lg">
-                                    <Settings className="h-6 w-6"/>
+                                    <Settings className="h-7 w-7"/>
                                     <span>Settings</span>
                                 </SidebarMenuButton>
                             </Link>
