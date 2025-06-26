@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarInset, SidebarFooter, SidebarSeparator, useSidebar } from '@/components/ui/sidebar';
@@ -9,7 +9,23 @@ import { useAppContext } from '@/contexts/AppContext';
 import SettingsPanel from '@/components/SettingsPanel';
 import { cn } from '@/lib/utils';
 
-// This new component can use the useSidebar hook
+// This wrapper ensures its children are only rendered on the client-side,
+// preventing SSR hydration errors with components that rely on window/browser APIs.
+const ClientOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [hasMounted, setHasMounted] = useState(false);
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
+
+    if (!hasMounted) {
+        return null; // Or a loading skeleton if you prefer
+    }
+
+    return <>{children}</>;
+};
+
+// This component can use the useSidebar hook because it's wrapped in ClientOnly
 const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { settings, toggleTheme } = useAppContext();
     const { state, toggleSidebar } = useSidebar();
@@ -95,11 +111,13 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
     );
 };
 
-// The main AppShell component now just sets up the provider
+// The main AppShell component now just sets up the provider and client-side wrapper
 const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
         <SidebarProvider>
-            <AppShellContent>{children}</AppShellContent>
+            <ClientOnly>
+                <AppShellContent>{children}</AppShellContent>
+            </ClientOnly>
         </SidebarProvider>
     );
 };
