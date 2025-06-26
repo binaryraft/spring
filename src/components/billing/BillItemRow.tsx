@@ -182,9 +182,9 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
 
   return (
     <div className="p-4 border rounded-lg space-y-4 bg-card shadow-sm hover:shadow-md transition-shadow">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-10 gap-4 items-start">
         {/* Material */}
-        <div className="md:col-span-1 space-y-1.5">
+        <div className="md:col-span-2 space-y-1.5">
           <Label htmlFor={`material-select-${item.id}`}>Material</Label>
           <Select value={item.valuableId || ''} onValueChange={handleValuableSelect}>
             <SelectTrigger id={`material-select-${item.id}`} ref={materialSelectRef} className="h-11 text-base w-full" onKeyDown={(e) => handleKeyDown(e, 0)}>
@@ -204,7 +204,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         </div>
 
         {/* Product Name & HSN */}
-        <div className="md:col-span-2 space-y-1.5">
+        <div className="md:col-span-3 space-y-1.5">
           <Label htmlFor={`product-name-${item.id}`}>Product Name</Label>
            <Input
               id={`product-name-${item.id}`}
@@ -235,7 +235,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         </div>
         
         {/* Quantity */}
-        <div className="md:col-span-1 space-y-1.5">
+        <div className="md:col-span-2 space-y-1.5">
            <Label htmlFor={`qty-${item.id}`}>{`Qty / ${selectedValuableDetails?.unit || 'Wt'}`}</Label>
            <Input
               id={`qty-${item.id}`}
@@ -251,7 +251,7 @@ const BillItemRow: React.FC<BillItemRowProps> = ({
         </div>
 
         {/* Rate (Sales) or Net Calc (Purchase) */}
-        <div className="md:col-span-1 space-y-1.5">
+        <div className="md:col-span-3 space-y-1.5">
             {!isPurchase ? (
                  <div className="space-y-1.5">
                     <Label htmlFor={`rate-${item.id}`}>Rate ({currencySymbol})</Label>
