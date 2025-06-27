@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check, Wrench, GripVertical } from "lucide-react"; 
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check, Wrench, GripVertical, Upload, Download, Database } from "lucide-react"; 
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "@/components/ValuableIcon";
@@ -137,6 +137,7 @@ export default function SettingsPage() {
   const [localSettings, setLocalSettings] = useState<Settings>(() => JSON.parse(JSON.stringify(settings))); 
   const [newProductName, setNewProductName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   const [isEditingMaterial, setIsEditingMaterial] = useState<Valuable | null>(null);
   const [customMaterialForm, setCustomMaterialForm] = useState<Omit<Valuable, 'id' | 'selectedInHeader' | 'isDefault'>>({
@@ -144,6 +145,7 @@ export default function SettingsPage() {
   });
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [activeTab, setActiveTab] = useState('company');
+  const [importedSettings, setImportedSettings] = useState<Settings | null>(null);
 
   useEffect(() => {
     setLocalSettings(JSON.parse(JSON.stringify(settings))); 
@@ -310,6 +312,7 @@ export default function SettingsPage() {
     { id: 'products', label: 'Products & HSN', icon: Tag },
     { id: 'billing', label: 'Billing Defaults', icon: Package },
     { id: 'features', label: 'Features', icon: Wrench },
+    { id: 'data', label: 'Backup & Restore', icon: Database },
   ];
 
   const sensors = useSensors(
@@ -331,6 +334,58 @@ export default function SettingsPage() {
           valuables: arrayMove(prev.valuables, oldIndex, newIndex),
         };
       });
+    }
+  };
+
+  const handleExportSettings = () => {
+    const jsonString = JSON.stringify(localSettings, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `spring-settings-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => {
+    importFileRef.current?.click();
+  };
+
+  const handleImportFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result;
+          if (typeof text !== 'string') throw new Error("File content is not text.");
+          const parsedSettings = JSON.parse(text);
+          
+          if (parsedSettings.companyName && Array.isArray(parsedSettings.valuables)) {
+            setImportedSettings(parsedSettings as Settings);
+          } else {
+            alert('Invalid or corrupted settings file.');
+          }
+        } catch (error) {
+          console.error("Error parsing settings file:", error);
+          alert('Failed to read or parse the settings file.');
+        } finally {
+          if (event.target) {
+            event.target.value = '';
+          }
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleConfirmImport = () => {
+    if (importedSettings) {
+      setLocalSettings(importedSettings);
+      setImportedSettings(null);
     }
   };
 
@@ -437,7 +492,7 @@ export default function SettingsPage() {
                   <Card className="shadow-lg border-border">
                       <CardHeader>
                           <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
-                              <Paintbrush className="mr-3 h-6 w-6 text-primary"/> Print & Appearance
+                              <Paintbrush className="mr-3 h-6 w-6 text-primary"/> Print &amp; Appearance
                           </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-6">
@@ -475,7 +530,7 @@ export default function SettingsPage() {
                           )}
                           <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
                               <Checkbox id="enableColorBilling" checked={localSettings.enableColorBilling} onCheckedChange={(checked) => handleChange('enableColorBilling', !!checked)} className="w-5 h-5"/>
-                              <Label htmlFor="enableColorBilling" className="text-base font-medium leading-none cursor-pointer">Enable Colour PDF Bills & Estimates</Label>
+                              <Label htmlFor="enableColorBilling" className="text-base font-medium leading-none cursor-pointer">Enable Colour PDF Bills &amp; Estimates</Label>
                           </div>
                       </CardContent>
                   </Card>
@@ -558,7 +613,7 @@ export default function SettingsPage() {
                 <Card className="shadow-lg border-border">
                   <CardHeader>
                       <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
-                          <Tag className="mr-3 h-6 w-6 text-primary"/> Product Suggestions {localSettings.enableHsnCode && '& HSN'}
+                          <Tag className="mr-3 h-6 w-6 text-primary"/> Product Suggestions {localSettings.enableHsnCode && '&amp; HSN'}
                       </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -681,6 +736,45 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
               )}
+              {activeTab === 'data' && (
+                <Card className="shadow-lg border-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
+                      <Database className="mr-3 h-6 w-6 text-primary"/> Backup &amp; Restore
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Export Settings</h3>
+                      <p className="text-muted-foreground mb-4 text-sm">
+                        Save a backup of all your current application settings. This includes company info, materials, billing defaults, and all other configurations. Keep this file safe.
+                      </p>
+                      <Button onClick={handleExportSettings}>
+                        <Download className="mr-2 h-4 w-4" /> Export Settings File
+                      </Button>
+                    </div>
+
+                    <Separator />
+                    
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Import Settings</h3>
+                      <p className="text-muted-foreground mb-4 text-sm">
+                        Restore your settings from a backup file. <span className="font-bold text-destructive">Warning:</span> This will overwrite all your current settings. This action cannot be undone.
+                      </p>
+                      <Button variant="outline" onClick={handleImportClick}>
+                        <Upload className="mr-2 h-4 w-4" /> Import from File
+                      </Button>
+                      <input
+                        type="file"
+                        ref={importFileRef}
+                        onChange={handleImportFileChange}
+                        accept=".json"
+                        className="hidden"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
         </div>
 
@@ -698,6 +792,21 @@ export default function SettingsPage() {
               {saveState === 'idle' ? 'Save All Settings' : (saveState === 'saving' ? 'Saving...' : 'Saved!')}
             </Button>
         </div>
+
+        <AlertDialog open={!!importedSettings} onOpenChange={(isOpen) => !isOpen && setImportedSettings(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl">Confirm Settings Import</AlertDialogTitle>
+              <AlertDialogDescription className="text-base">
+                Are you sure you want to import settings from this file? This will overwrite all of your current settings. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setImportedSettings(null)} className="text-base h-auto px-4 py-2">Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmImport} className="bg-destructive hover:bg-destructive/90 text-base h-auto px-4 py-2">Overwrite &amp; Import</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 };
