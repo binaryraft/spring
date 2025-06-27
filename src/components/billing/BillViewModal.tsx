@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import type { Bill, BillItem } from '@/types';
@@ -70,6 +69,38 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [billHtml, setBillHtml] = useState('');
 
+  useEffect(() => {
+    // This effect is designed to integrate with an Electron desktop app for printing.
+    // It runs whenever the modal's open state changes.
+    if (isOpen) {
+      // @ts-ignore - Check if the Electron print API is injected into the window
+      if (window.electronAPI && typeof window.electronAPI.print === 'function') {
+        const printButton = document.getElementById('print-btn');
+
+        const electronPrintHandler = (event: MouseEvent) => {
+          // Prevent the default browser/React print logic from running
+          event.preventDefault();
+          event.stopPropagation();
+          // @ts-ignore
+          window.electronAPI.print();
+        };
+
+        if (printButton) {
+          // We add the event listener in the 'capture' phase to ensure it runs
+          // before React's default event listeners in the 'bubble' phase.
+          // This is crucial for stopping propagation and preventing the default print handler.
+          printButton.addEventListener('click', electronPrintHandler, true);
+
+          // Return a cleanup function to remove the listener when the modal closes or component unmounts.
+          return () => {
+            printButton.removeEventListener('click', electronPrintHandler, true);
+          };
+        }
+      }
+    }
+  }, [isOpen]); // Only re-run this effect when the modal opens or closes.
+
+
   const getEffectiveRateForItem = (item: BillItem): number => {
     if (!bill) return item.rate || 0;
     if (bill.type === 'purchase') {
@@ -95,8 +126,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     // Define color palettes for printing - background is always white
     const color = {
       primary: useColor ? '#B58B5D' : '#000000',
-      text: useColor ? '#333333' : '#000000',
-      textMuted: useColor ? '#777777' : '#555555',
+      text: '#000000', // Always black for clean printing text
+      textMuted: useColor ? '#555555' : '#555555',
       border: useColor ? '#EAE3D8' : '#cccccc',
       headerBg: '#ffffff', // Always white for clean printing
       signatoryBorder: useColor ? '#999999' : '#000000',
@@ -110,7 +141,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
       : '';
 
     const showGstColumns = bill.type === 'sales-bill' && !isViewingEstimate;
-    const showHsnColumnInPdf = bill.type === 'sales-bill' && !isViewingEstimate && settings.enableHsnCode;
+    const showHsnColumnInPdf = bill.type === 'sales-bill' && !isViewingEstimate && settings.enableHsnCode && bill.items.some(i => i.hsnCode);
     const showMakingChargeColumnInPdf = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
 
     const itemsHtml = bill.items.map((item, index) => {
@@ -157,11 +188,11 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     <head>
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=PT+Sans:wght@400;700&display=swap');
-        body { font-family: 'PT Sans', sans-serif; color: ${color.text}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { font-family: 'PT Sans', sans-serif; color: ${color.text}; -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #ffffff !important; }
       </style>
     </head>
     <body>
-      <div id="bill-content-for-pdf" style="width: 794px; margin: 0 auto; background-color: #ffffff; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
+      <div id="bill-content-for-pdf" style="width: 794px; height: 1123px; margin: 0 auto; background-color: #ffffff !important; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
         
         <header>
             <div style="text-align: center; margin-bottom: 25px;">
@@ -266,30 +297,38 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
     }
     setIsGeneratingPdf(true);
 
-    const captureWrapper = document.createElement('div');
-    Object.assign(captureWrapper.style, {
-        position: 'fixed', left: '-9999px', top: '0px', width: '794px', 
-        backgroundColor: 'white', zIndex: '-1',
+    const tempContainer = document.createElement('div');
+    Object.assign(tempContainer.style, {
+        position: 'absolute',
+        left: '-9999px',
+        top: '0px',
+        width: '794px',
+        height: 'auto',
+        backgroundColor: 'white',
+        zIndex: '-1',
     });
-    document.body.appendChild(captureWrapper);
+    
+    // The HTML content itself defines a specific height, so we let the content dictate size.
+    tempContainer.innerHTML = generatePdfHtml().replace('height: 1123px;', 'height: auto;');
 
+    document.body.appendChild(tempContainer);
+    
     try {
-        captureWrapper.innerHTML = generatePdfHtml();
-        const billContentElementForCapture = captureWrapper.querySelector<HTMLElement>('#bill-content-for-pdf');
-
-        if (!billContentElementForCapture) {
-            alert("Critical Error: Could not find content to capture for PDF.");
-            throw new Error("PDF content element not found.");
+        const billContentElement = tempContainer.querySelector<HTMLElement>('#bill-content-for-pdf');
+        
+        if (!billContentElement) {
+            throw new Error("PDF content element could not be found in the temporary container.");
         }
         
-        // Wait for images and fonts to load
         await new Promise(resolve => setTimeout(resolve, 500)); 
 
-        const canvas = await html2canvas(billContentElementForCapture, {
-            scale: 2, 
+        const canvas = await html2canvas(billContentElement, {
+            scale: 2,
             useCORS: true,
             logging: false,
             backgroundColor: "#ffffff",
+            height: billContentElement.scrollHeight, // Capture the full scroll height
+            windowHeight: billContentElement.scrollHeight,
         });
 
         const imgData = canvas.toDataURL('image/png');
@@ -309,8 +348,8 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
         console.error("Error generating PDF:", error);
         alert(`An error occurred during PDF generation: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
-        if (captureWrapper.parentNode === document.body) {
-           document.body.removeChild(captureWrapper);
+        if (tempContainer.parentNode) {
+           tempContainer.parentNode.removeChild(tempContainer);
         }
         setIsGeneratingPdf(false);
     }
@@ -336,7 +375,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           <div className="shadow-lg" dangerouslySetInnerHTML={{ __html: billHtml }} />
         </div>
         <DialogFooter className="p-4 border-t mt-auto print-hidden">
-          <Button variant="outline" onClick={handleGeneratePdf} disabled={isGeneratingPdf} className="text-base px-5 py-2.5 h-auto">
+          <Button id="print-btn" variant="outline" onClick={handleGeneratePdf} disabled={isGeneratingPdf} className="text-base px-5 py-2.5 h-auto">
             {isGeneratingPdf ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
