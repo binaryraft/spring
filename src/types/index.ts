@@ -50,6 +50,7 @@ export interface Settings {
   pdfLogoPosition: PdfLogoPosition;
   enableGstReport: boolean;
   enableHsnCode: boolean;
+  enablePurchase: boolean;
 }
 
 export interface BillItem {
@@ -148,6 +149,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pdfLogoPosition: 'inline-left', 
   enableGstReport: true,
   enableHsnCode: true,
+  enablePurchase: true,
 };
 
 export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = [

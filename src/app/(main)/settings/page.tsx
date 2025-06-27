@@ -733,6 +733,10 @@ export default function SettingsPage() {
                           <Checkbox id="enableHsnCode" checked={localSettings.enableHsnCode} onCheckedChange={(checked) => handleChange('enableHsnCode', !!checked)} className="w-5 h-5"/>
                           <Label htmlFor="enableHsnCode" className="text-base font-medium leading-none cursor-pointer">Enable HSN Codes for Sales</Label>
                       </div>
+                       <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
+                          <Checkbox id="enablePurchase" checked={localSettings.enablePurchase} onCheckedChange={(checked) => handleChange('enablePurchase', !!checked)} className="w-5 h-5"/>
+                          <Label htmlFor="enablePurchase" className="text-base font-medium leading-none cursor-pointer">Enable Purchase Module</Label>
+                      </div>
                   </CardContent>
                 </Card>
               )}

@@ -46,13 +46,15 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
     const billingItems = useMemo(() => {
         const items = [
             { href: '/sales', label: 'Sales', icon: BadgeIndianRupee, color: 'text-success' },
-            { href: '/purchase', label: 'Purchases', icon: ShoppingBag, color: 'text-destructive' },
         ];
+        if (settings.enablePurchase) {
+          items.push({ href: '/purchase', label: 'Purchases', icon: ShoppingBag, color: 'text-destructive' });
+        }
         if (settings.enableGstReport) {
           items.push({ href: '/gst-report', label: 'GST Report', icon: FilePieChart });
         }
         return items;
-    }, [settings.enableGstReport]);
+    }, [settings.enableGstReport, settings.enablePurchase]);
 
 
     return (
