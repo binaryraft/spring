@@ -121,14 +121,14 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
     `;
 
     return `
-      <div id="bill-content-for-print" style="width: 210mm; min-height: 297mm; margin: 0 auto; background-color: #ffffff; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
+      <div id="bill-content-for-print" style="width: 210mm; margin: 0 auto; background-color: #ffffff; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
         
         <header>
             <div style="text-align: center; margin-bottom: 25px;">
                 ${logoImageHtml}
                 <h1 style="font-family: 'Playfair Display', serif; font-size: 26pt; margin: 0; color: ${color.primary};">${settings.companyName}</h1>
                 ${settings.slogan ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${settings.slogan}</p>` : ''}
-                <p style="margin: 6px 0 0 0; font-size: 9pt;">${settings.address}</p>
+                <p style="margin: 6px 0 0 0; font-size: 9pt;">${settings.place}</p>
                 <p style="margin: 2px 0 0 0; font-size: 9pt;">${settings.phoneNumber}</p>
                 ${!isViewingEstimate && settings.gstin ? `<p style="margin: 2px 0 0 0; font-size: 9pt; font-weight: bold;">GSTIN: ${settings.gstin}</p>` : ''}
             </div>
@@ -138,8 +138,9 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
                 <td style="width: 60%; vertical-align: top; border: 1px solid ${color.border}; padding: 10px;">
                   <p style="margin: 0 0 5px 0; font-size: 9pt; color: ${color.textMuted};">BILL TO</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt; color: ${color.text};">${bill.customerName || 'N/A'}</p>
-                  ${bill.customerAddress ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerAddress}</p>`: ''}
+                  ${bill.customerPlace ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerPlace}</p>`: ''}
                   ${bill.customerPhone ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerPhone}</p>`: ''}
+                  ${bill.customerGstin ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">GSTIN: ${bill.customerGstin}</p>`: ''}
                   
                 </td>
                 <td style="width: 40%; padding: 15px; text-align: right; vertical-align: top;">
@@ -160,7 +161,7 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
             </table>
         </main>
         
-        <footer style="padding-top: 10px;">
+        <footer style="padding-top: 10px; margin-top: auto;">
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
               <tr>
                 <td style="width: 55%; vertical-align: top; padding-right: 20px;">
@@ -221,14 +222,20 @@ export const directPrint = (bill: Bill, settings: Settings, getValuableById: (id
   
   printRoot.innerHTML = htmlContent;
 
+  const appRoot = document.getElementById('app-root');
+  if(appRoot) appRoot.style.display = 'none';
+  document.body.classList.add('print-capture-active');
+  
   if (window.electronAPI && typeof window.electronAPI.print === 'function') {
     window.electronAPI.print();
   } else {
     window.print();
   }
   
-  // Optional: Clean up after a delay in case onafterprint doesn't fire
+  // Optional: Clean up after a delay
   setTimeout(() => {
     printRoot.innerHTML = '';
-  }, 2000);
+    if(appRoot) appRoot.style.display = 'block';
+    document.body.classList.remove('print-capture-active');
+  }, 500);
 };

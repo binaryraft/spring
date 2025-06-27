@@ -21,7 +21,7 @@ interface AppContextType {
   removeProductSuggestion: (name: string) => void;
 
   bills: Bill[];
-  addBill: (bill: Omit<Bill, 'id' | 'date' | 'billNumber' | 'companyGstin'>) => Bill;
+  addBill: (bill: Omit<Bill, 'id' | 'date' | 'companyGstin'>) => Bill;
   updateBill: (updatedBill: Bill) => void;
   deleteBill: (billId: string) => void;
   getValuableById: (id: string) => Valuable | undefined;
@@ -75,7 +75,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setSettings(prev => ({
       ...prev,
-      valuables: [...prev.valuables, newFullValuable].sort((a, b) => a.name.localeCompare(b.name)),
+      valuables: [...prev.valuables, newFullValuable],
     }));
     return newFullValuable;
   }, [setSettings, settings.valuables]);
@@ -93,7 +93,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           return mergedData;
         }
         return v;
-      }).sort((a, b) => a.name.localeCompare(b.name)),
+      }),
     }));
   }, [setSettings]);
 
@@ -151,27 +151,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return settings.valuables.find(v => v.id === id);
   }, [settings.valuables]);
 
-  const addBill = useCallback((billData: Omit<Bill, 'id' | 'date' | 'billNumber' | 'companyGstin'>): Bill => {
-    const prefix = billData.type === 'sales-bill' ? 'S' : 'P';
-    const typeSpecificBills = bills.filter(b => b.type === billData.type);
-    
-    const billNumbers = typeSpecificBills
-        .map(b => parseInt(b.billNumber?.split('-').pop() || '0', 10))
-        .filter(num => !isNaN(num));
-
-    const nextBillNumberVal = (billNumbers.length > 0 ? Math.max(...billNumbers) + 1 : 1);
-    const nextBillNumber = nextBillNumberVal.toString().padStart(4, '0');
-
+  const addBill = useCallback((billData: Omit<Bill, 'id' | 'date' | 'companyGstin'>): Bill => {
     const newBill: Bill = {
       ...billData,
       id: uuidv4(),
       date: new Date().toISOString(),
-      billNumber: `${prefix}-${nextBillNumber}`,
       companyGstin: settings.gstin || undefined, 
     };
     setBills(prev => [newBill, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     return newBill;
-  }, [bills, setBills, settings.gstin]);
+  }, [setBills, settings.gstin]);
 
   const updateBill = useCallback((updatedBill: Bill) => {
     setBills(prev => prev.map(b => b.id === updatedBill.id ? { ...updatedBill, companyGstin: settings.gstin || undefined } : b).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));

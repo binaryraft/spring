@@ -444,8 +444,8 @@ export default function SettingsPage() {
                             </div>
                         </div>
                         <div>
-                          <Label htmlFor="address" className="text-base font-medium">Address</Label>
-                          <Input id="address" value={localSettings.address} onChange={(e) => handleChange('address', e.target.value)} className="mt-1.5 text-base h-11"/>
+                          <Label htmlFor="place" className="text-base font-medium">Place</Label>
+                          <Input id="place" value={localSettings.place} onChange={(e) => handleChange('place', e.target.value)} className="mt-1.5 text-base h-11"/>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>

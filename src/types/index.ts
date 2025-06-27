@@ -41,7 +41,7 @@ export interface ProductSuggestion {
 export interface Settings {
   companyName: string;
   slogan: string;
-  address: string;
+  place: string;
   phoneNumber: string;
   gstin?: string; 
   companyLogo?: string; 
@@ -86,12 +86,13 @@ export type BillType = 'purchase' | 'sales-bill';
 
 export interface Bill {
   id: string;
-  billNumber?: string;
+  billNumber: string;
   type: BillType;
   date: string; 
   customerName?: string;
-  customerAddress?: string;
+  customerPlace?: string;
   customerPhone?: string;
+  customerGstin?: string;
   items: BillItem[];
   subTotal: number; 
   discount?: number;
@@ -130,7 +131,7 @@ export const AVAILABLE_CURRENCIES: CurrencyDefinition[] = [
 export const DEFAULT_SETTINGS: Settings = {
   companyName: 'Your Company Name',
   slogan: 'Quality you can trust',
-  address: '123 Main St, City, Country',
+  place: '123 Main St, City, Country',
   phoneNumber: '+1234567890',
   gstin: '', 
   companyLogo: undefined,
