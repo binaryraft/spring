@@ -11,6 +11,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isToday, isThisMonth, isThisYear } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { directPrint } from '@/lib/print';
 
 
 interface BillManagementProps {
@@ -20,7 +21,7 @@ interface BillManagementProps {
 type Period = 'daily' | 'monthly' | 'yearly' | 'all';
 
 const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
-  const { bills } = useAppContext();
+  const { bills, settings, getValuableById } = useAppContext();
   const [period, setPeriod] = useState<Period>('daily');
   const [isFormVisible, setIsFormVisible] = useState(true);
   const [editingBill, setEditingBill] = useState<Bill | undefined>(undefined);
@@ -65,7 +66,7 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
   const handleSaveAndPrintBill = (savedBill: Bill) => {
     setEditingBill(undefined);
     setIsFormVisible(false);
-    handleViewBill(savedBill, false);
+    directPrint(savedBill, settings, getValuableById);
   };
 
   const handleEditBill = (bill: Bill) => {

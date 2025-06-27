@@ -116,10 +116,21 @@
 
 /* Ensure print styles do not get overridden by screen styles for color */
 @media print {
-  body.print-capture-active, body {
+  body.print-capture-active, body, #print-root {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    background: white !important;
   }
+  #app-root {
+    display: none;
+  }
+  #print-root {
+    display: block;
+  }
+}
+
+#print-root {
+  display: none;
 }
 
 /* Custom font styles removed as they are no longer loaded from Google Fonts */

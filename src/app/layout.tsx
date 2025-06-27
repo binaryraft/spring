@@ -20,7 +20,10 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <AppProvider>
-          {children}
+          <div id="app-root">
+            {children}
+          </div>
+          <div id="print-root" />
         </AppProvider>
       </body>
     </html>

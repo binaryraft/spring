@@ -1,4 +1,13 @@
 
+
+declare global {
+  interface Window {
+    electronAPI?: {
+      print: () => void;
+    };
+  }
+}
+
 export interface Valuable {
   id: string;
   name: string;
