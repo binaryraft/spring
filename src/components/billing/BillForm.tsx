@@ -302,7 +302,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     switch(billType) {
         case 'purchase': return <ShoppingBag className="mr-3 h-6 w-6 text-destructive"/>;
         case 'sales-bill': return <Users className="mr-3 h-6 w-6 text-success"/>;
-        case 'delivery-voucher': return <Truck className="mr-3 h-6 w-6 text-primary"/>;
+        case 'delivery-voucher': return <Truck className="mr-3 h-6 w-6 text-warning"/>;
         default: return null;
     }
   }, [billType]);
@@ -315,7 +315,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       <header className="flex items-center justify-between">
           <h1 className={cn(
               "font-headline text-3xl lg:text-4xl flex items-center",
-              isSalesBill ? 'text-success' : isPurchase ? 'text-destructive' : 'text-primary'
+              isSalesBill ? 'text-success' : isPurchase ? 'text-destructive' : 'text-warning'
           )}>
             <Calculator className="mr-3 h-8 w-8 lg:h-9 lg:w-9" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel}
           </h1>
@@ -512,7 +512,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       
       <div className={cn("grid grid-cols-1 gap-6", !isDeliveryVoucher && "lg:grid-cols-5")}>
         <Card className={cn(!isDeliveryVoucher ? "lg:col-span-3" : "w-full")}>
-            <CardHeader><CardTitle className="flex items-center text-xl font-headline"><StickyNote className={cn("mr-3 h-6 w-6", isSalesBill ? "text-success" : isPurchase ? "text-destructive" : "text-primary")}/>Notes</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center text-xl font-headline"><StickyNote className={cn("mr-3 h-6 w-6", isSalesBill ? "text-success" : isPurchase ? "text-destructive" : "text-warning")}/>Notes</CardTitle></CardHeader>
             <CardContent><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="text-base" rows={6} placeholder="Add any notes for the bill here..."/></CardContent>
         </Card>
         
@@ -541,7 +541,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           {onShowEstimate && isSalesBill && (<Button variant="outline" size="lg" onClick={handleShowEstimate} disabled={isSaving} className="h-12 text-base border-2 border-primary text-primary hover:bg-primary/10 hover:text-primary"><FileText className="mr-2.5 h-5 w-5" /> Create Estimate</Button>)}
           <Button 
             onClick={handleSubmit} 
-            variant={isSalesBill ? 'success' : isPurchase ? 'destructive' : 'default'} 
+            variant={isSalesBill ? 'success' : isPurchase ? 'destructive' : 'warning'} 
             size="lg" 
             className="h-12 text-base w-48" 
             disabled={isSaving}

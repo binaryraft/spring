@@ -50,7 +50,7 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
         if (settings.enablePurchase) {
           items.push({ href: '/purchase', label: 'Purchase Invoice', icon: ShoppingBag, color: 'text-destructive' });
         }
-        items.push({ href: '/delivery-voucher', label: 'Delivery Voucher', icon: Truck, color: 'text-primary' });
+        items.push({ href: '/delivery-voucher', label: 'Delivery Voucher', icon: Truck, color: 'text-warning' });
 
         if (settings.enableGstReport) {
           items.push({ href: '/gst-report', label: 'GST Report', icon: FilePieChart });

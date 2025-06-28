@@ -46,7 +46,7 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
     switch (billType) {
       case 'sales-bill': return 'success';
       case 'purchase': return 'destructive';
-      case 'delivery-voucher': return 'default';
+      case 'delivery-voucher': return 'warning';
       default: return 'default';
     }
   }, [billType]);
