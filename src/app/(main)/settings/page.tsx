@@ -765,9 +765,17 @@ export default function SettingsPage() {
                                   <Label htmlFor="ewayPassword" className="text-base font-medium">Password</Label>
                                   <Input id="ewayPassword" type="password" value={localSettings.ewayBillCredentials.password} onChange={(e) => handleNestedChange('ewayBillCredentials', 'password', e.target.value)} className="mt-1.5 text-base h-11"/>
                                 </div>
+                                <div>
+                                  <Label htmlFor="ewayApiKey" className="text-base font-medium">API Key</Label>
+                                  <Input id="ewayApiKey" value={localSettings.ewayBillCredentials.apiKey} onChange={(e) => handleNestedChange('ewayBillCredentials', 'apiKey', e.target.value)} className="mt-1.5 text-base h-11"/>
+                                </div>
+                                <div>
+                                  <Label htmlFor="ewayClientSecret" className="text-base font-medium">Client Secret</Label>
+                                  <Input id="ewayClientSecret" type="password" value={localSettings.ewayBillCredentials.clientSecret} onChange={(e) => handleNestedChange('ewayBillCredentials', 'clientSecret', e.target.value)} className="mt-1.5 text-base h-11"/>
+                                </div>
                               </div>
                               <p className="text-sm text-muted-foreground italic">
-                                Credentials for the E-Way Bill API (Kerala).
+                                These credentials are required for authenticating with the E-Way Bill API.
                               </p>
                           </div>
                         )}

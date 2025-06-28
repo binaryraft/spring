@@ -64,6 +64,8 @@ export interface Settings {
   ewayBillCredentials: {
     username: string;
     password?: string;
+    apiKey: string;
+    clientSecret: string;
   };
 }
 
@@ -170,6 +172,8 @@ export const DEFAULT_SETTINGS: Settings = {
   ewayBillCredentials: {
     username: '',
     password: '',
+    apiKey: '',
+    clientSecret: '',
   },
 };
 
