@@ -82,7 +82,7 @@ export interface BillItem {
   itemSgstAmount?: number;
 }
 
-export type BillType = 'purchase' | 'sales-bill';
+export type BillType = 'purchase' | 'sales-bill' | 'delivery-voucher';
 
 export interface Bill {
   id: string;

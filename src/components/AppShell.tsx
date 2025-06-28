@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarContent, SidebarHeader, SidebarInset, SidebarFooter, SidebarSeparator, useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Settings, Moon, Sun, PanelLeft, Gem, FilePieChart, BadgeIndianRupee, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, Settings, Moon, Sun, PanelLeft, Gem, FilePieChart, BadgeIndianRupee, ShoppingBag, Truck } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
 
@@ -45,11 +45,13 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
     
     const billingItems = useMemo(() => {
         const items = [
-            { href: '/sales', label: 'Sales', icon: BadgeIndianRupee, color: 'text-success' },
+            { href: '/sales', label: 'Sales Bill', icon: BadgeIndianRupee, color: 'text-success' },
         ];
         if (settings.enablePurchase) {
-          items.push({ href: '/purchase', label: 'Purchases', icon: ShoppingBag, color: 'text-destructive' });
+          items.push({ href: '/purchase', label: 'Purchase Invoice', icon: ShoppingBag, color: 'text-destructive' });
         }
+        items.push({ href: '/delivery-voucher', label: 'Delivery Voucher', icon: Truck, color: 'text-primary' });
+
         if (settings.enableGstReport) {
           items.push({ href: '/gst-report', label: 'GST Report', icon: FilePieChart });
         }

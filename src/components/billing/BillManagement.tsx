@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Bill, BillType } from '@/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, List } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import BillForm from './BillForm';
 import BillHistoryList from './BillHistoryList';
 import BillViewModal from './BillViewModal';
@@ -32,9 +32,25 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  const billTypeLabel = useMemo(() => {
+    switch (billType) {
+      case 'sales-bill': return 'Sales Bill';
+      case 'purchase': return 'Purchase Invoice';
+      case 'delivery-voucher': return 'Delivery Voucher';
+      default: return 'Bill';
+    }
+  }, [billType]);
 
-  const billTypeLabel = billType === 'sales-bill' ? 'Sell' : 'Purchase';
-  const billVariant = billType === 'sales-bill' ? 'success' : 'destructive';
+  const billVariant = useMemo(() => {
+    switch (billType) {
+      case 'sales-bill': return 'success';
+      case 'purchase': return 'destructive';
+      case 'delivery-voucher': return 'default';
+      default: return 'default';
+    }
+  }, [billType]);
+
 
   const filteredBills = useMemo(() => {
     const componentBills = bills.filter(bill => bill.type === billType);

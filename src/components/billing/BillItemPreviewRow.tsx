@@ -1,6 +1,6 @@
 
 "use client";
-import type { BillItem } from '@/types';
+import type { BillItem, BillType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Edit, Trash2 } from 'lucide-react';
@@ -11,15 +11,17 @@ interface BillItemPreviewRowProps {
   index: number;
   onEdit: () => void;
   onDelete: () => void;
-  isSalesBill: boolean;
+  billType: BillType;
 }
 
-export default function BillItemPreviewRow({ item, index, onEdit, onDelete, isSalesBill }: BillItemPreviewRowProps) {
+export default function BillItemPreviewRow({ item, index, onEdit, onDelete, billType }: BillItemPreviewRowProps) {
   const { settings, getValuableById } = useAppContext();
   const valuable = getValuableById(item.valuableId);
+  const isSalesBill = billType === 'sales-bill';
+  const isDeliveryVoucher = billType === 'delivery-voucher';
 
   const effectiveRate = (() => {
-    if (!isSalesBill) {
+    if (billType === 'purchase') {
       const marketPrice = valuable?.price || 0;
       switch (item.purchaseNetType) {
         case 'net_percentage':
@@ -53,11 +55,11 @@ export default function BillItemPreviewRow({ item, index, onEdit, onDelete, isSa
         <div className="font-bold text-base">{item.name}</div>
         <div className="text-sm text-muted-foreground">{valuable?.name}</div>
       </TableCell>
-      {isSalesBill && settings.enableHsnCode && <TableCell className="text-sm">{item.hsnCode || '-'}</TableCell>}
+      {(isSalesBill || isDeliveryVoucher) && settings.enableHsnCode && <TableCell className="text-sm">{item.hsnCode || '-'}</TableCell>}
       <TableCell className="text-right text-sm">{weightDisplay()}</TableCell>
-      <TableCell className="text-right text-sm">{settings.currencySymbol}{effectiveRate.toFixed(2)}</TableCell>
+      {!isDeliveryVoucher && <TableCell className="text-right text-sm">{settings.currencySymbol}{effectiveRate.toFixed(2)}</TableCell>}
       {isSalesBill && <TableCell className="text-right text-sm">{makingChargeDisplay()}</TableCell>}
-      <TableCell className="text-right font-bold text-base">{settings.currencySymbol}{item.amount.toFixed(2)}</TableCell>
+      {!isDeliveryVoucher && <TableCell className="text-right font-bold text-base">{settings.currencySymbol}{item.amount.toFixed(2)}</TableCell>}
       <TableCell className="text-center">
         <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10">
             <Edit className="h-4 w-4" />

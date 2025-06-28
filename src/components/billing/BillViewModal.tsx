@@ -40,7 +40,13 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
   
   if (!bill) return null;
 
-  const effectiveBillType = isViewingEstimate ? 'Estimate' : bill.type === 'purchase' ? 'Purchase Invoice' : 'Sales Bill';
+  const effectiveBillType = isViewingEstimate 
+    ? 'Estimate' 
+    : bill.type === 'delivery-voucher' 
+      ? 'Delivery Voucher' 
+      : bill.type === 'purchase' 
+        ? 'Purchase Invoice' 
+        : 'Sales Bill';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

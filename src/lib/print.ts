@@ -60,7 +60,8 @@ const getEffectiveRateForItem = (item: BillItem, bill: Bill, getValuableById: (i
 };
 
 export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById: (id: string) => Valuable | undefined, isViewingEstimate = false): string => {
-    const useColor = settings.enableColorBilling && !isViewingEstimate;
+    const isDeliveryVoucher = bill.type === 'delivery-voucher';
+    const useColor = settings.enableColorBilling && !isViewingEstimate && !isDeliveryVoucher;
     
     const color = {
       primary: useColor ? '#B58B5D' : '#000000',
@@ -72,15 +73,15 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
     };
     
     const pdfCurrencyDisplay = settings.currencySymbol === '₹' ? 'Rs. ' : settings.currencySymbol;
-    const effectiveBillType = isViewingEstimate ? 'Estimate' : (bill.type === 'sales-bill' ? 'Sales Bill' : 'Purchase Invoice');
+    const effectiveBillType = isViewingEstimate ? 'Estimate' : isDeliveryVoucher ? 'Delivery Voucher' : (bill.type === 'sales-bill' ? 'Sales Bill' : 'Purchase Invoice');
 
     const logoImageHtml = settings.showCompanyLogo && settings.companyLogo
       ? `<img src="${settings.companyLogo}" alt="Logo" style="max-width: 140px; max-height: 70px; object-fit: contain; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;">`
       : '';
 
     const showGstColumns = bill.type === 'sales-bill' && !isViewingEstimate;
-    const showHsnColumnInPdf = bill.type === 'sales-bill' && !isViewingEstimate && settings.enableHsnCode && bill.items.some(i => i.hsnCode);
-    const showMakingChargeColumnInPdf = bill.type === 'sales-bill' && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
+    const showHsnColumnInPdf = (bill.type === 'sales-bill' || isDeliveryVoucher) && !isViewingEstimate && settings.enableHsnCode && bill.items.some(i => i.hsnCode);
+    const showMakingChargeColumnInPdf = bill.type === 'sales-bill' && !isDeliveryVoucher && bill.items.some(i => i.makingCharge && i.makingCharge > 0);
 
     const itemsHtml = bill.items.map((item, index) => {
       const valuableDetails = getValuableById(item.valuableId);
@@ -95,9 +96,9 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
           </td>
           ${showHsnColumnInPdf ? `<td style="padding: 8px; text-align: center;">${item.hsnCode || '-'}</td>` : ''}
           <td style="padding: 8px; text-align: right;">${item.weightOrQuantity.toFixed(item.unit === 'carat' || item.unit === 'ct' ? 3 : 2)} ${item.unit}</td>
-          <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${effectiveRate.toFixed(2)}</td>
+          ${!isDeliveryVoucher ? `<td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${effectiveRate.toFixed(2)}</td>` : ''}
           ${showMakingChargeColumnInPdf ? `<td style="padding: 8px; text-align: right;">${item.makingCharge && item.makingCharge > 0 ? (item.makingChargeType === 'percentage' ? `${item.makingCharge}%` : pdfCurrencyDisplay + item.makingCharge.toFixed(2)) : '-'}</td>` : ''}
-          <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${item.amount.toFixed(2)}</td>
+          ${!isDeliveryVoucher ? `<td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${item.amount.toFixed(2)}</td>` : ''}
           ${showGstColumns ? `
             <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${(item.itemCgstAmount || 0).toFixed(2)}</td>
             <td style="padding: 8px; text-align: right;">${pdfCurrencyDisplay}${(item.itemSgstAmount || 0).toFixed(2)}</td>
@@ -111,15 +112,17 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
       <th style="padding: 10px 8px; text-align: left;">Item</th>
       ${showHsnColumnInPdf ? `<th style="padding: 10px 8px; text-align: center;">HSN</th>` : ''}
       <th style="padding: 10px 8px; text-align: right;">Qty/Wt</th>
-      <th style="padding: 10px 8px; text-align: right;">Rate</th>
+      ${!isDeliveryVoucher ? `<th style="padding: 10px 8px; text-align: right;">Rate</th>` : ''}
       ${showMakingChargeColumnInPdf ? `<th style="padding: 10px 8px; text-align: right;">MC</th>` : ''}
-      <th style="padding: 10px 8px; text-align: right;">Cost</th>
+      ${!isDeliveryVoucher ? `<th style="padding: 10px 8px; text-align: right;">Cost</th>` : ''}
       ${showGstColumns ? `
         <th style="padding: 10px 8px; text-align: right;">CGST (${settings.cgstRate}%)</th>
         <th style="padding: 10px 8px; text-align: right;">SGST (${settings.sgstRate}%)</th>
       ` : ''}
     `;
 
+    const customerLabel = isDeliveryVoucher ? 'DELIVER TO' : 'BILL TO';
+    
     return `
       <div id="bill-content-for-print" style="width: 210mm; margin: 0 auto; background-color: #ffffff; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
         
@@ -136,7 +139,7 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
               <tr>
                 <td style="width: 60%; vertical-align: top; border: 1px solid ${color.border}; padding: 10px;">
-                  <p style="margin: 0 0 5px 0; font-size: 9pt; color: ${color.textMuted};">BILL TO</p>
+                  <p style="margin: 0 0 5px 0; font-size: 9pt; color: ${color.textMuted};">${customerLabel}</p>
                   <p style="margin: 0; font-weight: bold; font-size: 11pt; color: ${color.text};">${bill.customerName || 'N/A'}</p>
                   ${bill.customerPlace ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerPlace}</p>`: ''}
                   ${bill.customerPhone ? `<p style="margin: 2px 0 0 0; font-size: 9pt;">${bill.customerPhone}</p>`: ''}
@@ -162,6 +165,7 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
         </main>
         
         <footer style="padding-top: 10px; margin-top: auto;">
+          ${!isDeliveryVoucher ? `
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
               <tr>
                 <td style="width: 55%; vertical-align: top; padding-right: 20px;">
@@ -198,6 +202,15 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
                 </td>
               </tr>
             </table>
+          ` : `
+            <div style="margin-top: 20px;">
+              ${bill.notes ? `
+                <h4 style="font-family: 'Playfair Display', serif; margin: 15px 0 5px 0; font-size: 10pt;">Notes</h4>
+                <p style="font-size: 8.5pt; white-space: pre-line;">${bill.notes}</p>
+              ` : ''}
+              <div style="margin-top: 20px; padding: 10px; border: 1px solid ${color.border}; text-align: center; font-size: 10pt;">This is a delivery voucher and not a tax invoice.</div>
+            </div>
+          `}
             
             <div style="margin-top: 50px; padding-top: 15px; display: flex; justify-content: space-between; align-items: flex-end;">
               <p style="font-size: 8.5pt; color: ${color.textMuted};">Thank you for your business! - ${settings.companyName}</p>
