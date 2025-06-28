@@ -60,6 +60,11 @@ export interface Settings {
   enableGstReport: boolean;
   enableHsnCode: boolean;
   enablePurchase: boolean;
+  enableEwayBill: boolean;
+  ewayBillCredentials: {
+    username: string;
+    password?: string;
+  };
 }
 
 export interface BillItem {
@@ -93,6 +98,7 @@ export interface Bill {
   customerPlace?: string;
   customerPhone?: string;
   customerGstin?: string;
+  ewayBillNumber?: string;
   items: BillItem[];
   subTotal: number; 
   discount?: number;
@@ -160,6 +166,11 @@ export const DEFAULT_SETTINGS: Settings = {
   enableGstReport: true,
   enableHsnCode: true,
   enablePurchase: true,
+  enableEwayBill: false,
+  ewayBillCredentials: {
+    username: '',
+    password: '',
+  },
 };
 
 export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = [

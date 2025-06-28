@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check, Wrench, GripVertical, Upload, Download, Database } from "lucide-react"; 
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check, Wrench, GripVertical, Upload, Download, Database, Network } from "lucide-react"; 
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "@/components/ValuableIcon";
@@ -312,6 +312,7 @@ export default function SettingsPage() {
     { id: 'products', label: 'Products & HSN', icon: Tag },
     { id: 'billing', label: 'Billing Defaults', icon: Package },
     { id: 'features', label: 'Features', icon: Wrench },
+    { id: 'eway', label: 'E-Way Bill', icon: Network },
     { id: 'data', label: 'Backup & Restore', icon: Database },
   ];
 
@@ -739,6 +740,39 @@ export default function SettingsPage() {
                       </div>
                   </CardContent>
                 </Card>
+              )}
+              {activeTab === 'eway' && (
+                  <Card className="shadow-lg border-border">
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
+                            <Network className="mr-3 h-6 w-6 text-primary"/> E-Way Bill Settings
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
+                            <Checkbox id="enableEwayBill" checked={localSettings.enableEwayBill} onCheckedChange={(checked) => handleChange('enableEwayBill', !!checked)} className="w-5 h-5"/>
+                            <Label htmlFor="enableEwayBill" className="text-base font-medium leading-none cursor-pointer">Enable E-Way Bill Feature</Label>
+                        </div>
+                        {localSettings.enableEwayBill && (
+                          <div className="space-y-4 pt-4 border-t">
+                              <h3 className="text-lg font-medium text-muted-foreground">API Credentials</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                  <Label htmlFor="ewayUsername" className="text-base font-medium">Username</Label>
+                                  <Input id="ewayUsername" value={localSettings.ewayBillCredentials.username} onChange={(e) => handleNestedChange('ewayBillCredentials', 'username', e.target.value)} className="mt-1.5 text-base h-11"/>
+                                </div>
+                                <div>
+                                  <Label htmlFor="ewayPassword" className="text-base font-medium">Password</Label>
+                                  <Input id="ewayPassword" type="password" value={localSettings.ewayBillCredentials.password} onChange={(e) => handleNestedChange('ewayBillCredentials', 'password', e.target.value)} className="mt-1.5 text-base h-11"/>
+                                </div>
+                              </div>
+                              <p className="text-sm text-muted-foreground italic">
+                                Credentials for the E-Way Bill API (Kerala).
+                              </p>
+                          </div>
+                        )}
+                    </CardContent>
+                  </Card>
               )}
               {activeTab === 'data' && (
                 <Card className="shadow-lg border-border">

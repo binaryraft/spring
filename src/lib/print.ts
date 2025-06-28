@@ -150,6 +150,7 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
                   <h2 style="font-family: 'Playfair Display', serif; font-size: 20pt; margin: 0 0 10px 0; color: ${color.text};">${effectiveBillType.toUpperCase()}</h2>
                   <p style="margin: 0; font-size: 9pt;"><span style="color: ${color.textMuted};">Bill #</span> ${bill.billNumber || 'N/A'}</p>
                   <p style="margin: 2px 0 0 0; font-size: 9pt;"><span style="color: ${color.textMuted};">Date:</span> ${format(new Date(bill.date), 'dd MMM, yyyy')}</p>
+                  ${bill.ewayBillNumber ? `<p style="margin: 2px 0 0 0; font-size: 9pt;"><span style="color: ${color.textMuted};">E-Way Bill:</span> ${bill.ewayBillNumber}</p>` : ''}
                 </td>
               </tr>
             </table>

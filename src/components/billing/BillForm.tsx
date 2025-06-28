@@ -38,6 +38,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const [customerPlace, setCustomerPlace] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerGstin, setCustomerGstin] = useState('');
+  const [ewayBillNumber, setEwayBillNumber] = useState('');
   const [items, setItems] = useState<BillItem[]>([]);
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -52,6 +53,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const customerPhoneRef = useRef<HTMLInputElement>(null);
   const customerPlaceRef = useRef<HTMLInputElement>(null);
   const customerGstinRef = useRef<HTMLInputElement>(null);
+  const ewayBillNumberRef = useRef<HTMLInputElement>(null);
   const materialSelectTriggerRef = useRef<HTMLButtonElement>(null);
   const productNameRef = useRef<HTMLInputElement>(null);
   const hsnCodeRef = useRef<HTMLInputElement>(null);
@@ -87,6 +89,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       setCustomerPlace(existingBill.customerPlace || '');
       setCustomerPhone(existingBill.customerPhone || '');
       setCustomerGstin(existingBill.customerGstin || '');
+      setEwayBillNumber(existingBill.ewayBillNumber || '');
       setItems(existingBill.items || []);
       setNotes(existingBill.notes || '');
     }
@@ -230,6 +233,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       customerPlace,
       customerPhone,
       customerGstin: isDeliveryVoucher ? '' : customerGstin,
+      ewayBillNumber: isDeliveryVoucher ? '' : ewayBillNumber,
       items: finalItems,
       subTotal,
       cgstAmount: billCgstAmount,
@@ -352,10 +356,18 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                 <Input id="customerPlace" value={customerPlace} onChange={(e) => setCustomerPlace(e.target.value)} className="mt-1.5 h-11 text-base" ref={customerPlaceRef} onKeyDown={e => handleKeyDown(e, customerGstinRef)}/>
               </div>
               {!isDeliveryVoucher && (
-                <div className="md:col-span-2">
-                  <Label htmlFor="customerGstin" className="text-base">{customerLabel} GSTIN</Label>
-                  <Input id="customerGstin" value={customerGstin} onChange={(e) => setCustomerGstin(e.target.value.toUpperCase())} className="mt-1.5 h-11 text-base" ref={customerGstinRef} onKeyDown={e => handleKeyDown(e, materialSelectTriggerRef)}/>
-                </div>
+                <>
+                    <div>
+                        <Label htmlFor="customerGstin" className="text-base">{customerLabel} GSTIN</Label>
+                        <Input id="customerGstin" value={customerGstin} onChange={(e) => setCustomerGstin(e.target.value.toUpperCase())} className="mt-1.5 h-11 text-base" ref={customerGstinRef} onKeyDown={e => handleKeyDown(e, settings.enableEwayBill ? ewayBillNumberRef : materialSelectTriggerRef)}/>
+                    </div>
+                    {settings.enableEwayBill && (
+                        <div>
+                            <Label htmlFor="ewayBillNumber" className="text-base">E-Way Bill Number</Label>
+                            <Input id="ewayBillNumber" value={ewayBillNumber} onChange={(e) => setEwayBillNumber(e.target.value)} className="mt-1.5 h-11 text-base" ref={ewayBillNumberRef} onKeyDown={e => handleKeyDown(e, materialSelectTriggerRef)}/>
+                        </div>
+                    )}
+                </>
               )}
           </div>
         </CardContent>
