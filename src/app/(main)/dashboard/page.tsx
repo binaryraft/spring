@@ -1,4 +1,3 @@
-
 "use client";
 import React from 'react';
 import Link from 'next/link';
@@ -15,7 +14,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-12">
       {/* Header Section */}
-      <div className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-8 shadow-2xl">
+      <div className="rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-8 shadow-xl border border-border">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="text-center md:text-left">
                 <h1 className="text-4xl lg:text-5xl font-bold font-headline tracking-tight">{settings.companyName}</h1>

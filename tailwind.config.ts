@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -11,11 +10,11 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['ui-sans-serif', 'system-ui', 'sans-serif'],
-        serif: ['ui-serif', 'Georgia', 'serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['Playfair Display', 'ui-serif', 'Georgia', 'serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
-        headline: ['ui-serif', 'Georgia', 'serif'], // Fallback to serif
-        body: ['ui-sans-serif', 'system-ui', 'sans-serif'], // Fallback to sans-serif
+        headline: ['Playfair Display', 'serif'],
+        body: ['Inter', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',

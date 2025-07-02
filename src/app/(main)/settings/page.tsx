@@ -1,7 +1,6 @@
-
 "use client";
 import { useAppContext } from "@/contexts/AppContext";
-import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition, PdfLogoPosition, ProductSuggestion } from "@/types";
+import type { Valuable, Settings, MakingChargeSetting, CurrencyDefinition, PdfLogoPosition, ProductSuggestion, ValuableIconType } from "@/types";
 import { AVAILABLE_ICONS, AVAILABLE_CURRENCIES } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,7 +90,7 @@ function SortableValuableCard({
                   <>
                   <div>
                       <Label htmlFor={`icon-select-${valuable.id}`} className="text-sm font-medium">Icon</Label>
-                      <Select value={valuable.icon} onValueChange={(newIcon) => handleLocalValuableChange(valuable.id, 'icon', newIcon)}>
+                      <Select value={valuable.icon} onValueChange={(newIcon) => handleLocalValuableChange(valuable.id, 'icon', newIcon as ValuableIconType)}>
                           <SelectTrigger id={`icon-select-${valuable.id}`} className="mt-1.5 h-11 text-base"><SelectValue placeholder="Select icon" /></SelectTrigger>
                           <SelectContent>
                               {AVAILABLE_ICONS.map(iconOpt => (<SelectItem key={iconOpt.value} value={iconOpt.value} className="text-base py-2 flex items-center"><ValuableIcon valuableType={iconOpt.value} className="w-5 h-5 mr-3" color={iconOpt.value === 'custom-gem' ? valuable.iconColor : undefined} /> {iconOpt.label}</SelectItem>))}
@@ -563,7 +562,7 @@ export default function SettingsPage() {
                                 </div>
                                 <div>
                                     <Label htmlFor="customMaterialIcon" className="text-base font-medium">Icon</Label>
-                                    <Select value={customMaterialForm.icon} onValueChange={val => handleCustomMaterialFormChange('icon', val as Valuable['icon'])}>
+                                    <Select value={customMaterialForm.icon} onValueChange={val => handleCustomMaterialFormChange('icon', val as ValuableIconType)}>
                                         <SelectTrigger className="mt-1.5 h-11 text-base"> <SelectValue placeholder="Select icon" /></SelectTrigger>
                                         <SelectContent>
                                             {AVAILABLE_ICONS.map(icon => (

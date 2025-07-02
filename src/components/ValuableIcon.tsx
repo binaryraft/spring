@@ -1,11 +1,10 @@
-
-import type { Valuable } from "@/types";
+import type { ValuableIconType } from "@/types";
 import { Gem, Circle, Award, Droplet, Leaf, Zap, Package } from "lucide-react"; // Added more icons
 import GoldCoinIcon from "./icons/GoldCoinIcon";
 import SilverCoinIcon from "./icons/SilverCoinIcon";
 
 interface ValuableIconProps {
-  valuableType: Valuable['icon'];
+  valuableType: ValuableIconType;
   color?: string;
   className?: string;
 }

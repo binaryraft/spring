@@ -1,4 +1,3 @@
-
 import type { Bill, BillItem, Settings, Valuable } from '@/types';
 import { format } from 'date-fns';
 
@@ -88,7 +87,7 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
       const effectiveRate = getEffectiveRateForItem(item, bill, getValuableById);
       
       return `
-        <tr style="font-family: 'PT Sans', sans-serif; font-size: 9pt; border-bottom: 1px solid ${color.border};">
+        <tr style="font-family: 'Inter', sans-serif; font-size: 9pt; border-bottom: 1px solid ${color.border};">
           <td style="padding: 8px; text-align: center;">${index + 1}</td>
           <td style="padding: 8px; font-weight: bold; color: ${color.text};">
             ${item.name}
@@ -195,7 +194,7 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
                         <td style="padding: 6px 0; text-align: right;">${pdfCurrencyDisplay}${(bill.sgstAmount || 0).toFixed(2)}</td>
                       </tr>
                     ` : ''}
-                    <tr style="font-family: 'PT Sans', sans-serif; font-weight: bold;">
+                    <tr style="font-family: 'Inter', sans-serif; font-weight: bold;">
                       <td style="padding: 12px 10px; border-top: 2px solid ${color.primary}; font-size: 14pt; color: ${color.primary};">GRAND TOTAL</td>
                       <td style="padding: 12px 10px; text-align: right; border-top: 2px solid ${color.primary}; font-size: 14pt; color: ${color.primary};">${pdfCurrencyDisplay}${bill.totalAmount.toFixed(2)}</td>
                     </tr>
@@ -236,20 +235,16 @@ export const directPrint = (bill: Bill, settings: Settings, getValuableById: (id
   
   printRoot.innerHTML = htmlContent;
 
-  const appRoot = document.getElementById('app-root');
-  if(appRoot) appRoot.style.display = 'none';
-  document.body.classList.add('print-capture-active');
-  
   if (window.electronAPI && typeof window.electronAPI.print === 'function') {
     window.electronAPI.print();
   } else {
     window.print();
   }
   
-  // Optional: Clean up after a delay
+  // Clean up the print root after a delay to ensure printing process has started.
   setTimeout(() => {
-    printRoot.innerHTML = '';
-    if(appRoot) appRoot.style.display = 'block';
-    document.body.classList.remove('print-capture-active');
-  }, 500);
+    if (printRoot) {
+        printRoot.innerHTML = '';
+    }
+  }, 1000);
 };

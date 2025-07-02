@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Bill, BillItem, BillType } from '@/types';
@@ -416,7 +415,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       <Card>
           <CardHeader><CardTitle className="flex items-center text-xl font-headline"><Edit className="mr-3 h-6 w-6 text-primary"/>{isEditing ? `Editing Item #${(editingItemIndex ?? 0) + 1}` : 'Add New Item'}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-             <div className="grid grid-cols-1 md:grid-cols-10 gap-4 items-start">
+             <div className="grid grid-cols-1 md:grid-cols-9 gap-4 items-start">
                 <div className="md:col-span-2 space-y-1.5">
                     <Label>Material</Label>
                     <Select value={currentItem.valuableId || ''} onValueChange={handleValuableSelect}>
@@ -438,9 +437,9 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                     <datalist id={datalistId}>{settings.productSuggestions.map(p => <option key={p.name} value={p.name} />)}</datalist>
                     {(isSalesBill || isDeliveryVoucher) && settings.enableHsnCode && <Input placeholder="HSN Code" value={currentItem.hsnCode || ''} onChange={e => handleItemFormChange('hsnCode', e.target.value)} className="h-9 text-sm mt-1" ref={hsnCodeRef} onKeyDown={e => handleKeyDown(e, qtyWtRef)}/>}
                 </div>
-                <div className="md:col-span-2 space-y-1.5">
-                    <Label>{`Qty / ${getValuableById(currentItem.valuableId || '')?.unit || 'Wt'}`}</Label>
-                    <Input type="number" value={currentItem.weightOrQuantity || ''} onChange={(e) => handleItemFormChange('weightOrQuantity', parseFloat(e.target.value))} className="h-11 text-base" ref={qtyWtRef} onKeyDown={e => handleKeyDown(e, addItemButtonRef)}/>
+                <div className="md:col-span-1 space-y-1.5">
+                    <Label>{`Qty / Wt`}</Label>
+                    <Input type="number" value={currentItem.weightOrQuantity || ''} onChange={(e) => handleItemFormChange('weightOrQuantity', parseFloat(e.target.value))} className="h-11 text-base" ref={qtyWtRef} onKeyDown={e => handleKeyDown(e, addItemButtonRef)} min="0"/>
                 </div>
                 
                 {!isDeliveryVoucher && (
@@ -456,15 +455,15 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                                   </SelectContent>
                               </Select>
                               {currentItem.purchaseNetType === 'net_percentage' ? (
-                                  <Input type="number" placeholder="%" value={currentItem.purchaseNetPercentValue || ''} onChange={(e) => handleItemFormChange('purchaseNetPercentValue', parseFloat(e.target.value))} className="h-11 text-base mt-1" />
+                                  <Input type="number" placeholder="%" value={currentItem.purchaseNetPercentValue || ''} onChange={(e) => handleItemFormChange('purchaseNetPercentValue', parseFloat(e.target.value))} className="h-11 text-base mt-1" min="0"/>
                               ) : (
-                                  <Input type="number" placeholder={`Rate in ${settings.currencySymbol}`} value={currentItem.purchaseNetFixedValue || ''} onChange={(e) => handleItemFormChange('purchaseNetFixedValue', parseFloat(e.target.value))} className="h-11 text-base mt-1" />
+                                  <Input type="number" placeholder={`Rate in ${settings.currencySymbol}`} value={currentItem.purchaseNetFixedValue || ''} onChange={(e) => handleItemFormChange('purchaseNetFixedValue', parseFloat(e.target.value))} className="h-11 text-base mt-1" min="0"/>
                               )}
                           </div>
                       ) : ( // isSalesBill
                           <div>
                               <Label>Rate ({settings.currencySymbol})</Label>
-                              <Input type="number" value={currentItem.rate || ''} onChange={(e) => handleItemFormChange('rate', parseFloat(e.target.value))} className="h-11 text-base"/>
+                              <Input type="number" value={currentItem.rate || ''} onChange={(e) => handleItemFormChange('rate', parseFloat(e.target.value))} className="h-11 text-base" min="0"/>
                               <div className="mt-2">
                                   <Label className="text-sm font-medium text-muted-foreground">MC</Label>
                                   <div className="flex items-center gap-2 mt-1">
@@ -504,6 +503,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                                           value={currentItem.makingCharge || ''} 
                                           onChange={(e) => handleItemFormChange('makingCharge', parseFloat(e.target.value))} 
                                           className="h-9 text-sm w-full" 
+                                          min="0"
                                       />
                                   </div>
                               </div>

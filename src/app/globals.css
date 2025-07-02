@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -122,22 +123,19 @@
 
 /* Ensure print styles do not get overridden by screen styles for color */
 @media print {
-  body.print-capture-active, body, #print-root {
+  body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     background: white !important;
   }
   #app-root {
-    display: none;
+    display: none !important;
   }
   #print-root {
-    display: block;
+    display: block !important;
   }
 }
 
 #print-root {
   display: none;
 }
-
-/* Custom font styles removed as they are no longer loaded from Google Fonts */
-    

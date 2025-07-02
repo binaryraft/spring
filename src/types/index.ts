@@ -1,5 +1,4 @@
 
-
 declare global {
   interface Window {
     electronAPI?: {
@@ -8,12 +7,27 @@ declare global {
   }
 }
 
+export const AVAILABLE_ICONS = [
+    { value: 'gold', label: 'Gold Coin' },
+    { value: 'silver', label: 'Silver Coin' },
+    { value: 'diamond', label: 'Diamond (Clear)' },
+    { value: 'ruby', label: 'Ruby (Red Gem)' },
+    { value: 'emerald', label: 'Emerald (Green Gem)' },
+    { value: 'sapphire', label: 'Sapphire (Blue Gem)' },
+    { value: 'pearl', label: 'Pearl' },
+    { value: 'platinum', label: 'Platinum Badge' },
+    { value: 'custom-gem', label: 'Custom Gem (Specify Color)' },
+    { value: 'other', label: 'Other/Generic' },
+] as const;
+
+export type ValuableIconType = typeof AVAILABLE_ICONS[number]['value'];
+
 export interface Valuable {
   id: string;
   name: string;
   price: number;
   lastUpdated?: string;
-  icon: string; 
+  icon: ValuableIconType; 
   iconColor?: string; 
   selectedInHeader: boolean;
   unit: string; 
@@ -176,16 +190,3 @@ export const DEFAULT_SETTINGS: Settings = {
     clientSecret: '',
   },
 };
-
-export const AVAILABLE_ICONS: Array<{value: Valuable['icon'], label: string}> = [
-    { value: 'gold', label: 'Gold Coin' },
-    { value: 'silver', label: 'Silver Coin' },
-    { value: 'diamond', label: 'Diamond (Clear)' },
-    { value: 'ruby', label: 'Ruby (Red Gem)' },
-    { value: 'emerald', label: 'Emerald (Green Gem)' },
-    { value: 'sapphire', label: 'Sapphire (Blue Gem)' },
-    { value: 'pearl', label: 'Pearl' },
-    { value: 'platinum', label: 'Platinum Badge' },
-    { value: 'custom-gem', label: 'Custom Gem (Specify Color)' },
-    { value: 'other', label: 'Other/Generic' },
-];
