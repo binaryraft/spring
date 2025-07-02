@@ -235,16 +235,17 @@ export const directPrint = (bill: Bill, settings: Settings, getValuableById: (id
   
   printRoot.innerHTML = htmlContent;
 
-  if (window.electronAPI && typeof window.electronAPI.print === 'function') {
+  const isElectron = window.electronAPI && typeof window.electronAPI.print === 'function';
+
+  if (isElectron) {
     window.electronAPI.print();
   } else {
     window.print();
   }
   
-  // Clean up the print root after a delay to ensure printing process has started.
   setTimeout(() => {
     if (printRoot) {
         printRoot.innerHTML = '';
     }
-  }, 1000);
+  }, 1500);
 };
