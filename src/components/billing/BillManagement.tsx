@@ -80,12 +80,16 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
 
 
   const handleSaveAndPrintBill = (savedBill: Bill) => {
+    // This function synchronously calls window.print() for browsers
     directPrint(savedBill, settings, getValuableById);
-    // Use a timeout to ensure the print dialog doesn't get interrupted by the component unmounting.
-    setTimeout(() => {
-      setEditingBill(undefined);
-      setIsFormVisible(false);
-    }, 50);
+    
+    // To prevent the React re-render from cancelling the print dialog,
+    // we defer the navigation state update until after the current browser frame has been painted.
+    // This gives the print dialog a chance to appear before the component unmounts.
+    requestAnimationFrame(() => {
+        setEditingBill(undefined);
+        setIsFormVisible(false);
+    });
   };
 
   const handleEditBill = (bill: Bill) => {
