@@ -50,7 +50,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[95vh] flex flex-col text-base w-full max-w-screen-xl"> 
+      <DialogContent className="h-[95vh] flex flex-col text-base w-full max-w-screen-xl"> 
         <DialogHeader className="print-hidden pb-4 border-b">
           <DialogTitle className="font-headline text-2xl lg:text-3xl text-primary">
             {effectiveBillType}
