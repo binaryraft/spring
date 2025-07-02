@@ -60,8 +60,12 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, isOpen, onClose, is
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-grow overflow-y-auto bg-muted/30 p-4"> 
-          <div className="shadow-lg bg-white" dangerouslySetInnerHTML={{ __html: billHtml }} />
+        <div className="flex-grow overflow-hidden bg-muted/30 p-4"> 
+          <iframe 
+            srcDoc={billHtml}
+            title="Bill Preview"
+            className="w-full h-full border-0 shadow-lg bg-white"
+          />
         </div>
         <DialogFooter className="p-4 border-t mt-auto print-hidden">
           <Button id="print-btn" variant="outline" onClick={handlePrint} className="text-base px-5 py-2.5 h-auto">

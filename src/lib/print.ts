@@ -122,8 +122,8 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
 
     const customerLabel = isDeliveryVoucher ? 'DELIVER TO' : 'BILL TO';
     
-    return `
-      <div id="bill-content-for-print" style="width: 210mm; margin: 0 auto; background-color: #ffffff; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column;">
+    const billContent = `
+      <div id="bill-content-for-print" style="width: 210mm; margin: 0 auto; background-color: #ffffff; padding: 40px; box-sizing: border-box; font-size: 10pt; display: flex; flex-direction: column; min-height: 100vh;">
         
         <header>
             <div style="text-align: center; margin-bottom: 25px;">
@@ -222,30 +222,74 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
         </footer>
       </div>
     `;
+
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>${effectiveBillType} - ${bill.billNumber || 'N/A'}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+          <style>
+            body { font-family: 'Inter', sans-serif; margin: 0; }
+            @media print {
+              body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+               @page {
+                size: A4;
+                margin: 0;
+              }
+            }
+          </style>
+      </head>
+      <body>
+        ${billContent}
+      </body>
+      </html>
+    `;
 };
 
 export const directPrint = (bill: Bill, settings: Settings, getValuableById: (id: string) => Valuable | undefined, isEstimate = false) => {
   const htmlContent = generateBillHtml(bill, settings, getValuableById, isEstimate);
   
-  const printRoot = document.getElementById('print-root');
-  if (!printRoot) {
-    console.error('Print root element not found.');
-    return;
-  }
-  
-  printRoot.innerHTML = htmlContent;
-
   const isElectron = window.electronAPI && typeof window.electronAPI.print === 'function';
 
   if (isElectron) {
-    window.electronAPI.print();
-  } else {
-    window.print();
-  }
-  
-  setTimeout(() => {
-    if (printRoot) {
-        printRoot.innerHTML = '';
+    const printRoot = document.getElementById('print-root');
+    if (!printRoot) {
+      console.error('Print root element not found.');
+      return;
     }
-  }, 1500);
+    
+    // Electron can handle the full HTML document within the print-root
+    printRoot.innerHTML = htmlContent;
+    window.electronAPI.print();
+    
+    setTimeout(() => {
+      if (printRoot) {
+          printRoot.innerHTML = '';
+      }
+    }, 1500);
+  } else {
+    // For browsers, open a new window and print from there
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close(); // Necessary for some browsers to finish loading
+        
+        // Wait for the content to fully load before printing
+        printWindow.onload = () => {
+            printWindow.focus(); // Focus the new window
+            printWindow.print();
+            // Don't close automatically, as browser behavior varies.
+            // The user can close it manually.
+        };
+    } else {
+        alert('Could not open print window. Please check your pop-up blocker settings.');
+    }
+  }
 };
