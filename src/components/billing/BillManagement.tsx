@@ -81,8 +81,11 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
 
   const handleSaveAndPrintBill = (savedBill: Bill) => {
     directPrint(savedBill, settings, getValuableById);
-    setEditingBill(undefined);
-    setIsFormVisible(false);
+    // Use a timeout to ensure the print dialog doesn't get interrupted by the component unmounting.
+    setTimeout(() => {
+      setEditingBill(undefined);
+      setIsFormVisible(false);
+    }, 50);
   };
 
   const handleEditBill = (bill: Bill) => {

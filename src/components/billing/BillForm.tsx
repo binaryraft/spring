@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, List, Loader2, Edit, Banknote, StickyNote, ListOrdered, Truck } from 'lucide-react';
+import { PlusCircle, Save, Calculator, FileText, XCircle, Users, ShoppingBag, List, Edit, Banknote, StickyNote, ListOrdered, Truck } from 'lucide-react';
 import BillItemPreviewRow from './BillItemPreviewRow';
 import { v4 as uuidv4 } from 'uuid';
 import { Separator } from '../ui/separator';
@@ -40,8 +40,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const [ewayBillNumber, setEwayBillNumber] = useState('');
   const [items, setItems] = useState<BillItem[]>([]);
   const [notes, setNotes] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
+  
   // Item form state
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [currentItem, setCurrentItem] = useState<Partial<BillItem>>({});
@@ -240,8 +239,6 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       totalAmount: finalTotalAmount,
       notes,
     };
-    
-    setIsSaving(true);
     
     finalItems.forEach(item => {
       if (item.name && (isSalesBill || isDeliveryVoucher) && settings.enableHsnCode) {
@@ -547,18 +544,17 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       </div>
       
       <footer className="flex justify-end space-x-4 border-t pt-6 mt-6">
-        {existingBill && (<Button variant="outline" size="lg" onClick={onCancel} className="h-12 text-base" disabled={isSaving}><XCircle className="mr-2 h-5 w-5" /> Cancel</Button>)}
+        {existingBill && (<Button variant="outline" size="lg" onClick={onCancel} className="h-12 text-base"><XCircle className="mr-2 h-5 w-5" /> Cancel</Button>)}
         <div className="flex items-center space-x-4">
-          {onShowEstimate && isSalesBill && (<Button variant="outline" size="lg" onClick={handleShowEstimate} disabled={isSaving} className="h-12 text-base border-2 border-primary text-primary hover:bg-primary/10 hover:text-primary"><FileText className="mr-2.5 h-5 w-5" /> Create Estimate</Button>)}
+          {onShowEstimate && isSalesBill && (<Button variant="outline" size="lg" onClick={handleShowEstimate} className="h-12 text-base border-2 border-primary text-primary hover:bg-primary/10 hover:text-primary"><FileText className="mr-2.5 h-5 w-5" /> Create Estimate</Button>)}
           <Button 
             onClick={handleSubmit} 
             variant={isSalesBill ? 'success' : isPurchase ? 'destructive' : 'warning'} 
             size="lg" 
-            className="h-12 text-base w-48" 
-            disabled={isSaving}
+            className="h-12 text-base w-48"
           >
-            {isSaving ? (<Loader2 className="mr-2.5 h-5 w-5 animate-spin" />) : (<Save className="mr-2.5 h-5 w-5" />)}
-            {isSaving ? 'Saving...' : `${existingBill ? 'Update' : 'Save'} & Print`}
+            <Save className="mr-2.5 h-5 w-5" />
+            {`${existingBill ? 'Update' : 'Save'} & Print`}
           </Button>
         </div>
       </footer>
