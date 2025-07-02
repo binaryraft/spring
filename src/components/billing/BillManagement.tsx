@@ -80,9 +80,9 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
 
 
   const handleSaveAndPrintBill = (savedBill: Bill) => {
+    directPrint(savedBill, settings, getValuableById);
     setEditingBill(undefined);
     setIsFormVisible(false);
-    directPrint(savedBill, settings, getValuableById);
   };
 
   const handleEditBill = (bill: Bill) => {

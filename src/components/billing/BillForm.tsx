@@ -242,23 +242,22 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
     };
     
     setIsSaving(true);
-    setTimeout(() => {
-      finalItems.forEach(item => {
-        if (item.name && (isSalesBill || isDeliveryVoucher) && settings.enableHsnCode) {
-          addOrUpdateProductSuggestion(item.name.trim(), item.hsnCode || '');
-        }
-      });
-
-      let savedBill;
-      if (existingBill) {
-        savedBill = { ...existingBill, ...billDetails };
-        updateBill(savedBill);
-      } else {
-        savedBill = addBill(billDetails);
+    
+    finalItems.forEach(item => {
+      if (item.name && (isSalesBill || isDeliveryVoucher) && settings.enableHsnCode) {
+        addOrUpdateProductSuggestion(item.name.trim(), item.hsnCode || '');
       }
-      onSaveAndPrint(savedBill);
-      setIsSaving(false);
-    }, 700);
+    });
+
+    let savedBill;
+    if (existingBill) {
+      savedBill = { ...existingBill, ...billDetails };
+      updateBill(savedBill);
+    } else {
+      savedBill = addBill(billDetails);
+    }
+    
+    onSaveAndPrint(savedBill);
   };
   
   const handleShowEstimate = () => {
