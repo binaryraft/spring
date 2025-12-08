@@ -149,7 +149,8 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
                   <h2 style="font-family: 'Playfair Display', serif; font-size: 20pt; margin: 0 0 10px 0; color: ${color.text};">${effectiveBillType.toUpperCase()}</h2>
                   <p style="margin: 0; font-size: 9pt;"><span style="color: ${color.textMuted};">Bill #</span> ${bill.billNumber || 'N/A'}</p>
                   <p style="margin: 2px 0 0 0; font-size: 9pt;"><span style="color: ${color.textMuted};">Date:</span> ${format(new Date(bill.date), 'dd MMM, yyyy')}</p>
-                  ${bill.ewayBillNumber ? `<p style="margin: 2px 0 0 0; font-size: 9pt;"><span style="color: ${color.textMuted};">E-Way Bill:</span> ${bill.ewayBillNumber}</p>` : ''}
+                  ${!isDeliveryVoucher && !isViewingEstimate && bill.trn ? `<p style="margin: 2px 0 0 0; font-size: 8pt;"><span style="color: ${color.textMuted};">TRN:</span> ${bill.trn}</p>` : ''}
+                  ${!isDeliveryVoucher && !isViewingEstimate && bill.irn ? `<p style="margin: 2px 0 0 0; font-size: 8pt;"><span style="color: ${color.textMuted};">IRN:</span> ${bill.irn}</p>` : ''}
                 </td>
               </tr>
             </table>
@@ -171,6 +172,7 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
                 <td style="width: 55%; vertical-align: top; padding-right: 20px;">
                    <p style="font-size: 9pt; font-weight: bold;">Amount in Words:</p>
                    <p style="font-size: 9pt; margin: 2px 0;">${numberToWords(bill.totalAmount)}</p>
+                   ${!isViewingEstimate && bill.reverseCharge ? `<p style="font-size: 8pt; color: ${color.textMuted}; margin-top: 8px;">Tax is payable on reverse charge basis.</p>` : ''}
                    ${bill.notes ? `
                     <h4 style="font-family: 'Playfair Display', serif; margin: 15px 0 5px 0; font-size: 10pt;">Notes</h4>
                     <p style="font-size: 8.5pt; white-space: pre-line;">${bill.notes}</p>
@@ -211,6 +213,13 @@ export const generateBillHtml = (bill: Bill, settings: Settings, getValuableById
               <div style="margin-top: 20px; padding: 10px; border: 1px solid ${color.border}; text-align: center; font-size: 10pt;">This is a delivery voucher and not a tax invoice.</div>
             </div>
           `}
+          
+          ${!isDeliveryVoucher && !isViewingEstimate && bill.transporterName ? `
+            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid ${color.border}; font-size: 9pt;">
+                <p style="margin:0; font-weight: bold;">Transporter Details:</p>
+                <p style="margin:2px 0 0 0;">Name: ${bill.transporterName} | Vehicle: ${bill.vehicleNumber || 'N/A'} | Mode: ${bill.modeOfTransport || 'N/A'}</p>
+            </div>
+          ` : ''}
             
             <div style="margin-top: 50px; padding-top: 15px; display: flex; justify-content: space-between; align-items: flex-end;">
               <p style="font-size: 8.5pt; color: ${color.textMuted};">Thank you for your business! - ${settings.companyName}</p>
@@ -265,7 +274,6 @@ export const directPrint = (bill: Bill, settings: Settings, getValuableById: (id
       return;
     }
     
-    // Electron can handle the full HTML document within the print-root
     printRoot.innerHTML = htmlContent;
     window.electronAPI.print();
     
@@ -275,19 +283,15 @@ export const directPrint = (bill: Bill, settings: Settings, getValuableById: (id
       }
     }, 1500);
   } else {
-    // For browsers, open a new window and print from there
     const printWindow = window.open('', '_blank');
     if (printWindow) {
         printWindow.document.write(htmlContent);
-        printWindow.document.close(); // Necessary for some browsers to finish loading
-        
-        // Wait for the content to fully load before printing
-        printWindow.onload = () => {
-            printWindow.focus(); // Focus the new window
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
             printWindow.print();
-            // Don't close automatically, as browser behavior varies.
-            // The user can close it manually.
-        };
+            // printWindow.close();
+        }, 250);
     } else {
         alert('Could not open print window. Please check your pop-up blocker settings.');
     }

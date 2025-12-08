@@ -311,7 +311,6 @@ export default function SettingsPage() {
     { id: 'products', label: 'Products & HSN', icon: Tag },
     { id: 'billing', label: 'Billing Defaults', icon: Package },
     { id: 'features', label: 'Features', icon: Wrench },
-    { id: 'eway', label: 'E-Way Bill', icon: Network },
     { id: 'data', label: 'Backup & Restore', icon: Database },
   ];
 
@@ -737,49 +736,16 @@ export default function SettingsPage() {
                           <Checkbox id="enablePurchase" checked={localSettings.enablePurchase} onCheckedChange={(checked) => handleChange('enablePurchase', !!checked)} className="w-5 h-5"/>
                           <Label htmlFor="enablePurchase" className="text-base font-medium leading-none cursor-pointer">Enable Purchase Module</Label>
                       </div>
+                      <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
+                          <Checkbox id="enableEwayBill" checked={localSettings.enableEwayBill} onCheckedChange={(checked) => handleChange('enableEwayBill', !!checked)} className="w-5 h-5"/>
+                          <Label htmlFor="enableEwayBill" className="text-base font-medium leading-none cursor-pointer">Enable E-Way Bill Feature</Label>
+                      </div>
+                      <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
+                          <Checkbox id="enableGstInvoicing" checked={localSettings.enableGstInvoicing} onCheckedChange={(checked) => handleChange('enableGstInvoicing', !!checked)} className="w-5 h-5"/>
+                          <Label htmlFor="enableGstInvoicing" className="text-base font-medium leading-none cursor-pointer">Enable GST Invoicing Features (TRN, IRN, etc.)</Label>
+                      </div>
                   </CardContent>
                 </Card>
-              )}
-              {activeTab === 'eway' && (
-                  <Card className="shadow-lg border-border">
-                    <CardHeader>
-                        <CardTitle className="flex items-center text-xl lg:text-2xl font-headline">
-                            <Network className="mr-3 h-6 w-6 text-primary"/> E-Way Bill Settings
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
-                            <Checkbox id="enableEwayBill" checked={localSettings.enableEwayBill} onCheckedChange={(checked) => handleChange('enableEwayBill', !!checked)} className="w-5 h-5"/>
-                            <Label htmlFor="enableEwayBill" className="text-base font-medium leading-none cursor-pointer">Enable E-Way Bill Feature</Label>
-                        </div>
-                        {localSettings.enableEwayBill && (
-                          <div className="space-y-4 pt-4 border-t">
-                              <h3 className="text-lg font-medium text-muted-foreground">API Credentials</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                  <Label htmlFor="ewayUsername" className="text-base font-medium">Username</Label>
-                                  <Input id="ewayUsername" value={localSettings.ewayBillCredentials.username} onChange={(e) => handleNestedChange('ewayBillCredentials', 'username', e.target.value)} className="mt-1.5 text-base h-11"/>
-                                </div>
-                                <div>
-                                  <Label htmlFor="ewayPassword" className="text-base font-medium">Password</Label>
-                                  <Input id="ewayPassword" type="password" value={localSettings.ewayBillCredentials.password} onChange={(e) => handleNestedChange('ewayBillCredentials', 'password', e.target.value)} className="mt-1.5 text-base h-11"/>
-                                </div>
-                                <div>
-                                  <Label htmlFor="ewayApiKey" className="text-base font-medium">API Key</Label>
-                                  <Input id="ewayApiKey" value={localSettings.ewayBillCredentials.apiKey} onChange={(e) => handleNestedChange('ewayBillCredentials', 'apiKey', e.target.value)} className="mt-1.5 text-base h-11"/>
-                                </div>
-                                <div>
-                                  <Label htmlFor="ewayClientSecret" className="text-base font-medium">Client Secret</Label>
-                                  <Input id="ewayClientSecret" type="password" value={localSettings.ewayBillCredentials.clientSecret} onChange={(e) => handleNestedChange('ewayBillCredentials', 'clientSecret', e.target.value)} className="mt-1.5 text-base h-11"/>
-                                </div>
-                              </div>
-                              <p className="text-sm text-muted-foreground italic">
-                                These credentials are required for authenticating with the E-Way Bill API.
-                              </p>
-                          </div>
-                        )}
-                    </CardContent>
-                  </Card>
               )}
               {activeTab === 'data' && (
                 <Card className="shadow-lg border-border">

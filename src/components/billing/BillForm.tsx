@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ValuableIcon from '../ValuableIcon';
 import { Table, TableBody, TableHeader, TableRow, TableHead } from '@/components/ui/table';
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from '../ui/checkbox';
 
 interface BillFormProps {
   billType: BillType;
@@ -40,6 +41,12 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const [ewayBillNumber, setEwayBillNumber] = useState('');
   const [items, setItems] = useState<BillItem[]>([]);
   const [notes, setNotes] = useState('');
+  const [trn, setTrn] = useState('');
+  const [irn, setIrn] = useState('');
+  const [transporterName, setTransporterName] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [modeOfTransport, setModeOfTransport] = useState('');
+  const [reverseCharge, setReverseCharge] = useState(false);
   
   // Item form state
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
@@ -90,6 +97,12 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       setEwayBillNumber(existingBill.ewayBillNumber || '');
       setItems(existingBill.items || []);
       setNotes(existingBill.notes || '');
+      setTrn(existingBill.trn || '');
+      setIrn(existingBill.irn || '');
+      setTransporterName(existingBill.transporterName || '');
+      setVehicleNumber(existingBill.vehicleNumber || '');
+      setModeOfTransport(existingBill.modeOfTransport || '');
+      setReverseCharge(existingBill.reverseCharge || false);
     }
     setCurrentItem(getBlankItem());
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -238,6 +251,12 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       sgstAmount: billSgstAmount,
       totalAmount: finalTotalAmount,
       notes,
+      trn: isDeliveryVoucher ? '' : trn,
+      irn: isDeliveryVoucher ? '' : irn,
+      transporterName: isDeliveryVoucher ? '' : transporterName,
+      vehicleNumber: isDeliveryVoucher ? '' : vehicleNumber,
+      modeOfTransport: isDeliveryVoucher ? '' : modeOfTransport,
+      reverseCharge: isDeliveryVoucher ? false : reverseCharge,
     };
     
     finalItems.forEach(item => {
@@ -275,6 +294,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         totalAmount: subTotal, // No taxes on estimate
         cgstAmount: 0,
         sgstAmount: 0,
+        reverseCharge: false,
       };
       onShowEstimate(estimateBillForView);
   };
@@ -333,7 +353,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
               <div>
                 <Label htmlFor="billNumber" className="text-base">{billTypeLabel} Number</Label>
                 <Input id="billNumber" value={billNumber} onChange={(e) => setBillNumber(e.target.value)} className="mt-1.5 h-11 text-base font-bold" ref={billNumberRef} onKeyDown={e => handleKeyDown(e, customerNameRef)}/>
@@ -367,6 +387,44 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
           </div>
         </CardContent>
       </Card>
+
+      {!isDeliveryVoucher && settings.enableGstInvoicing && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-headline">GST &amp; Transport Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+              <div>
+                <Label htmlFor="trn" className="text-base">TRN</Label>
+                <Input id="trn" value={trn} onChange={(e) => setTrn(e.target.value)} className="mt-1.5 h-11 text-base"/>
+              </div>
+              <div>
+                <Label htmlFor="irn" className="text-base">IRN</Label>
+                <Input id="irn" value={irn} onChange={(e) => setIrn(e.target.value)} className="mt-1.5 h-11 text-base"/>
+              </div>
+              <div className="flex items-end">
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="reverseCharge" checked={reverseCharge} onCheckedChange={(checked) => setReverseCharge(!!checked)} />
+                    <Label htmlFor="reverseCharge" className="text-base font-medium">Reverse Charge Applicable</Label>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="transporterName" className="text-base">Transporter Name</Label>
+                <Input id="transporterName" value={transporterName} onChange={(e) => setTransporterName(e.target.value)} className="mt-1.5 h-11 text-base"/>
+              </div>
+              <div>
+                <Label htmlFor="vehicleNumber" className="text-base">Vehicle Number</Label>
+                <Input id="vehicleNumber" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} className="mt-1.5 h-11 text-base"/>
+              </div>
+              <div>
+                <Label htmlFor="modeOfTransport" className="text-base">Mode of Transport</Label>
+                <Input id="modeOfTransport" value={modeOfTransport} onChange={(e) => setModeOfTransport(e.target.value)} className="mt-1.5 h-11 text-base"/>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       {/* Items Preview */}
       <Card>

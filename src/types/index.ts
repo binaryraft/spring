@@ -1,4 +1,3 @@
-
 declare global {
   interface Window {
     electronAPI?: {
@@ -75,6 +74,7 @@ export interface Settings {
   enableHsnCode: boolean;
   enablePurchase: boolean;
   enableEwayBill: boolean;
+  enableGstInvoicing: boolean;
   ewayBillCredentials: {
     username: string;
     password?: string;
@@ -124,7 +124,13 @@ export interface Bill {
   sgstAmount?: number; 
   totalAmount: number; 
   notes?: string;
-  companyGstin?: string; 
+  companyGstin?: string;
+  trn?: string;
+  irn?: string;
+  transporterName?: string;
+  vehicleNumber?: string;
+  modeOfTransport?: string;
+  reverseCharge: boolean;
 }
 
 export const DEFAULT_VALUABLES: Valuable[] = [
@@ -183,6 +189,7 @@ export const DEFAULT_SETTINGS: Settings = {
   enableHsnCode: true,
   enablePurchase: true,
   enableEwayBill: false,
+  enableGstInvoicing: false,
   ewayBillCredentials: {
     username: '',
     password: '',
