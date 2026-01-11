@@ -339,8 +339,8 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   
   const billTypeTitle = useMemo(() => {
     switch(billType) {
-      case 'purchase': return 'Purchase Invoice';
-      case 'sales-bill': return 'Sales Bill';
+      case 'purchase': return 'Purchase';
+      case 'sales-bill': return 'Sales';
       case 'delivery-voucher': return 'Delivery Voucher';
       default: return 'Bill';
     }
@@ -415,51 +415,53 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
                         <Label htmlFor="customerGstin" className="text-base">{customerLabel} GSTIN</Label>
                         <Input id="customerGstin" value={customerGstin} onChange={(e) => setCustomerGstin(e.target.value.toUpperCase())} className="mt-1.5 h-11 text-base" ref={customerGstinRef} onKeyDown={e => handleKeyDown(e, settings.enableEwayBill ? ewayBillNumberRef : materialSelectTriggerRef)}/>
                     </div>
-                    {settings.enableEwayBill && (
-                        <div>
-                            <Label htmlFor="ewayBillNumber" className="text-base">E-Way Bill Number</Label>
-                            <Input id="ewayBillNumber" value={ewayBillNumber} onChange={(e) => setEwayBillNumber(e.target.value)} className="mt-1.5 h-11 text-base" ref={ewayBillNumberRef} onKeyDown={e => handleKeyDown(e, materialSelectTriggerRef)}/>
-                        </div>
-                    )}
                 </>
               )}
           </div>
         </CardContent>
       </Card>
 
-      {!isDeliveryVoucher && settings.enableGstInvoicing && (
+      {!isDeliveryVoucher && (settings.enableGstInvoicing || settings.enableEwayBill) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-headline">GST &amp; Transport Details</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-              <div>
-                <Label htmlFor="trn" className="text-base">TRN</Label>
-                <Input id="trn" value={trn} onChange={(e) => setTrn(e.target.value)} className="mt-1.5 h-11 text-base"/>
-              </div>
-              <div>
-                <Label htmlFor="irn" className="text-base">IRN</Label>
-                <Input id="irn" value={irn} onChange={(e) => setIrn(e.target.value)} className="mt-1.5 h-11 text-base"/>
-              </div>
-              <div className="flex items-end">
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="reverseCharge" checked={reverseCharge} onCheckedChange={(checked) => setReverseCharge(!!checked)} />
-                    <Label htmlFor="reverseCharge" className="text-base font-medium">Reverse Charge Applicable</Label>
+              {settings.enableGstInvoicing && <>
+                <div>
+                  <Label htmlFor="trn" className="text-base">TRN</Label>
+                  <Input id="trn" value={trn} onChange={(e) => setTrn(e.target.value)} className="mt-1.5 h-11 text-base"/>
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="transporterName" className="text-base">Transporter Name</Label>
-                <Input id="transporterName" value={transporterName} onChange={(e) => setTransporterName(e.target.value)} className="mt-1.5 h-11 text-base"/>
-              </div>
-              <div>
-                <Label htmlFor="vehicleNumber" className="text-base">Vehicle Number</Label>
-                <Input id="vehicleNumber" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} className="mt-1.5 h-11 text-base"/>
-              </div>
-              <div>
-                <Label htmlFor="modeOfTransport" className="text-base">Mode of Transport</Label>
-                <Input id="modeOfTransport" value={modeOfTransport} onChange={(e) => setModeOfTransport(e.target.value)} className="mt-1.5 h-11 text-base"/>
-              </div>
+                <div>
+                  <Label htmlFor="irn" className="text-base">IRN</Label>
+                  <Input id="irn" value={irn} onChange={(e) => setIrn(e.target.value)} className="mt-1.5 h-11 text-base"/>
+                </div>
+                <div className="flex items-end">
+                  <div className="flex items-center space-x-2">
+                      <Checkbox id="reverseCharge" checked={reverseCharge} onCheckedChange={(checked) => setReverseCharge(!!checked)} />
+                      <Label htmlFor="reverseCharge" className="text-base font-medium">Reverse Charge Applicable</Label>
+                  </div>
+                </div>
+              </>}
+              {settings.enableEwayBill && <>
+                <div>
+                    <Label htmlFor="ewayBillNumber" className="text-base">E-Way Bill Number</Label>
+                    <Input id="ewayBillNumber" value={ewayBillNumber} onChange={(e) => setEwayBillNumber(e.target.value)} className="mt-1.5 h-11 text-base" ref={ewayBillNumberRef} onKeyDown={e => handleKeyDown(e, materialSelectTriggerRef)}/>
+                </div>
+                <div>
+                  <Label htmlFor="transporterName" className="text-base">Transporter Name</Label>
+                  <Input id="transporterName" value={transporterName} onChange={(e) => setTransporterName(e.target.value)} className="mt-1.5 h-11 text-base"/>
+                </div>
+                <div>
+                  <Label htmlFor="vehicleNumber" className="text-base">Vehicle Number</Label>
+                  <Input id="vehicleNumber" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} className="mt-1.5 h-11 text-base"/>
+                </div>
+                <div>
+                  <Label htmlFor="modeOfTransport" className="text-base">Mode of Transport</Label>
+                  <Input id="modeOfTransport" value={modeOfTransport} onChange={(e) => setModeOfTransport(e.target.value)} className="mt-1.5 h-11 text-base"/>
+                </div>
+              </>}
             </div>
           </CardContent>
         </Card>

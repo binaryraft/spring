@@ -19,7 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check, Wrench, GripVertical, Upload, Download, Database, Network } from "lucide-react"; 
+import { Settings as SettingsIcon, Save, PlusCircle, Trash2, XCircle, Info, Tag, Package, Percent, Banknote, CreditCard, Edit3, Palette, Paintbrush, Loader2, Check, Wrench, GripVertical, Upload, Download, Database, Network, Construction } from "lucide-react"; 
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ValuableIcon from "@/components/ValuableIcon";
@@ -29,6 +29,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Badge } from "@/components/ui/badge";
 
 function SortableValuableCard({ 
     valuable, 
@@ -726,7 +727,7 @@ export default function SettingsPage() {
                   <CardContent className="space-y-6">
                       <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
                           <Checkbox id="enableGstReport" checked={localSettings.enableGstReport} onCheckedChange={(checked) => handleChange('enableGstReport', !!checked)} className="w-5 h-5"/>
-                          <Label htmlFor="enableGstReport" className="text-base font-medium leading-none cursor-pointer">Enable GST Report</Label>
+                          <Label htmlFor="enableGstReport" className="text-base font-medium leading-none cursor-pointer">Enable Reports Module</Label>
                       </div>
                       <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
                           <Checkbox id="enableHsnCode" checked={localSettings.enableHsnCode} onCheckedChange={(checked) => handleChange('enableHsnCode', !!checked)} className="w-5 h-5"/>
@@ -736,13 +737,25 @@ export default function SettingsPage() {
                           <Checkbox id="enablePurchase" checked={localSettings.enablePurchase} onCheckedChange={(checked) => handleChange('enablePurchase', !!checked)} className="w-5 h-5"/>
                           <Label htmlFor="enablePurchase" className="text-base font-medium leading-none cursor-pointer">Enable Purchase Module</Label>
                       </div>
-                      <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
-                          <Checkbox id="enableEwayBill" checked={localSettings.enableEwayBill} onCheckedChange={(checked) => handleChange('enableEwayBill', !!checked)} className="w-5 h-5"/>
-                          <Label htmlFor="enableEwayBill" className="text-base font-medium leading-none cursor-pointer">Enable E-Way Bill Feature</Label>
+                      <div className="flex items-center justify-between space-x-3.5 p-3 bg-muted/30 rounded-md">
+                          <div className="flex items-center space-x-3.5">
+                            <Checkbox id="enableEwayBill" checked={false} disabled className="w-5 h-5"/>
+                            <Label htmlFor="enableEwayBill" className="text-base font-medium leading-none text-muted-foreground">Enable E-Way Bill Feature</Label>
+                          </div>
+                          <Badge variant="outline" className="text-xs font-semibold bg-yellow-100 text-yellow-800 border-yellow-300">
+                            <Construction className="mr-1.5 h-3.5 w-3.5" />
+                            Coming Soon
+                          </Badge>
                       </div>
-                      <div className="flex items-center space-x-3.5 p-3 bg-muted/30 rounded-md">
-                          <Checkbox id="enableGstInvoicing" checked={localSettings.enableGstInvoicing} onCheckedChange={(checked) => handleChange('enableGstInvoicing', !!checked)} className="w-5 h-5"/>
-                          <Label htmlFor="enableGstInvoicing" className="text-base font-medium leading-none cursor-pointer">Enable GST Invoicing Features (TRN, IRN, etc.)</Label>
+                      <div className="flex items-center justify-between space-x-3.5 p-3 bg-muted/30 rounded-md">
+                          <div className="flex items-center space-x-3.5">
+                            <Checkbox id="enableGstInvoicing" checked={false} disabled className="w-5 h-5"/>
+                            <Label htmlFor="enableGstInvoicing" className="text-base font-medium leading-none text-muted-foreground">Enable GST Invoicing Features (TRN, IRN, etc.)</Label>
+                          </div>
+                          <Badge variant="outline" className="text-xs font-semibold bg-yellow-100 text-yellow-800 border-yellow-300">
+                            <Construction className="mr-1.5 h-3.5 w-3.5" />
+                            Coming Soon
+                          </Badge>
                       </div>
                   </CardContent>
                 </Card>
