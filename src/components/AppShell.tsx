@@ -54,7 +54,7 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
         // { href: '/delivery-voucher', label: 'Delivery Voucher', icon: Truck, color: 'text-warning' },
 
         if (settings.enableGstReport) {
-          items.push({ href: '/gst-report', label: 'Reports', icon: FilePieChart });
+          items.push({ href: '/reports', label: 'Reports', icon: FilePieChart });
         }
         return items;
     }, [settings.enableGstReport, settings.enablePurchase]);
