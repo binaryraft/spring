@@ -1,27 +1,33 @@
 
 "use client";
 
-import type { Bill } from '@/types';
+import type { BillItem } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { format } from 'date-fns';
 
+type GstReportItem = BillItem & {
+    billDate: string;
+    billNumber: string;
+    customerName?: string;
+};
+
 interface GstReportTableProps {
-  bills: Bill[];
+  items: GstReportItem[];
 }
 
-const GstReportTable: React.FC<GstReportTableProps> = ({ bills }) => {
+const GstReportTable: React.FC<GstReportTableProps> = ({ items }) => {
   const { settings } = useAppContext();
 
-  if (bills.length === 0) {
-    return <p className="text-muted-foreground p-6 text-center text-lg">No sales bills found for the selected period.</p>;
+  if (items.length === 0) {
+    return <p className="text-muted-foreground p-6 text-center text-lg">No sales items found for the selected period.</p>;
   }
 
-  const totals = bills.reduce((acc, bill) => {
-    acc.taxable += bill.subTotal;
-    acc.cgst += bill.cgstAmount || 0;
-    acc.sgst += bill.sgstAmount || 0;
-    acc.totalTax += (bill.cgstAmount || 0) + (bill.sgstAmount || 0);
+  const totals = items.reduce((acc, item) => {
+    acc.taxable += item.amount;
+    acc.cgst += item.itemCgstAmount || 0;
+    acc.sgst += item.itemSgstAmount || 0;
+    acc.totalTax += (item.itemCgstAmount || 0) + (item.itemSgstAmount || 0);
     return acc;
   }, { taxable: 0, cgst: 0, sgst: 0, totalTax: 0 });
 
@@ -30,27 +36,30 @@ const GstReportTable: React.FC<GstReportTableProps> = ({ bills }) => {
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
-            <TableHead className="text-base">Bill No.</TableHead>
             <TableHead className="text-base">Date</TableHead>
-            <TableHead className="text-base">Customer</TableHead>
-            <TableHead className="text-right text-base">Cost</TableHead>
+            <TableHead className="text-base">Product (HSN)</TableHead>
+            <TableHead className="text-base">Bill No.</TableHead>
+            <TableHead className="text-right text-base">Taxable</TableHead>
             <TableHead className="text-right text-base">CGST (${settings.cgstRate}%)</TableHead>
             <TableHead className="text-right text-base">SGST (${settings.sgstRate}%)</TableHead>
             <TableHead className="text-right text-base">Total Tax</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {bills.map((bill) => (
-            <TableRow key={bill.id} className="text-base hover:bg-primary/5">
-              <TableCell className="font-medium">{bill.billNumber || 'N/A'}</TableCell>
-              <TableCell>{format(new Date(bill.date), 'dd/MM/yyyy')}</TableCell>
-              <TableCell>{bill.customerName || 'N/A'}</TableCell>
-              <TableCell className="text-right">{settings.currencySymbol}{bill.subTotal.toFixed(2)}</TableCell>
-              <TableCell className="text-right">{settings.currencySymbol}{(bill.cgstAmount || 0).toFixed(2)}</TableCell>
-              <TableCell className="text-right">{settings.currencySymbol}{(bill.sgstAmount || 0).toFixed(2)}</TableCell>
-              <TableCell className="text-right">{settings.currencySymbol}{((bill.cgstAmount || 0) + (bill.sgstAmount || 0)).toFixed(2)}</TableCell>
-            </TableRow>
-          ))}
+          {items.map((item) => {
+            const totalTax = (item.itemCgstAmount || 0) + (item.itemSgstAmount || 0);
+            return (
+              <TableRow key={item.id} className="text-base hover:bg-primary/5">
+                <TableCell>{format(new Date(item.billDate), 'dd/MM/yyyy')}</TableCell>
+                <TableCell className="font-medium">{item.name}{item.hsnCode ? ` (${item.hsnCode})`: ''}</TableCell>
+                <TableCell>{item.billNumber || 'N/A'}</TableCell>
+                <TableCell className="text-right">{settings.currencySymbol}{item.amount.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{settings.currencySymbol}{(item.itemCgstAmount || 0).toFixed(2)}</TableCell>
+                <TableCell className="text-right">{settings.currencySymbol}{(item.itemSgstAmount || 0).toFixed(2)}</TableCell>
+                <TableCell className="text-right">{settings.currencySymbol}{totalTax.toFixed(2)}</TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
         <TableFooter className="bg-muted font-bold text-base">
             <TableRow>

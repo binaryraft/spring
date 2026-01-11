@@ -10,10 +10,18 @@ import { DatePicker } from '@/components/ui/date-picker';
 import GstReportTable from '@/components/reports/GstReportTable';
 import { FilePieChart, Printer } from 'lucide-react';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, getYear, getMonth, setYear, setMonth, format, isWithinInterval } from 'date-fns';
-import type { Bill } from '@/types';
+import type { Bill, BillItem } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type PeriodType = 'monthly' | 'yearly' | 'custom';
+
+// A new type for flattened items for the report
+type GstReportItem = BillItem & {
+    billDate: string;
+    billNumber: string;
+    customerName?: string;
+};
+
 
 const GstReportPage = () => {
     const { bills, settings } = useAppContext();
@@ -50,7 +58,7 @@ const GstReportPage = () => {
 
     const salesBills = useMemo(() => bills.filter(b => b.type === 'sales-bill'), [bills]);
 
-    const filteredBills = useMemo(() => {
+    const filteredItems = useMemo(() => {
         let startDate: Date;
         let endDate: Date;
 
@@ -71,40 +79,56 @@ const GstReportPage = () => {
                 return [];
             }
         }
-
-        return salesBills.filter(bill => {
+        
+        const relevantBills = salesBills.filter(bill => {
             const billDate = new Date(bill.date);
             return isWithinInterval(billDate, { start: startDate, end: endDate });
-        }).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        });
+
+        // Flatten the items from the filtered bills
+        const items: GstReportItem[] = relevantBills.flatMap(bill => 
+            bill.items.map(item => ({
+                ...item,
+                billDate: bill.date,
+                billNumber: bill.billNumber,
+                customerName: bill.customerName,
+            }))
+        ).sort((a,b) => new Date(b.billDate).getTime() - new Date(a.billDate).getTime());
+
+        return items;
+
     }, [periodType, selectedMonth, selectedYear, customStartDate, customEndDate, salesBills]);
 
     const handlePrint = () => {
-        if (selectedMonth === undefined || selectedYear === undefined) return;
+        if (!isClient) return;
         
         const reportTitle = periodType === 'monthly' ? `${months.find(m=>m.value === selectedMonth)?.label} ${selectedYear}` :
                             periodType === 'yearly' ? `Year ${selectedYear}` :
                             customStartDate && customEndDate ? `${format(customStartDate, 'PPP')} to ${format(customEndDate, 'PPP')}`:
                             `Custom Range`;
         
-        const totals = filteredBills.reduce((acc, bill) => {
-            acc.taxable += bill.subTotal;
-            acc.cgst += bill.cgstAmount || 0;
-            acc.sgst += bill.sgstAmount || 0;
-            acc.totalTax += (bill.cgstAmount || 0) + (bill.sgstAmount || 0);
+        const totals = filteredItems.reduce((acc, item) => {
+            acc.taxable += item.amount;
+            acc.cgst += item.itemCgstAmount || 0;
+            acc.sgst += item.itemSgstAmount || 0;
+            acc.totalTax += (item.itemCgstAmount || 0) + (item.itemSgstAmount || 0);
             return acc;
         }, { taxable: 0, cgst: 0, sgst: 0, totalTax: 0 });
 
-        const itemsHtml = filteredBills.map((bill) => `
-            <tr>
-              <td style="border: 1px solid #ddd; padding: 6px;">${bill.billNumber || 'N/A'}</td>
-              <td style="border: 1px solid #ddd; padding: 6px;">${format(new Date(bill.date), 'dd/MM/yyyy')}</td>
-              <td style="border: 1px solid #ddd; padding: 6px;">${bill.customerName || 'N/A'}</td>
-              <td style="border: 1px solid #ddd; padding: 6px; text-align: right;">${settings.currencySymbol}${bill.subTotal.toFixed(2)}</td>
-              <td style="border: 1px solid #ddd; padding: 6px; text-align: right;">${settings.currencySymbol}${(bill.cgstAmount || 0).toFixed(2)}</td>
-              <td style="border: 1px solid #ddd; padding: 6px; text-align: right;">${settings.currencySymbol}${(bill.sgstAmount || 0).toFixed(2)}</td>
-              <td style="border: 1px solid #ddd; padding: 6px; text-align: right;">${settings.currencySymbol}${((bill.cgstAmount || 0) + (bill.sgstAmount || 0)).toFixed(2)}</td>
-            </tr>
-        `).join('');
+        const itemsHtml = filteredItems.map((item) => {
+            const totalTax = (item.itemCgstAmount || 0) + (item.itemSgstAmount || 0);
+            return `
+                <tr>
+                  <td style="border: 1px solid #ddd; padding: 6px;">${format(new Date(item.billDate), 'dd/MM/yyyy')}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px;">${item.name}${item.hsnCode ? ` (${item.hsnCode})` : ''}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px;">${item.billNumber || 'N/A'}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px; text-align: right;">${settings.currencySymbol}${item.amount.toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px; text-align: right;">${settings.currencySymbol}${(item.itemCgstAmount || 0).toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px; text-align: right;">${settings.currencySymbol}${(item.itemSgstAmount || 0).toFixed(2)}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px; text-align: right;">${settings.currencySymbol}${totalTax.toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('');
 
         const printHtml = `
             <html>
@@ -125,10 +149,10 @@ const GstReportPage = () => {
                     <table>
                         <thead>
                             <tr>
-                                <th style="border: 1px solid #ddd; padding: 6px;">Bill No.</th>
                                 <th style="border: 1px solid #ddd; padding: 6px;">Date</th>
-                                <th style="border: 1px solid #ddd; padding: 6px;">Customer</th>
-                                <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">Cost</th>
+                                <th style="border: 1px solid #ddd; padding: 6px;">Product (HSN)</th>
+                                <th style="border: 1px solid #ddd; padding: 6px;">Bill No.</th>
+                                <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">Taxable</th>
                                 <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">CGST (${settings.cgstRate}%)</th>
                                 <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">SGST (${settings.sgstRate}%)</th>
                                 <th style="border: 1px solid #ddd; padding: 6px; text-align: right;">Total Tax</th>
@@ -271,7 +295,7 @@ const GstReportPage = () => {
                  <h2 className="text-2xl font-headline text-center my-4">
                     GST Report for {getReportTitle()}
                 </h2>
-                <GstReportTable bills={filteredBills} />
+                <GstReportTable items={filteredItems} />
             </div>
 
         </div>
