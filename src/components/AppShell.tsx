@@ -45,15 +45,16 @@ const AppShellContent: React.FC<{ children: React.ReactNode }> = ({ children }) 
     
     const billingItems = useMemo(() => {
         const items = [
-            { href: '/sales', label: 'Sales Bill', icon: BadgeIndianRupee, color: 'text-success' },
+            { href: '/sales', label: 'Sales', icon: BadgeIndianRupee, color: 'text-success' },
         ];
         if (settings.enablePurchase) {
-          items.push({ href: '/purchase', label: 'Purchase Invoice', icon: ShoppingBag, color: 'text-destructive' });
+          items.push({ href: '/purchase', label: 'Purchase', icon: ShoppingBag, color: 'text-destructive' });
         }
-        items.push({ href: '/delivery-voucher', label: 'Delivery Voucher', icon: Truck, color: 'text-warning' });
+        // The delivery voucher is hidden as per user request.
+        // { href: '/delivery-voucher', label: 'Delivery Voucher', icon: Truck, color: 'text-warning' },
 
         if (settings.enableGstReport) {
-          items.push({ href: '/gst-report', label: 'GST Report', icon: FilePieChart });
+          items.push({ href: '/gst-report', label: 'Reports', icon: FilePieChart });
         }
         return items;
     }, [settings.enableGstReport, settings.enablePurchase]);

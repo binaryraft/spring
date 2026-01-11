@@ -16,6 +16,7 @@ import ValuableIcon from '../ValuableIcon';
 import { Table, TableBody, TableHeader, TableRow, TableHead } from '@/components/ui/table';
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from '../ui/checkbox';
+import { format, isSameDay } from 'date-fns';
 
 interface BillFormProps {
   billType: BillType;
@@ -26,7 +27,7 @@ interface BillFormProps {
 }
 
 const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPrint, onCancel, onShowEstimate }) => {
-  const { settings, addBill, updateBill, addOrUpdateProductSuggestion, getValuableById } = useAppContext();
+  const { settings, addBill, updateBill, addOrUpdateProductSuggestion, getValuableById, bills } = useAppContext();
 
   const isSalesBill = billType === 'sales-bill';
   const isPurchase = billType === 'purchase';
@@ -64,6 +65,31 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
   const hsnCodeRef = useRef<HTMLInputElement>(null);
   const qtyWtRef = useRef<HTMLInputElement>(null);
   const addItemButtonRef = useRef<HTMLButtonElement>(null);
+
+  const generateNewBillNumber = useCallback(() => {
+    if (billType === 'delivery-voucher') return '';
+
+    const today = new Date();
+    const prefix = format(today, 'ddMMyy');
+    
+    const todaysBills = bills.filter(bill => 
+      bill.type === billType &&
+      bill.billNumber.startsWith(prefix) &&
+      isSameDay(new Date(bill.date), today)
+    );
+
+    let maxNumber = 0;
+    todaysBills.forEach(bill => {
+      const parts = bill.billNumber.split('-');
+      const numPart = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+      if (!isNaN(numPart) && numPart > maxNumber) {
+        maxNumber = numPart;
+      }
+    });
+
+    const newNumber = (maxNumber + 1).toString().padStart(3, '0');
+    return `${prefix}-${newNumber}`;
+  }, [bills, billType]);
 
   const getBlankItem = useCallback((): Partial<BillItem> => {
     const defaultValuable = settings.valuables.find(v => v.id === 'gold-bis');
@@ -103,10 +129,13 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
       setVehicleNumber(existingBill.vehicleNumber || '');
       setModeOfTransport(existingBill.modeOfTransport || '');
       setReverseCharge(existingBill.reverseCharge || false);
+    } else {
+        // This is a new bill
+        setBillNumber(generateNewBillNumber());
     }
     setCurrentItem(getBlankItem());
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingBill, getBlankItem]);
+  }, [existingBill, getBlankItem, generateNewBillNumber]);
 
   const handleKeyDown = (e: React.KeyboardEvent, nextFieldRef?: React.RefObject<HTMLElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -301,12 +330,22 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
 
   const billTypeLabel = useMemo(() => {
     switch(billType) {
+      case 'purchase': return 'Purchase';
+      case 'sales-bill': return 'Sales';
+      case 'delivery-voucher': return 'Delivery Voucher';
+      default: return 'Bill';
+    }
+  }, [billType]);
+  
+  const billTypeTitle = useMemo(() => {
+    switch(billType) {
       case 'purchase': return 'Purchase Invoice';
       case 'sales-bill': return 'Sales Bill';
       case 'delivery-voucher': return 'Delivery Voucher';
       default: return 'Bill';
     }
   }, [billType]);
+
 
   const customerLabel = useMemo(() => {
     switch(billType) {
@@ -336,7 +375,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
               "font-headline text-3xl lg:text-4xl flex items-center",
               isSalesBill ? 'text-success' : isPurchase ? 'text-destructive' : 'text-warning'
           )}>
-            <Calculator className="mr-3 h-8 w-8 lg:h-9 lg:w-9" /> {existingBill ? 'Edit' : 'Create'} {billTypeLabel}
+            <Calculator className="mr-3 h-8 w-8 lg:h-9 lg:w-9" /> {existingBill ? 'Edit' : 'Create'} {billTypeTitle}
           </h1>
            {!existingBill && (
               <Button variant="outline" onClick={onCancel} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
@@ -355,7 +394,7 @@ const BillForm: React.FC<BillFormProps> = ({ billType, existingBill, onSaveAndPr
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
               <div>
-                <Label htmlFor="billNumber" className="text-base">{billTypeLabel} Number</Label>
+                <Label htmlFor="billNumber" className="text-base">{billTypeTitle} Number</Label>
                 <Input id="billNumber" value={billNumber} onChange={(e) => setBillNumber(e.target.value)} className="mt-1.5 h-11 text-base font-bold" ref={billNumberRef} onKeyDown={e => handleKeyDown(e, customerNameRef)}/>
               </div>
               <div>

@@ -35,8 +35,17 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
   
   const billTypeLabel = useMemo(() => {
     switch (billType) {
-      case 'sales-bill': return 'Sales Bill';
+      case 'sales-bill': return 'Sales';
+      case 'purchase': return 'Purchase';
+      case 'delivery-voucher': return 'Delivery Voucher';
+      default: return 'Bill';
+    }
+  }, [billType]);
+  
+  const billTypeTitle = useMemo(() => {
+    switch(billType) {
       case 'purchase': return 'Purchase Invoice';
+      case 'sales-bill': return 'Sales Bill';
       case 'delivery-voucher': return 'Delivery Voucher';
       default: return 'Bill';
     }
@@ -53,6 +62,8 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
 
 
   const filteredBills = useMemo(() => {
+    if (billType === 'delivery-voucher') return [];
+
     const componentBills = bills.filter(bill => bill.type === billType);
 
     if (period === 'all') {
@@ -149,7 +160,7 @@ const BillManagement: React.FC<BillManagementProps> = ({ billType }) => {
         {!isClient ? <HistoryViewSkeleton /> : (
             <div className="space-y-8">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-3xl lg:text-4xl font-headline text-primary">{billTypeLabel} History</h1>
+                    <h1 className="text-3xl lg:text-4xl font-headline text-primary">{billTypeTitle} History</h1>
                     <Button onClick={handleCreateNew} variant={billVariant} className="shadow-md hover:shadow-lg transition-shadow text-lg px-6 py-3 h-auto">
                         <PlusCircle className="mr-2.5 h-5 w-5" /> Create New {billTypeLabel}
                     </Button>
